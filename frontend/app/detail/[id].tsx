@@ -23,7 +23,7 @@ import * as ImagePicker from "expo-image-picker";
 import TendenciaStockChart from "../../components/TendenciaStockChart";
 
 // Constantes
-const API_BASE_URL = "http://192.168.0.166:3000";
+const API_BASE_URL = "http://172.20.10.11:3000";
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get("window");
 

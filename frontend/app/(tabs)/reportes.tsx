@@ -8,186 +8,466 @@ import {
   StyleSheet,
   Alert,
   FlatList,
-  ActivityIndicator,
+  Dimensions,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { ThemedText } from "@/components/themed-text";
 import { useRouter } from "expo-router";
+const { width: screenWidth } = Dimensions.get("window");
 
 // Configuración de API
-const API_BASE_URL = "http://192.168.0.166:3000/api";
+const API_BASE_URL = "http://172.20.10.11:3000/api";
 
-interface ProductoConsumo {
+interface ProductoGrupo {
   id: string;
   nombre: string;
-  cantidad: string;
-  fecha: string;
+  tipo: "reactivo" | "material" | "equipo";
+  stockActual: number;
+  lotes: LoteProducto[];
 }
 
-interface ProductoCaducar {
+interface LoteProducto {
   id: string;
-  nombre: string;
   lote: string;
-  fechaCaducidad: string;
-  diasRestantes: number;
-}
-
-interface StockActual {
-  id: string;
-  nombre: string;
-  existencia: number;
-  cantidadMinima: number;
-  estado: 'normal' | 'bajo' | 'critico';
+  cantidadConsumida?: number;
+  stockActual: number;
+  fechaCaducidad?: string;
+  fechaIngreso: string;
+  marca?: string;
+  idAgk?: string;
+  modelo?: string;
+  numeroSerie?: string;
+  estatus: "activo" | "inactivo" | "caducado";
+  diasRestantes?: number;
 }
 
 interface Filtros {
   periodo: string;
-  tipoReporte: string;
+  tipoProducto: "todos" | "reactivo" | "material" | "equipo";
 }
 
-interface PaginationInfo {
-  currentPage: number;
-  totalPages: number;
-  totalItems: number;
-  itemsPerPage: number;
+interface ProductoExpandido {
+  [key: string]: boolean;
 }
 
 export default function ReportesScreen() {
   const router = useRouter();
   const [refreshing, setRefreshing] = useState(false);
   const [filtrosVisible, setFiltrosVisible] = useState(false);
-  const [filtrosAplicados, setFiltrosAplicados] = useState(false);
   const [loading, setLoading] = useState(true);
-  
+  const [productosExpandidos, setProductosExpandidos] =
+    useState<ProductoExpandido>({});
   const [filtros, setFiltros] = useState<Filtros>({
-    periodo: "trimestral",
-    tipoReporte: "todos",
+    periodo: "mensual",
+    tipoProducto: "todos",
   });
+  // Datos de ejemplo según la nueva estructura
+  const [productos, setProductos] = useState<ProductoGrupo[]>([
+    {
+      id: "1",
+      nombre: "Agua destilada",
+      tipo: "reactivo",
+      stockActual: 12,
+      lotes: [
+        {
+          id: "1-1",
+          lote: "ABC123",
+          cantidadConsumida: 5,
 
-  // Datos estáticos según la imagen
-  const [consumoProductos, setConsumoProductos] = useState<ProductoConsumo[]>([
-    { id: '1', nombre: 'Agua destinada', cantidad: '12 litros', fecha: 'Septiembre-Diciembre' },
-    { id: '2', nombre: 'Guantes de lotex estéril totala', cantidad: '120 piezas', fecha: 'Septiembre-Diciembre' },
-    { id: '3', nombre: 'Guantes de lotex estéril totala CH', cantidad: '100 piezas', fecha: 'Septiembre-Diciembre' },
-    { id: '4', nombre: 'Ácido glutámico', cantidad: '9 litros', fecha: 'Septiembre-Diciembre' },
+          stockActual: 7,
+          fechaCaducidad: "12/Nov/2025",
+          fechaIngreso: "01/Ene/2024",
+          estatus: "activo",
+          diasRestantes: 20,
+        },
+        {
+          id: "1-2",
+          lote: "DEF456",
+          cantidadConsumida: 3,
+
+          stockActual: 5,
+          fechaCaducidad: "15/Dic/2025",
+          fechaIngreso: "01/Feb/2024",
+          estatus: "activo",
+          diasRestantes: 53,
+        },
+      ],
+    },
+    {
+      id: "2",
+      nombre: "Guantes de látex estéril",
+      tipo: "material",
+
+      stockActual: 120,
+      lotes: [
+        {
+          id: "2-1",
+          lote: "MAT001",
+          stockActual: 80,
+          fechaIngreso: "15/Mar/2024",
+          marca: "MediSafe",
+          estatus: "activo",
+        },
+
+        {
+          id: "2-2",
+          lote: "MAT002",
+          stockActual: 40,
+          fechaIngreso: "20/Abr/2024",
+          marca: "MediSafe",
+          estatus: "activo",
+        },
+      ],
+    },
+    {
+      id: "3",
+
+      nombre: "Centrífuga de laboratorio",
+      tipo: "equipo",
+      stockActual: 2,
+      lotes: [
+        {
+          id: "3-1",
+          lote: "EQP001",
+          stockActual: 1,
+          fechaIngreso: "10/Ene/2024",
+          marca: "LabTech",
+
+          idAgk: "AGK-CENT-001",
+          modelo: "CT-5000",
+          numeroSerie: "SN123456",
+          estatus: "activo",
+        },
+        {
+          id: "3-2",
+          lote: "EQP002",
+          stockActual: 1,
+          fechaIngreso: "15/Feb/2024",
+
+          marca: "LabTech",
+          idAgk: "AGK-CENT-002",
+          modelo: "CT-5000",
+          numeroSerie: "SN123457",
+          estatus: "inactivo",
+        },
+      ],
+    },
+    {
+      id: "4",
+      nombre: "Ácido glutámico",
+      tipo: "reactivo",
+
+      stockActual: 9,
+      lotes: [
+        {
+          id: "4-1",
+          lote: "ACD001",
+          cantidadConsumida: 2,
+          stockActual: 3,
+          fechaCaducidad: "08/Nov/2025",
+          fechaIngreso: "01/Mar/2024",
+          estatus: "activo",
+
+          diasRestantes: 16,
+        },
+      ],
+    },
+    {
+      id: "5",
+      nombre: "Jeringas desechables",
+      tipo: "material",
+      stockActual: 200,
+      lotes: [
+        {
+          id: "5-1",
+          lote: "MAT003",
+
+          stockActual: 200,
+          fechaIngreso: "05/May/2024",
+          marca: "SafeMed",
+          estatus: "activo",
+        },
+      ],
+    },
   ]);
-
-  const [productosProximosCaducar, setProductosProximosCaducar] = useState<ProductoCaducar[]>([
-    { id: '1', nombre: 'Acielo glutámico', lote: 'ABC123', fechaCaducidad: '12/Noviembre/2025', diasRestantes: 20 },
-    { id: '2', nombre: 'Detergente neutro', lote: 'DIF.456', fechaCaducidad: '11/Noviembre/2025', diasRestantes: 19 },
-    { id: '3', nombre: 'Agua destinada', lote: '798cH1', fechaCaducidad: '8/Noviembre/2025', diasRestantes: 16 },
-    { id: '4', nombre: 'Sulfato de potasio', lote: '220CC3', fechaCaducidad: '8/Noviembre/2025', diasRestantes: 16 },
-  ]);
-
-  const [stockActual, setStockActual] = useState<StockActual[]>([
-    { id: '1', nombre: 'Agua destinada', existencia: 12, cantidadMinima: 6, estado: 'normal' },
-    { id: '2', nombre: 'Motroz Eférmeyer', existencia: 120, cantidadMinima: 2, estado: 'normal' },
-    { id: '3', nombre: 'Guantes de lotex estéril totala CH', existencia: 100, cantidadMinima: 2, estado: 'normal' },
-    { id: '4', nombre: 'Ácido glutámico', existencia: 9, cantidadMinima: 10, estado: 'bajo' },
-  ]);
-
-  // 🔹 Función para fetch de datos optimizada
-  const fetchData = useCallback(async (endpoint: string) => {
-    try {
-      const response = await fetch(`${API_BASE_URL}${endpoint}`);
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}`);
-      }
-      return await response.json();
-    } catch (error) {
-      console.error(`❌ Error en ${endpoint}:`, error);
-      throw error;
-    }
+  // 🔹 Función para alternar expansión de productos
+  const toggleProductoExpandido = useCallback((productoId: string) => {
+    setProductosExpandidos((prev) => ({
+      ...prev,
+      [productoId]: !prev[productoId],
+    }));
   }, []);
-
-  // 🔹 Cargar reportes desde el backend
-  const fetchReportes = useCallback(async () => {
-    try {
-      setLoading(true);
-      console.log('🔄 Cargando reportes...');
-
-      // Construir URL con parámetros
-      const params = new URLSearchParams({
-        periodo: filtros.periodo,
-        tipoReporte: filtros.tipoReporte
-      });
-
-      // Aquí irían las llamadas reales a la API
-      // const reportesData = await fetchData(`/reportes?${params}`);
-      
-      // Por ahora usamos datos estáticos
-      console.log('✅ Reportes cargados');
-      
-    } catch (error) {
-      console.error("❌ Error cargando reportes:", error);
-      Alert.alert("Error", "No se pudieron cargar los reportes");
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
+  // 🔹 Filtrar productos según los filtros aplicados
+  const productosFiltrados = useMemo(() => {
+    if (filtros.tipoProducto === "todos") {
+      return productos;
     }
-  }, [fetchData, filtros]);
-
-  // 🔹 Actualizar estado de filtros aplicados
+    return productos.filter(
+      (producto) => producto.tipo === filtros.tipoProducto
+    );
+  }, [productos, filtros.tipoProducto]);
+  // 🔹 Función para determinar el color según los días restantes
+  const getColorCaducidad = useCallback((dias?: number) => {
+    if (!dias) return "#6B7280";
+    if (dias <= 7) return "#EF4444";
+    if (dias <= 30) return "#F59E0B";
+    return "#16A34A";
+  }, []);
+  // 🔹 Función para determinar el estado del stock
+  const getEstadoStock = useCallback((stockActual: number) => {
+    if (stockActual === 0) return { estado: "agotado", color: "#EF4444" };
+    if (stockActual <= 5) return { estado: "critico", color: "#F59E0B" };
+    if (stockActual <= 15) return { estado: "bajo", color: "#F59E0B" };
+    return { estado: "normal", color: "#16A34A" };
+  }, []);
+  // 🔹 Función para obtener texto del periodo (Eliminada, ya no se usa)
+  // 🔹 Contadores por tipo
+  const contadores = useMemo(
+    () => ({
+      todos: productos.length,
+      reactivo: productos.filter((p) => p.tipo === "reactivo").length,
+      material: productos.filter((p) => p.tipo === "material").length,
+      equipo: productos.filter((p) => p.tipo === "equipo").length,
+    }),
+    [productos]
+  );
+  // 🔹 Cargar datos al montar
   useEffect(() => {
-    const hayFiltrosActivos =
-      filtros.periodo !== "trimestral" ||
-      filtros.tipoReporte !== "todos";
-
-    setFiltrosAplicados(hayFiltrosActivos);
-  }, [filtros]);
-
-  // 🔹 Resetear filtros
-  const resetearFiltros = useCallback(() => {
-    setFiltros({
-      periodo: "trimestral",
-      tipoReporte: "todos",
-    });
-    setFiltrosAplicados(false);
+    setTimeout(() => {
+      setLoading(false);
+    }, 1000);
   }, []);
-
   // 🔹 Aplicar filtros desde modal
   const aplicarFiltrosDesdeModal = useCallback(() => {
     setFiltrosVisible(false);
-    fetchReportes();
-  }, [fetchReportes]);
-
-  // 🔹 Función para determinar el color según los días restantes
-  const getColorCaducidad = useCallback((dias: number) => {
-    if (dias <= 7) return "#EF4444"; // rojo
-    if (dias <= 30) return "#F59E0B"; // amarillo
-    return "#16A34A"; // verde
   }, []);
-
-  // 🔹 Función para determinar el estado del stock
-  const getEstadoStock = useCallback((existencia: number, minimo: number) => {
-    if (existencia <= minimo * 0.3) return { estado: 'critico', color: "#EF4444" };
-    if (existencia <= minimo) return { estado: 'bajo', color: "#F59E0B" };
-    return { estado: 'normal', color: "#16A34A" };
-  }, []);
-
-  // 🔹 Funciones de exportación
-  const exportarPDF = useCallback(() => {
-    console.log('📊 Exportando a PDF...');
-    Alert.alert("Éxito", "Reporte exportado a PDF correctamente");
-  }, []);
-
-  const exportarExcel = useCallback(() => {
-    console.log('📊 Exportando a Excel...');
-    Alert.alert("Éxito", "Reporte exportado a Excel correctamente");
-  }, []);
-
-  // 🔹 Cargar datos al montar
-  useEffect(() => {
-    fetchReportes();
-  }, [fetchReportes]);
-
   // 🔹 Pull to refresh
   const onRefresh = useCallback(() => {
     setRefreshing(true);
-    fetchReportes();
-  }, [fetchReportes]);
+    setTimeout(() => {
+      setRefreshing(false);
+    }, 1000);
+  }, []);
+  // 🔹 Funciones de exportación
+  const exportarPDF = useCallback(() => {
+    Alert.alert("Éxito", "Reporte exportado a PDF correctamente");
+  }, []);
+  const exportarExcel = useCallback(() => {
+    Alert.alert("Éxito", "Reporte exportado a Excel correctamente");
+  }, []);
+  // 🔹 Render Item para productos
+  const renderProductoItem = useCallback(
+    ({ item }: { item: ProductoGrupo }) => {
+      const isExpanded = productosExpandidos[item.id];
+      const { estado, color } = getEstadoStock(item.stockActual);
+      const estadoText =
+        estado === "agotado"
+          ? "Agotado"
+          : estado === "critico"
+          ? "Crítico"
+          : estado === "bajo"
+          ? "Bajo"
+          : "Normal";
 
-  if (loading && consumoProductos.length === 0) {
+      return (
+        <View style={styles.productoContainer}>
+          {/* Encabezado del producto */}
+          <TouchableOpacity
+            style={styles.productoHeader}
+            onPress={() => toggleProductoExpandido(item.id)}
+          >
+            <View style={styles.productoInfo}>
+              <ThemedText style={styles.productoNombre}>
+                {item.nombre}
+              </ThemedText>
+
+              <View style={styles.productoMeta}>
+                <ThemedText style={styles.productoTipo}>
+                  {item.tipo === "reactivo"
+                    ? "Reactivo"
+                    : item.tipo === "material"
+                    ? "Material"
+                    : "Equipo"}
+                </ThemedText>
+                <View style={styles.separator} />
+
+                <ThemedText style={styles.lotesCount}>
+                  {item.lotes.length}{" "}
+                  {item.lotes.length === 1 ? "lote" : "lotes"}
+                </ThemedText>
+              </View>
+            </View>
+
+            <View style={styles.productoActions}>
+              <View
+                style={[styles.stockBadge, { backgroundColor: color + "15" }]}
+              >
+                <ThemedText style={[styles.stockText, { color }]}>
+                  {item.stockActual} unidades
+                </ThemedText>
+              </View>
+              <Ionicons
+                name={isExpanded ? "chevron-up" : "chevron-down"}
+                size={20}
+                color="#64748B"
+              />
+            </View>
+          </TouchableOpacity>
+
+          {/* Detalles expandidos */}
+          {isExpanded && (
+            <View style={styles.lotesContainer}>
+              {/* Header específico por tipo */}
+              <View style={styles.tableHeader}>
+                {item.tipo === "reactivo" && (
+                  <>
+                    {/* Columnas Reactivo */}
+                    <ThemedText style={styles.tableHeaderText}>Lote</ThemedText>
+                    <ThemedText style={styles.tableHeaderText}>
+                      Consumido
+                    </ThemedText>
+                    <ThemedText style={styles.tableHeaderText}>
+                      Stock
+                    </ThemedText>
+                    <ThemedText style={styles.tableHeaderText}>
+                      F. Ingreso
+                    </ThemedText>
+                  </>
+                )}
+
+                {item.tipo === "material" && (
+                  <>
+                    {/* Columnas Material */}
+                    <ThemedText style={styles.tableHeaderText}>Lote</ThemedText>
+                    <ThemedText style={styles.tableHeaderText}>
+                      Marca
+                    </ThemedText>
+                    <ThemedText style={styles.tableHeaderText}>
+                      Stock
+                    </ThemedText>
+                    <ThemedText style={styles.tableHeaderText}>
+                      F. Ingreso
+                    </ThemedText>
+                  </>
+                )}
+
+                {item.tipo === "equipo" && (
+                  <>
+                    {/* Columnas Equipo */}
+                    <ThemedText style={styles.tableHeaderText}>
+                      Marca/Modelo
+                    </ThemedText>
+                    <ThemedText style={styles.tableHeaderText}>
+                      ID AGK
+                    </ThemedText>
+                    <ThemedText style={styles.tableHeaderText}>
+                      No. Serie
+                    </ThemedText>
+                    <ThemedText style={styles.tableHeaderText}>
+                      Estatus
+                    </ThemedText>
+                    <ThemedText style={styles.tableHeaderText}>
+                      F. Ingreso
+                    </ThemedText>
+                  </>
+                )}
+              </View>
+
+              {item.lotes.map((lote) => (
+                <View key={lote.id} style={styles.loteRow}>
+                  {item.tipo === "reactivo" && (
+                    <>
+                      {/* Datos Reactivo */}
+                      <ThemedText style={styles.loteText}>
+                        {lote.lote}
+                      </ThemedText>
+                      <ThemedText style={styles.loteText}>
+                        {lote.cantidadConsumida || 0}u
+                      </ThemedText>
+                      <ThemedText style={styles.loteText}>
+                        {lote.stockActual}u
+                      </ThemedText>
+                      <ThemedText style={styles.loteText}>
+                        {lote.fechaIngreso}
+                      </ThemedText>
+                    </>
+                  )}
+
+                  {item.tipo === "material" && (
+                    <>
+                      {/* Datos Material */}
+                      <ThemedText style={styles.loteText}>
+                        {lote.lote}
+                      </ThemedText>
+                      <ThemedText style={styles.loteText}>
+                        {lote.marca}
+                      </ThemedText>
+                      <ThemedText style={styles.loteText}>
+                        {lote.stockActual}u
+                      </ThemedText>
+                      <ThemedText style={styles.loteText}>
+                        {lote.fechaIngreso}
+                      </ThemedText>
+                    </>
+                  )}
+
+                  {item.tipo === "equipo" && (
+                    <>
+                    {/* Datos Equipo */}
+                      <ThemedText style={styles.loteText}>
+                        {lote.marca} / {lote.modelo}
+                      </ThemedText>
+                      <ThemedText style={styles.loteText}>
+                        {lote.idAgk}
+                      </ThemedText>
+                      <ThemedText style={styles.loteText}>
+                        {lote.numeroSerie}
+                      </ThemedText>
+                      <View
+                        style={[
+                          styles.estadoBadge,
+                          {
+                            backgroundColor:
+                              lote.estatus === "activo"
+                                ? "#10B98115"
+                                : "#6B728015",
+                          },
+                        ]}
+                      >
+                        <ThemedText
+                          style={[
+                            styles.estadoText,
+                            {
+                              color:
+                                lote.estatus === "activo"
+                                  ? "#10B981"
+                                  : "#6B7280",
+                            },
+                          ]}
+                        >
+                          {lote.estatus === "activo" ? "Activo" : "Inactivo"}
+                        </ThemedText>
+                      </View>
+                      <ThemedText style={styles.loteText}>
+                        {lote.fechaIngreso}
+                      </ThemedText>
+                    </>
+                  )}
+                </View>
+              ))}
+            </View>
+          )}
+        </View>
+      );
+    },
+    [
+      productosExpandidos,
+      getEstadoStock,
+      getColorCaducidad,
+      toggleProductoExpandido,
+    ]
+  );
+  if (loading) {
     return (
       <View style={styles.loadingContainer}>
         <View style={styles.loadingContent}>
@@ -200,268 +480,212 @@ export default function ReportesScreen() {
     );
   }
 
-  // 🔹 Render Item para Consumo de Productos
-  const renderConsumoItem = useCallback(({ item }: { item: ProductoConsumo }) => (
-    <View style={styles.tableRow}>
-      <View style={[styles.tableCell, { flex: 2 }]}>
-        <ThemedText style={styles.productoNombre}>{item.nombre}</ThemedText>
-      </View>
-      <View style={[styles.tableCell, { flex: 1 }]}>
-        <ThemedText style={styles.cantidadText}>{item.cantidad}</ThemedText>
-      </View>
-      <View style={[styles.tableCell, { flex: 1.5 }]}>
-        <ThemedText style={styles.fechaText}>{item.fecha}</ThemedText>
-      </View>
-    </View>
-  ), []);
-
-  // 🔹 Render Item para Productos a Caducar
-  const renderCaducarItem = useCallback(({ item }: { item: ProductoCaducar }) => {
-    const color = getColorCaducidad(item.diasRestantes);
-    return (
-      <View style={styles.tableRow}>
-        <View style={[styles.tableCell, { flex: 2 }]}>
-          <ThemedText style={styles.productoNombre}>{item.nombre}</ThemedText>
-        </View>
-        <View style={[styles.tableCell, { flex: 1 }]}>
-          <ThemedText style={styles.loteText}>{item.lote}</ThemedText>
-        </View>
-        <View style={[styles.tableCell, { flex: 1.2 }]}>
-          <ThemedText style={styles.fechaText}>{item.fechaCaducidad}</ThemedText>
-        </View>
-        <View style={[styles.tableCell, { flex: 0.8 }]}>
-          <View style={[styles.estadoBadge, { backgroundColor: color + "15" }]}>
-            <ThemedText style={[styles.estadoText, { color }]}>
-              {item.diasRestantes}d
-            </ThemedText>
-          </View>
-        </View>
-      </View>
-    );
-  }, [getColorCaducidad]);
-
-  // 🔹 Render Item para Stock Actual
-  const renderStockItem = useCallback(({ item }: { item: StockActual }) => {
-    const { estado, color } = getEstadoStock(item.existencia, item.cantidadMinima);
-    const estadoText = estado === 'critico' ? 'Crítico' : estado === 'bajo' ? 'Bajo' : 'Normal';
-    
-    return (
-      <View style={styles.tableRow}>
-        <View style={[styles.tableCell, { flex: 2 }]}>
-          <ThemedText style={styles.productoNombre}>{item.nombre}</ThemedText>
-        </View>
-        <View style={[styles.tableCell, { flex: 1 }]}>
-          <ThemedText style={styles.cantidadText}>{item.existencia} unidades</ThemedText>
-        </View>
-        <View style={[styles.tableCell, { flex: 1 }]}>
-          <ThemedText style={styles.cantidadText}>{item.cantidadMinima} unidades</ThemedText>
-        </View>
-        <View style={[styles.tableCell, { flex: 1 }]}>
-          <View style={[styles.estadoBadge, { backgroundColor: color + "15" }]}>
-            <ThemedText style={[styles.estadoText, { color }]}>
-              {estadoText}
-            </ThemedText>
-          </View>
-        </View>
-      </View>
-    );
-  }, [getEstadoStock]);
-
   return (
     <View style={styles.container}>
       {/* 🔹 Header */}
       <View style={styles.header}>
-        <ThemedText type="title" style={styles.headerTitle}>
-          Reportes
-        </ThemedText>
-        
-        <View style={styles.headerActions}>
-          <TouchableOpacity
-            style={[
-              styles.filterButton,
-              filtrosAplicados && styles.filterButtonActive,
-            ]}
-            onPress={() => setFiltrosVisible(true)}
-          >
-            <Ionicons
-              name="options-outline"
-              size={18}
-              color={filtrosAplicados ? "#fff" : "#1E293B"}
-            />
-            <ThemedText
-              style={[
-                styles.filterText,
-                filtrosAplicados && styles.filterTextActive,
-              ]}
+        <View style={styles.headerTop}>
+          <ThemedText type="title" style={styles.headerTitle}>
+            Reportes
+          </ThemedText>
+          <View style={styles.headerActions}>
+            <TouchableOpacity
+              style={styles.filterButton}
+              onPress={() => setFiltrosVisible(true)}
             >
-              {filtros.periodo === "trimestral" ? "Trimestral" : 
-               filtros.periodo === "mensual" ? "Mensual" : "Personalizado"}
-            </ThemedText>
-            <Ionicons 
-              name="chevron-down" 
-              size={16} 
-              color={filtrosAplicados ? "#fff" : "#1E293B"} 
-            />
-          </TouchableOpacity>
-
-          <View style={styles.exportButtons}>
-            <TouchableOpacity style={styles.exportButton} onPress={exportarPDF}>
-              <Ionicons name="document-outline" size={18} color="#4B9CD3" />
-              <ThemedText style={styles.exportButtonText}>PDF</ThemedText>
-            </TouchableOpacity>
-            
-            <TouchableOpacity style={styles.exportButton} onPress={exportarExcel}>
-              <Ionicons name="tablet-landscape-outline" size={18} color="#4B9CD3" />
-              <ThemedText style={styles.exportButtonText}>Excel</ThemedText>
+              <Ionicons name="options-outline" size={20} color="#1E293B" />
+              <ThemedText style={styles.filterText}>Filtrar Periodo</ThemedText>
+              <Ionicons name="chevron-down" size={16} color="#1E293B" />
             </TouchableOpacity>
           </View>
         </View>
-      </View>
 
-      {/* 🔹 Badge de filtros activos */}
-      {filtrosAplicados && (
-        <View style={styles.badgeContainer}>
+        {/* 🔹 Periodo actual */}
+        <View style={styles.periodoContainer}>
+          <ThemedText style={styles.periodoText}>
+            Periodo: Ene 2025 - Abr 2025
+          </ThemedText>
+        </View>
+
+        {/* 🔹 Botones de exportar */}
+        <View style={styles.exportButtons}>
           <TouchableOpacity
-            style={styles.filtrosActivosBadge}
-            onPress={resetearFiltros}
+            style={styles.exportButtonBig}
+            onPress={exportarPDF}
           >
-            <ThemedText style={styles.filtrosActivosText}>
-              Filtros activos
-            </ThemedText>
-            <Ionicons name="close" size={16} color="#fff" />
+            <Ionicons name="document-text-outline" size={20} color="#D9534F" />
+            <ThemedText style={styles.exportButtonText}>PDF</ThemedText>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.exportButtonBig}
+            onPress={exportarExcel}
+          >
+            <Ionicons name="stats-chart-outline" size={20} color="#5CB85C" />
+            <ThemedText style={styles.exportButtonText}>Excel</ThemedText>
           </TouchableOpacity>
         </View>
-      )}
+      </View>
+
+      {/* 🔹 Filtros por tipo de producto */}
+      <View style={styles.filtrosContainer}>
+        <TouchableOpacity
+          style={[
+            styles.filtroCard,
+            filtros.tipoProducto === "todos" && styles.filtroCardActive,
+          ]}
+          onPress={() =>
+            setFiltros((prev) => ({ ...prev, tipoProducto: "todos" }))
+          }
+        >
+          <Ionicons
+            name="grid-outline"
+            size={24}
+            color={filtros.tipoProducto === "todos" ? "#FFFFFF" : "#4B9CD3"}
+          />
+          <ThemedText
+            style={[
+              styles.filtroNumber,
+              filtros.tipoProducto === "todos" && styles.filtroNumberActive,
+            ]}
+          >
+            {contadores.todos}
+          </ThemedText>
+          <ThemedText
+            style={[
+              styles.filtroLabel,
+              filtros.tipoProducto === "todos" && styles.filtroLabelActive,
+            ]}
+          >
+            Todos
+          </ThemedText>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={[
+            styles.filtroCard,
+            filtros.tipoProducto === "reactivo" && styles.filtroCardActive,
+          ]}
+          onPress={() =>
+            setFiltros((prev) => ({ ...prev, tipoProducto: "reactivo" }))
+          }
+        >
+          <Ionicons
+            name="flask-outline"
+            size={24}
+            color={filtros.tipoProducto === "reactivo" ? "#FFFFFF" : "#8B5CF6"}
+          />
+          <ThemedText
+            style={[
+              styles.filtroNumber,
+              filtros.tipoProducto === "reactivo" && styles.filtroNumberActive,
+            ]}
+          >
+            {contadores.reactivo}
+          </ThemedText>
+          <ThemedText
+            style={[
+              styles.filtroLabel,
+              filtros.tipoProducto === "reactivo" && styles.filtroLabelActive,
+            ]}
+          >
+            Reactivos
+          </ThemedText>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={[
+            styles.filtroCard,
+            filtros.tipoProducto === "material" && styles.filtroCardActive,
+          ]}
+          onPress={() =>
+            setFiltros((prev) => ({ ...prev, tipoProducto: "material" }))
+          }
+        >
+          <Ionicons
+            name="cube-outline"
+            size={24}
+            color={filtros.tipoProducto === "material" ? "#FFFFFF" : "#10B981"}
+          />
+          <ThemedText
+            style={[
+              styles.filtroNumber,
+              filtros.tipoProducto === "material" && styles.filtroNumberActive,
+            ]}
+          >
+            {contadores.material}
+          </ThemedText>
+          <ThemedText
+            style={[
+              styles.filtroLabel,
+              filtros.tipoProducto === "material" && styles.filtroLabelActive,
+            ]}
+          >
+            Materiales
+          </ThemedText>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={[
+            styles.filtroCard,
+            filtros.tipoProducto === "equipo" && styles.filtroCardActive,
+          ]}
+          onPress={() =>
+            setFiltros((prev) => ({ ...prev, tipoProducto: "equipo" }))
+          }
+        >
+          <Ionicons
+            name="hardware-chip-outline"
+            size={24}
+            color={filtros.tipoProducto === "equipo" ? "#FFFFFF" : "#3B82F6"}
+          />
+          <ThemedText
+            style={[
+              styles.filtroNumber,
+              filtros.tipoProducto === "equipo" && styles.filtroNumberActive,
+            ]}
+          >
+            {contadores.equipo}
+          </ThemedText>
+          <ThemedText
+            style={[
+              styles.filtroLabel,
+              filtros.tipoProducto === "equipo" && styles.filtroLabelActive,
+            ]}
+          >
+            Equipos
+          </ThemedText>
+        </TouchableOpacity>
+      </View>
 
       {/* 🔹 Contenido de Reportes */}
-      <ScrollView 
+      <ScrollView
         style={styles.scrollView}
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
         }
         showsVerticalScrollIndicator={false}
       >
-        {/* 🔹 Sección: Consumo de productos */}
-        <View style={styles.section}>
-          <ThemedText type="defaultSemiBold" style={styles.sectionTitle}>
-            Consumo de productos
-          </ThemedText>
-          
-          <View style={styles.tableContainer}>
-            {/* Header de la tabla */}
-            <View style={styles.tableHeader}>
-              <View style={[styles.tableHeaderCell, { flex: 2 }]}>
-                <ThemedText style={styles.tableHeaderText}>Producto</ThemedText>
-              </View>
-              <View style={[styles.tableHeaderCell, { flex: 1 }]}>
-                <ThemedText style={styles.tableHeaderText}>Cantidad</ThemedText>
-              </View>
-              <View style={[styles.tableHeaderCell, { flex: 1.5 }]}>
-                <ThemedText style={styles.tableHeaderText}>Fecha</ThemedText>
-              </View>
-            </View>
-
-            {/* Contenido de la tabla */}
-            <FlatList
-              data={consumoProductos}
-              keyExtractor={(item) => item.id}
-              renderItem={renderConsumoItem}
-              scrollEnabled={false}
-            />
-          </View>
+        {/* 🔹 Lista de productos */}
+        <View style={styles.productosList}>
+          <FlatList
+            data={productosFiltrados}
+            keyExtractor={(item) => item.id}
+            renderItem={renderProductoItem}
+            scrollEnabled={false}
+            contentContainerStyle={styles.listContent}
+          />
         </View>
 
-        {/* 🔹 Sección: Productos próximos a caducar */}
-        <View style={styles.section}>
-          <ThemedText type="defaultSemiBold" style={styles.sectionTitle}>
-            Productos próximos a caducar
-          </ThemedText>
-          
-          <View style={styles.tableContainer}>
-            {/* Header de la tabla */}
-            <View style={styles.tableHeader}>
-              <View style={[styles.tableHeaderCell, { flex: 2 }]}>
-                <ThemedText style={styles.tableHeaderText}>Producto</ThemedText>
-              </View>
-              <View style={[styles.tableHeaderCell, { flex: 1 }]}>
-                <ThemedText style={styles.tableHeaderText}>Lote</ThemedText>
-              </View>
-              <View style={[styles.tableHeaderCell, { flex: 1.2 }]}>
-                <ThemedText style={styles.tableHeaderText}>Fecha a caducar</ThemedText>
-              </View>
-              <View style={[styles.tableHeaderCell, { flex: 0.8 }]}>
-                <ThemedText style={styles.tableHeaderText}>Estado</ThemedText>
-              </View>
-            </View>
-
-            {/* Contenido de la tabla */}
-            <FlatList
-              data={productosProximosCaducar}
-              keyExtractor={(item) => item.id}
-              renderItem={renderCaducarItem}
-              scrollEnabled={false}
-            />
-          </View>
-        </View>
-
-        {/* 🔹 Sección: Stock actual */}
-        <View style={styles.section}>
-          <ThemedText type="defaultSemiBold" style={styles.sectionTitle}>
-            Stock actual
-          </ThemedText>
-          
-          <View style={styles.tableContainer}>
-            {/* Header de la tabla */}
-            <View style={styles.tableHeader}>
-              <View style={[styles.tableHeaderCell, { flex: 2 }]}>
-                <ThemedText style={styles.tableHeaderText}>Producto</ThemedText>
-              </View>
-              <View style={[styles.tableHeaderCell, { flex: 1 }]}>
-                <ThemedText style={styles.tableHeaderText}>Existencia</ThemedText>
-              </View>
-              <View style={[styles.tableHeaderCell, { flex: 1 }]}>
-                <ThemedText style={styles.tableHeaderText}>Cantidad mínima</ThemedText>
-              </View>
-              <View style={[styles.tableHeaderCell, { flex: 1 }]}>
-                <ThemedText style={styles.tableHeaderText}>Estado</ThemedText>
-              </View>
-            </View>
-
-            {/* Contenido de la tabla */}
-            <FlatList
-              data={stockActual}
-              keyExtractor={(item) => item.id}
-              renderItem={renderStockItem}
-              scrollEnabled={false}
-            />
-          </View>
-        </View>
-
-        {/* 🔹 Alertas importantes */}
-        <View style={styles.alertasContainer}>
-          <View style={[styles.alerta, styles.alertaWarning]}>
-            <Ionicons name="warning-outline" size={20} color="#F59E0B" />
-            <ThemedText style={styles.alertaText}>
-              <ThemedText type="defaultSemiBold">Ácido glutámico</ThemedText> - El stock actual está por debajo del mínimo requerido
-            </ThemedText>
-          </View>
-          
-          <View style={[styles.alerta, styles.alertaError]}>
-            <Ionicons name="alert-circle-outline" size={20} color="#EF4444" />
-            <ThemedText style={styles.alertaText}>
-              <ThemedText type="defaultSemiBold">Productos próximos a caducar</ThemedText> - 4 productos caducarán en los próximos 30 días
-            </ThemedText>
-          </View>
-        </View>
+        <View style={styles.spacer} />
       </ScrollView>
 
-      {/* 🔹 Modal de Filtros */}
+      {/* 🔹 Modal de Filtros de Periodo */}
       <Modal visible={filtrosVisible} animationType="slide" transparent>
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
             <View style={styles.modalHeader}>
               <ThemedText type="title" style={styles.modalTitle}>
-                Filtros de Reportes
+                Periodo del Reporte
               </ThemedText>
               <TouchableOpacity
                 style={styles.closeButton}
@@ -471,124 +695,20 @@ export default function ReportesScreen() {
               </TouchableOpacity>
             </View>
 
-            <ScrollView style={styles.filtersScroll}>
-              {/* Filtro: Periodo */}
-              <View style={styles.filterCard}>
-                <ThemedText type="defaultSemiBold" style={styles.filterCardTitle}>
-                  Selección de periodo
-                </ThemedText>
-                <View style={styles.filterOptions}>
-                  {[
-                    { value: "mensual", label: "Mensual" },
-                    { value: "trimestral", label: "Trimestral" },
-                    { value: "semestral", label: "Semestral" },
-                    { value: "anual", label: "Anual" },
-                    { value: "personalizado", label: "Personalizado" },
-                  ].map((option) => (
-                    <TouchableOpacity
-                      key={option.value}
-                      style={[
-                        styles.filterOption,
-                        filtros.periodo === option.value && styles.filterOptionActive,
-                      ]}
-                      onPress={() => {
-                        setFiltros((prev) => ({
-                          ...prev,
-                          periodo: option.value,
-                        }));
-                      }}
-                    >
-                      <ThemedText
-                        style={[
-                          styles.filterOptionText,
-                          filtros.periodo === option.value && styles.filterOptionTextActive,
-                        ]}
-                      >
-                        {option.label}
-                      </ThemedText>
-                    </TouchableOpacity>
-                  ))}
-                </View>
-              </View>
-
-              {/* Filtro: Tipo de Reporte */}
-              <View style={styles.filterCard}>
-                <ThemedText type="defaultSemiBold" style={styles.filterCardTitle}>
-                  Tipo de Reporte
-                </ThemedText>
-                <View style={styles.filterOptions}>
-                  <TouchableOpacity
-                    style={[
-                      styles.filterOption,
-                      filtros.tipoReporte === "todos" && styles.filterOptionActive,
-                    ]}
-                    onPress={() => {
-                      setFiltros((prev) => ({
-                        ...prev,
-                        tipoReporte: "todos",
-                      }));
-                    }}
-                  >
-                    <ThemedText
-                      style={[
-                        styles.filterOptionText,
-                        filtros.tipoReporte === "todos" && styles.filterOptionTextActive,
-                      ]}
-                    >
-                      Todos los reportes
-                    </ThemedText>
-                  </TouchableOpacity>
-                  {["consumo", "caducidad", "stock", "movimientos"].map((tipo) => (
-                    <TouchableOpacity
-                      key={tipo}
-                      style={[
-                        styles.filterOption,
-                        filtros.tipoReporte === tipo && styles.filterOptionActive,
-                      ]}
-                      onPress={() => {
-                        setFiltros((prev) => ({
-                          ...prev,
-                          tipoReporte: prev.tipoReporte === tipo ? "todos" : tipo,
-                        }));
-                      }}
-                    >
-                      <ThemedText
-                        style={[
-                          styles.filterOptionText,
-                          filtros.tipoReporte === tipo && styles.filterOptionTextActive,
-                        ]}
-                      >
-                        {tipo === "consumo" && "Consumo de productos"}
-                        {tipo === "caducidad" && "Productos a caducar"}
-                        {tipo === "stock" && "Stock actual"}
-                        {tipo === "movimientos" && "Movimientos"}
-                      </ThemedText>
-                    </TouchableOpacity>
-                  ))}
-                </View>
-              </View>
-            </ScrollView>
+            {/* MODIFICACIÓN 1: Opciones de periodo eliminadas */}
+            <View style={styles.periodoOptions}>
+              <ThemedText style={styles.placeholderText}>
+                Aquí irá el selector de rango de fechas (ej. "Desde" y "Hasta").
+              </ThemedText>
+            </View>
 
             <View style={styles.filterActions}>
-              <TouchableOpacity
-                style={styles.resetBtn}
-                onPress={() => {
-                  setFiltros({
-                    periodo: "trimestral",
-                    tipoReporte: "todos",
-                  });
-                }}
-              >
-                <ThemedText style={styles.resetBtnText}>
-                  Limpiar Filtros
-                </ThemedText>
-              </TouchableOpacity>
               <TouchableOpacity
                 style={styles.applyBtn}
                 onPress={aplicarFiltrosDesdeModal}
               >
                 <ThemedText style={styles.applyBtnText}>
-                  Aplicar Filtros
+                  Aplicar Periodo
                 </ThemedText>
               </TouchableOpacity>
             </View>
@@ -600,7 +720,10 @@ export default function ReportesScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#F8FAFC", paddingHorizontal: 20 },
+  container: {
+    flex: 1,
+    backgroundColor: "#F8FAFC",
+  },
   loadingContainer: {
     flex: 1,
     justifyContent: "center",
@@ -618,202 +741,256 @@ const styles = StyleSheet.create({
     textAlign: "center",
   },
   header: {
+    backgroundColor: "#FFFFFF",
+    paddingHorizontal: 20,
+    paddingTop: 60,
+    paddingBottom: 16,
+    borderBottomLeftRadius: 20,
+    borderBottomRightRadius: 20,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  headerTop: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    paddingTop: 60,
-    paddingBottom: 10,
   },
   headerTitle: {
-    fontSize: 23,
-    color: "#000000ff",
+    fontSize: 24,
+    color: "#000000",
     fontFamily: "Poppins_700Bold",
   },
   headerActions: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 12,
+    gap: 8,
   },
   filterButton: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#FFFFFF",
+    backgroundColor: "#F8FAFC",
     borderRadius: 12,
     paddingHorizontal: 12,
     height: 36,
     gap: 6,
-    shadowColor: "#000",
-    shadowOpacity: 0.06,
-    shadowRadius: 4,
-    elevation: 2,
-  },
-  filterButtonActive: {
-    backgroundColor: "#539DF3",
+    borderWidth: 1,
+    borderColor: "#E5E7EB",
   },
   filterText: {
     fontSize: 12,
     color: "#1E293B",
     fontFamily: "Poppins_500Medium",
   },
-  filterTextActive: {
-    color: "#FFFFFF",
-  },
   exportButtons: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 8,
+    gap: 12,
+    marginTop: 16,
   },
-  exportButton: {
+  exportButtonBig: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#FFFFFF",
-    borderRadius: 8,
-    paddingHorizontal: 10,
-    height: 36,
-    gap: 4,
-    shadowColor: "#000",
-    shadowOpacity: 0.06,
-    shadowRadius: 4,
-    elevation: 2,
+    justifyContent: "center",
+    backgroundColor: "#F8FAFC",
+    borderRadius: 12,
+    height: 40,
+    flex: 1,
+    gap: 8,
+    borderWidth: 1,
+    borderColor: "#E5E7EB",
   },
   exportButtonText: {
-    fontSize: 12,
-    color: "#4B9CD3",
+    fontSize: 14,
+    color: "#1E293B",
     fontFamily: "Poppins_500Medium",
   },
-  badgeContainer: {
-    flexDirection: "row",
-    justifyContent: "flex-start",
-    marginBottom: 12,
-    paddingHorizontal: 0,
-  },
-  filtrosActivosBadge: {
+  periodoContainer: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#539DF3",
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 20,
+    marginTop: 8,
   },
-  filtrosActivosText: {
-    color: "#fff",
-    fontSize: 12,
+  periodoText: {
+    fontSize: 14,
+    color: "#64748B",
     fontFamily: "Poppins_500Medium",
-    marginRight: 6,
+  },
+  filtrosContainer: {
+    flexDirection: "row",
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    gap: 8,
+  },
+  filtroCard: {
+    flex: 1,
+    alignItems: "center",
+    backgroundColor: "#FFFFFF",
+    borderRadius: 12,
+    padding: 12,
+    gap: 4,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
+    borderWidth: 1,
+    borderColor: "#F1F5F9",
+  },
+  filtroCardActive: {
+    backgroundColor: "#4B9CD3",
+    shadowColor: "#4B9CD3",
+    shadowOpacity: 0.2,
+    elevation: 4,
+  },
+  filtroNumber: {
+    fontSize: 16,
+    color: "#1E293B",
+    fontFamily: "Poppins_700Bold",
+  },
+  filtroNumberActive: {
+    color: "#FFFFFF",
+  },
+  filtroLabel: {
+    fontSize: 10,
+    color: "#64748B",
+    fontFamily: "Poppins_500Medium",
+    textAlign: "center",
+  },
+  filtroLabelActive: {
+    color: "#FFFFFF",
   },
   scrollView: {
     flex: 1,
   },
-  section: {
-    marginBottom: 24,
+  productosList: {
+    flex: 1,
+    paddingHorizontal: 20,
   },
-  sectionTitle: {
-    fontSize: 16,
-    color: "#000000ff",
-    marginBottom: 12,
-    fontFamily: "Poppins_600SemiBold",
+  listContent: {
+    paddingBottom: 20,
   },
-  tableContainer: {
+  productoContainer: {
     backgroundColor: "#FFFFFF",
     borderRadius: 12,
-    overflow: "hidden",
+    marginBottom: 12,
     shadowColor: "#000",
-    shadowOpacity: 0.06,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 2,
+    overflow: "hidden",
+  },
+  productoHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    padding: 16,
+  },
+  productoInfo: {
+    flex: 1,
+    gap: 4,
+  },
+  productoNombre: {
+    fontSize: 16,
+    color: "#1E293B",
+    fontFamily: "Poppins_600SemiBold",
+  },
+  productoMeta: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  productoTipo: {
+    fontSize: 12,
+    color: "#64748B",
+    fontFamily: "Poppins_400Regular",
+  },
+  separator: {
+    width: 1,
+    height: 12,
+    backgroundColor: "#E5E7EB",
+  },
+  lotesCount: {
+    fontSize: 12,
+    color: "#64748B",
+    fontFamily: "Poppins_400Regular",
+  },
+  productoActions: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+  },
+  stockBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 8,
+  },
+  stockText: {
+    fontSize: 11,
+    fontFamily: "Poppins_600SemiBold",
+  },
+  lotesContainer: {
+    backgroundColor: "#F8FAFC",
+    padding: 12,
+    borderTopWidth: 1,
+    borderTopColor: "#F1F5F9",
   },
   tableHeader: {
     flexDirection: "row",
-    backgroundColor: "#F8FAFC",
+    justifyContent: "space-between",
+    paddingVertical: 8,
+    paddingHorizontal: 4,
     borderBottomWidth: 1,
     borderBottomColor: "#E5E7EB",
-  },
-  tableHeaderCell: {
-    paddingVertical: 12,
-    paddingHorizontal: 8,
-    borderRightWidth: 1,
-    borderRightColor: "#E5E7EB",
+    marginBottom: 8,
   },
   tableHeaderText: {
-    fontSize: 12,
+    fontSize: 10,
     color: "#64748B",
-    fontFamily: "Poppins_600SemiBold",
+    fontFamily: "Poppins_700Bold",
     textAlign: "center",
+    flex: 1,
   },
-  tableRow: {
+  loteRow: {
     flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingVertical: 8,
+    paddingHorizontal: 4,
     borderBottomWidth: 1,
     borderBottomColor: "#F1F5F9",
   },
-  tableCell: {
-    paddingVertical: 12,
-    paddingHorizontal: 8,
-    borderRightWidth: 1,
-    borderRightColor: "#F1F5F9",
-    justifyContent: "center",
-  },
-  productoNombre: {
-    fontSize: 12,
-    color: "#1E293B",
-    fontFamily: "Poppins_500Medium",
-    textAlign: "center",
-  },
-  cantidadText: {
-    fontSize: 12,
-    color: "#475569",
-    fontFamily: "Poppins_400Regular",
-    textAlign: "center",
-  },
-  fechaText: {
-    fontSize: 12,
-    color: "#475569",
-    fontFamily: "Poppins_400Regular",
-    textAlign: "center",
-  },
   loteText: {
-    fontSize: 12,
+    fontSize: 10,
     color: "#475569",
     fontFamily: "Poppins_400Regular",
     textAlign: "center",
+    flex: 1,
+  },
+  diasBadge: {
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 6,
+    alignSelf: "center",
+  },
+  diasText: {
+    fontSize: 8,
+    fontFamily: "Poppins_600SemiBold",
   },
   estadoBadge: {
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 12,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 6,
     alignSelf: "center",
   },
   estadoText: {
-    fontSize: 10,
+    fontSize: 8,
     fontFamily: "Poppins_600SemiBold",
-    textAlign: "center",
   },
-  alertasContainer: {
-    gap: 12,
-    marginBottom: 24,
-  },
-  alerta: {
-    flexDirection: "row",
-    alignItems: "flex-start",
-    padding: 16,
-    borderRadius: 12,
-    gap: 12,
-  },
-  alertaWarning: {
-    backgroundColor: "#FEF3CD",
-    borderLeftWidth: 4,
-    borderLeftColor: "#F59E0B",
-  },
-  alertaError: {
-    backgroundColor: "#FEE2E2",
-    borderLeftWidth: 4,
-    borderLeftColor: "#EF4444",
-  },
-  alertaText: {
-    flex: 1,
-    fontSize: 12,
-    color: "#475569",
-    fontFamily: "Poppins_400Regular",
-    lineHeight: 16,
+  spacer: {
+    height: 20,
   },
   modalOverlay: {
     flex: 1,
@@ -824,7 +1001,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#FFFFFF",
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
-    maxHeight: "85%",
+    paddingBottom: 34,
   },
   modalHeader: {
     flexDirection: "row",
@@ -842,95 +1019,37 @@ const styles = StyleSheet.create({
   closeButton: {
     padding: 4,
   },
-  filtersScroll: {
-    maxHeight: 400,
-    paddingVertical: 8,
-  },
-  filterCard: {
-    backgroundColor: "#fff",
-    borderRadius: 16,
+  periodoOptions: {
     padding: 20,
-    marginHorizontal: 20,
-    marginBottom: 16,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    elevation: 2,
-    borderWidth: 1,
-    borderColor: "#f1f5f9",
+    gap: 12,
+    alignItems: "center",
+    justifyContent: "center",
+    minHeight: 150,
   },
-  filterCardTitle: {
-    fontFamily: "Poppins_500Medium",
-    fontSize: 16,
-    color: "#374151",
-    marginBottom: 12,
-  },
-  filterOptions: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 8,
-  },
-  filterOption: {
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    borderRadius: 20,
-    backgroundColor: "#f8fafc",
-    borderWidth: 1,
-    borderColor: "#e1e5e9",
-  },
-  filterOptionActive: {
-    backgroundColor: "#3B82F6",
-    borderColor: "#3B82F6",
-  },
-  filterOptionText: {
-    fontFamily: "Poppins_400Regular",
+  placeholderText: {
     fontSize: 14,
-    color: "#666",
-    fontWeight: "500",
-  },
-  filterOptionTextActive: {
-    color: "#fff",
-    fontWeight: "600",
+    color: "#64748B",
+    fontFamily: "Poppins_400Regular",
+    textAlign: "center",
+    padding: 20,
   },
   filterActions: {
-    flexDirection: "row",
-    padding: 20,
-    borderTopWidth: 1,
-    borderTopColor: "#E5E7EB",
-    gap: 12,
-  },
-  resetBtn: {
-    flex: 1,
-    backgroundColor: "#f8fafc",
-    padding: 16,
-    alignItems: "center",
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: "#e1e5e9",
+    paddingHorizontal: 20,
   },
   applyBtn: {
-    flex: 1,
-    backgroundColor: "#539DF3",
+    backgroundColor: "#4B9CD3",
     padding: 16,
     alignItems: "center",
     borderRadius: 12,
-    shadowColor: "#539DF3",
+    shadowColor: "#4B9CD3",
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 8,
     elevation: 4,
   },
-  resetBtnText: {
-    fontWeight: "600",
-    color: "#666",
-    fontSize: 16,
-    fontFamily: "Poppins_500Medium",
-  },
   applyBtnText: {
+    fontFamily: "Poppins_600SemiBold",
+    fontSize: 16,
     color: "#fff",
-    fontWeight: "600",
-    fontSize: 15,
-    fontFamily: "Poppins_700Bold",
   },
 });

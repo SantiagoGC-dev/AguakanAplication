@@ -23,7 +23,7 @@ import { useRouter, useLocalSearchParams } from "expo-router";
 import { useFocusEffect } from "@react-navigation/native";
 
 //Configuración de la API y Tipos
-const API_BASE_URL = "http://192.168.0.166:3000";
+const API_BASE_URL = "http://172.20.10.11:3000";
 
 interface FilterOption {
   label: string;
@@ -520,7 +520,7 @@ export default function InventarioScreen() {
   ];
 
   // --- Funciones de Carga de Datos ---
-const fetchProducts = async (
+  const fetchProducts = async (
     pageToFetch = 1,
     isRefresh = false,
     estatusOverride: string | null = null
@@ -544,30 +544,31 @@ const fetchProducts = async (
       params.append("page", pageToFetch.toString());
       params.append("limit", PAGE_LIMIT.toString());
       params.append("orden", orden); // Añadir orden
-      
+
       if (busquedaTerm.trim()) params.append("busqueda", busquedaTerm.trim());
       if (tipoProductoFiltro !== "todos")
         params.append("tipo", tipoProductoFiltro);
-      if (prioridad !== "todos") params.append("prioridad", prioridad); 
-      
+      if (prioridad !== "todos") params.append("prioridad", prioridad);
+
       // ✅ --- INICIO DE LA MODIFICACIÓN ---
       // Esta lógica decide si usar el filtro de estado normal (estatusFiltro)
       // o el filtro forzado que viene del dashboard (estatusOverride).
-      const finalEstatus = estatusOverride !== null ? estatusOverride : estatusFiltro;
-      if (finalEstatus !== "todos") { 
+      const finalEstatus =
+        estatusOverride !== null ? estatusOverride : estatusFiltro;
+      if (finalEstatus !== "todos") {
         params.append("estatus", finalEstatus);
       }
       // ✅ --- FIN DE LA MODIFICACIÓN ---
 
-      if (periodo !== "todos") params.append("periodo", periodo); 
+      if (periodo !== "todos") params.append("periodo", periodo);
 
       // 2. Hacer el fetch
       const res = await fetch(
-        `${API_BASE_URL}/api/productos?${params.toString()}` 
+        `${API_BASE_URL}/api/productos?${params.toString()}`
       );
-      if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`); 
+      if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
 
-      const data = await res.json(); 
+      const data = await res.json();
       const newProducts = data.products || [];
       const newTotalCount = data.totalCount || 0;
 
@@ -589,11 +590,11 @@ const fetchProducts = async (
           return true;
         });
 
-        setProductos(uniqueProducts); 
+        setProductos(uniqueProducts);
         setPage(1); // Resetear contador de página
       } else {
         // 2. Para cargar más, de-duplicamos contra 'prev' Y contra sí mismo
-        setProductos((prev) => { 
+        setProductos((prev) => {
           // Usamos 'prev' como base para el Set
           const existingIds = new Set(prev.map((p) => p.id_producto));
 
@@ -619,14 +620,13 @@ const fetchProducts = async (
       // 4. Actualizar estado de paginación
       setHasMore(pageToFetch * PAGE_LIMIT < newTotalCount);
     } catch (err) {
-      console.error("❌ Error cargando productos:", err); 
-      Alert.alert("Error", "No se pudieron cargar los productos"); 
+      console.error("❌ Error cargando productos:", err);
+      Alert.alert("Error", "No se pudieron cargar los productos");
     } finally {
-      setCargandoInicial(false); 
+      setCargandoInicial(false);
       setLoadingMore(false); // Siempre detener el loading de "cargar más"
     }
   };
-  
 
   const fetchProductTypes = () => {
     fetch(`${API_BASE_URL}/api/productos/tipoproducto`)
@@ -699,12 +699,12 @@ const fetchProducts = async (
     fetchLaboratoriosYEstatus();
   }, []);
 
-useFocusEffect(
+  useFocusEffect(
     React.useCallback(() => {
       // ✅ GUARDIA: Si el filtro "en-uso" está activo, no hagas nada.
       // El useEffect anterior ya se encargó de la carga.
       if (filter === "en-uso") {
-        return; 
+        return;
       }
 
       // Si no hay filtro, carga los productos normalmente.
@@ -722,23 +722,17 @@ useFocusEffect(
   }, [busqueda]);
 
   // Efecto para aplicar el filtro "en-uso" desde el dashboard
-useEffect(() => {
+  useEffect(() => {
     console.log("Filter parameter:", filter); // 🔥 DEBUG
     if (filter === "en-uso") {
       const statusEnUso = "5"; // El ID de estatus "En Uso" es 5
-      
+
       // 1. Actualizar el estado para que la UI sea consistente
       setEstatusFiltro(statusEnUso);
       setFiltrosAplicados(true);
 
-      // 2. ✅ LLAMAR EL FETCH DIRECTAMENTE CON EL FILTRO
-      // Esto evita la condición de carrera
-      fetchProducts(1, true, statusEnUso); 
-      
-      // 3. 🔥 LIMPIAR el parámetro después de usarlo
-      setTimeout(() => {
-        router.setParams({ filter: undefined });
-      }, 1000);
+      // 2. LLAMAR EL FETCH DIRECTAMENTE CON EL FILTRO
+      fetchProducts(1, true, statusEnUso);
     }
   }, [filter, router]);
 
@@ -1045,11 +1039,19 @@ useEffect(() => {
   };
 
   const resetearFiltros = () => {
+    // 1. Poner el estado de la UI en "todos"
     setPeriodo("todos");
     setTipoProductoFiltro("todos");
     setPrioridad("todos");
     setEstatusFiltro("todos");
     setFiltrosAplicados(false);
+
+    // 2. ✅ Limpiar el filtro de la URL
+    router.setParams({ filter: undefined });
+
+    // 3. ✅ Forzar la recarga de productos con el filtro "todos"
+    // Usamos el override para garantizar que se pidan "todos"
+    fetchProducts(1, true, "todos");
   };
 
   const handleLoadMore = () => {

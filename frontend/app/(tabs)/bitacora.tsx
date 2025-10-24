@@ -16,7 +16,7 @@ import { ThemedText } from "@/components/themed-text";
 import { useRouter } from "expo-router";
 
 // Configuración de API
-const API_BASE_URL = "http://192.168.0.166:3000/api";
+const API_BASE_URL = "http://172.20.10.11:3000/api";
 
 interface Usuario {
   id_usuario: string;
