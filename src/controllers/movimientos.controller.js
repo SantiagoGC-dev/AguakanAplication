@@ -1,6 +1,5 @@
 import db from "../config/db.js";
 
-
 export const getMotivosBaja = async (req, res) => {
   try {
     const [rows] = await db.query(
@@ -49,25 +48,153 @@ export const getHistorialProducto = async (req, res) => {
   }
 };
 
+// 🔹 FUNCIÓN PARA RANGOS DE FECHAS - CORREGIDA
+const getRangoFechasBackend = (periodo) => {
+  const ahora = new Date();
+  
+  switch (periodo) {
+    case "hoy":
+      const inicioHoy = new Date(ahora);
+      inicioHoy.setHours(0, 0, 0, 0);
+      const finHoy = new Date(ahora);
+      finHoy.setHours(23, 59, 59, 999);
+      return { fechaInicio: inicioHoy, fechaFin: finHoy };
+      
+    case "7dias":
+      const inicio7Dias = new Date(ahora);
+      inicio7Dias.setDate(ahora.getDate() - 7);
+      inicio7Dias.setHours(0, 0, 0, 0);
+      const fin7Dias = new Date(ahora);
+      fin7Dias.setHours(23, 59, 59, 999);
+      return { fechaInicio: inicio7Dias, fechaFin: fin7Dias };
+      
+    case "este_mes":
+      const inicioEsteMes = new Date(ahora.getFullYear(), ahora.getMonth(), 1);
+      const finEsteMes = new Date(ahora.getFullYear(), ahora.getMonth() + 1, 0);
+      finEsteMes.setHours(23, 59, 59, 999);
+      return { fechaInicio: inicioEsteMes, fechaFin: finEsteMes };
+      
+    case "mes_pasado":
+      // CORRECCIÓN: Todo el mes pasado (1 de sep a 30 de sep)
+      const inicioMesPasado = new Date(ahora.getFullYear(), ahora.getMonth() - 1, 1);
+      const finMesPasado = new Date(ahora.getFullYear(), ahora.getMonth(), 0);
+      finMesPasado.setHours(23, 59, 59, 999);
+      return { fechaInicio: inicioMesPasado, fechaFin: finMesPasado };
+      
+    case "este_año":
+      const inicioEsteAño = new Date(ahora.getFullYear(), 0, 1);
+      const finEsteAño = new Date(ahora.getFullYear(), 11, 31);
+      finEsteAño.setHours(23, 59, 59, 999);
+      return { fechaInicio: inicioEsteAño, fechaFin: finEsteAño };
+      
+    default:
+      return { fechaInicio: null, fechaFin: null };
+  }
+};
+
 /**
- * Obtiene todos los movimientos para la bitácora general.
+ * Obtiene todos los movimientos para la bitácora general CON PAGINACIÓN
  */
 export const getMovimientos = async (req, res) => {
   try {
-    const [rows] = await db.query( //ATENCIONNNNN! Hice cambio en la consulta para agregar el id_producto 'p.id_producto'
-      `SELECT
+    const { 
+      page = 1, 
+      limit = 50, 
+      search = '',
+      periodo = 'todos',
+      tipoAccion = '',
+      usuario = 'todos'
+    } = req.query;
+
+    const offset = (page - 1) * limit;
+
+    let baseQuery = `
+      SELECT
         m.id_movimiento, p.nombre AS producto, p.id_producto,
         CONCAT(u.primer_nombre, ' ', u.apellido_paterno) AS usuario,
         tm.nombre_tipo, mb.nombre_motivo, m.descripcion_adicional,
         m.cantidad, m.fecha
-       FROM Movimiento m
-       JOIN Producto p ON m.id_producto = p.id_producto
-       JOIN Usuario u ON m.id_usuario = u.id_usuario
-       JOIN TipoMovimiento tm ON m.id_tipo_movimiento = tm.id_tipo_movimiento
-       LEFT JOIN MotivoBaja mb ON m.id_motivo_baja = mb.id_motivo_baja
-       ORDER BY m.fecha DESC`
-    );
-    res.json(rows);
+      FROM Movimiento m
+      JOIN Producto p ON m.id_producto = p.id_producto
+      JOIN Usuario u ON m.id_usuario = u.id_usuario
+      JOIN TipoMovimiento tm ON m.id_tipo_movimiento = tm.id_tipo_movimiento
+      LEFT JOIN MotivoBaja mb ON m.id_motivo_baja = mb.id_motivo_baja
+    `;
+
+    let countQuery = `
+      SELECT COUNT(*) as total
+      FROM Movimiento m
+      JOIN Producto p ON m.id_producto = p.id_producto
+      JOIN Usuario u ON m.id_usuario = u.id_usuario
+      JOIN TipoMovimiento tm ON m.id_tipo_movimiento = tm.id_tipo_movimiento
+      LEFT JOIN MotivoBaja mb ON m.id_motivo_baja = mb.id_motivo_baja
+    `;
+
+    const whereConditions = [];
+    const params = [];
+
+    // Búsqueda por producto
+    if (search && search.trim() !== '') {
+      whereConditions.push('p.nombre LIKE ?');
+      params.push(`%${search.trim()}%`);
+    }
+
+    // Filtro por periodo - CORREGIDO
+    if (periodo !== 'todos') {
+      const { fechaInicio, fechaFin } = getRangoFechasBackend(periodo);
+      
+      if (fechaInicio) {
+        whereConditions.push('m.fecha >= ?');
+        params.push(fechaInicio);
+      }
+      
+      if (fechaFin) {
+        whereConditions.push('m.fecha < ?');
+        params.push(fechaFin);
+      }
+    }
+
+    // Filtro por tipo de acción
+    if (tipoAccion && tipoAccion !== '') {
+      if (tipoAccion === 'Entrada') {
+        whereConditions.push('tm.nombre_tipo = ?');
+        params.push('Entrada');
+      } else {
+        whereConditions.push('mb.nombre_motivo = ?');
+        params.push(tipoAccion);
+      }
+    }
+
+    // Filtro por usuario
+    if (usuario !== 'todos') {
+      whereConditions.push('u.id_usuario = ?');
+      params.push(usuario);
+    }
+
+    // Construir cláusula WHERE
+    const whereClause = whereConditions.length > 0 
+      ? `WHERE ${whereConditions.join(' AND ')}` 
+      : '';
+
+    const finalQuery = `${baseQuery} ${whereClause} ORDER BY m.fecha DESC LIMIT ? OFFSET ?`;
+    const finalCountQuery = `${countQuery} ${whereClause}`;
+
+    const queryParams = [...params, parseInt(limit), offset];
+
+    const [rows] = await db.query(finalQuery, queryParams);
+    const [countRows] = await db.query(finalCountQuery, params);
+    const total = countRows[0].total;
+
+    res.json({
+      movimientos: rows,
+      pagination: {
+        currentPage: parseInt(page),
+        totalPages: Math.ceil(total / limit),
+        totalItems: total,
+        itemsPerPage: parseInt(limit)
+      }
+    });
+
   } catch (error) {
     console.error("❌ Error obteniendo movimientos:", error);
     res.status(500).json({ error: error.message });
@@ -150,14 +277,13 @@ export const registrarSalida = async (req, res) => {
             error: "La descripción es obligatoria al reportar una incidencia.",
           });
         }
-          if (producto.existencia_actual <= 0) {
-    await connection.rollback();
-    return res.status(400).json({ 
-      error: "No se puede reportar incidencia de un producto sin stock disponible" 
-    });
-  }
-  break;
-        
+        if (producto.existencia_actual <= 0) {
+          await connection.rollback();
+          return res.status(400).json({ 
+            error: "No se puede reportar incidencia de un producto sin stock disponible" 
+          });
+        }
+        break;
 
       case 4: // BAJA (CORRECTO)
         // Validaciones para baja
@@ -371,5 +497,28 @@ export const registrarBaja = async (req, res) => {
     res.status(500).json({ error: error.message });
   } finally {
     if (connection) connection.release();
+  }
+};
+
+export const getUsuarios = async (req, res) => {
+  try {
+    const [rows] = await db.query(
+      `SELECT 
+        u.id_usuario,
+        CONCAT(u.primer_nombre, ' ', u.apellido_paterno, ' ', u.apellido_materno) as nombre_completo,
+        u.primer_nombre,
+        u.apellido_paterno, 
+        u.apellido_materno,
+        r.nombre_rol as rol
+       FROM Usuario u
+       JOIN Rol r ON u.id_rol = r.id_rol
+       WHERE u.id_estatus_usuario = 1 -- Solo usuarios activos
+       ORDER BY u.primer_nombre, u.apellido_paterno`
+    );
+    console.log("✅ Usuarios obtenidos:", rows.length);
+    res.json(rows);
+  } catch (error) {
+    console.error("❌ Error obteniendo usuarios:", error);
+    res.status(500).json({ error: error.message });
   }
 };

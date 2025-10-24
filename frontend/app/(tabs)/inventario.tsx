@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import {
   View,
   Text,
@@ -14,6 +14,7 @@ import {
   Alert,
   KeyboardAvoidingView,
   Keyboard,
+  ActivityIndicator,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import Icon from "react-native-vector-icons/MaterialIcons";
@@ -22,7 +23,7 @@ import { useRouter, useLocalSearchParams } from "expo-router";
 import { useFocusEffect } from "@react-navigation/native";
 
 //Configuración de la API y Tipos
-const API_BASE_URL = "http://172.20.10.11:3000";
+const API_BASE_URL = "http://192.168.0.166:3000";
 
 interface FilterOption {
   label: string;
@@ -49,6 +50,12 @@ interface FormFieldProps {
   onChange: (value: any) => void;
 }
 
+interface ProductoItemProps {
+  item: any;
+  expandedId: number | null;
+  onExpand: (id: number) => void;
+  onViewDetails: (id: number) => void;
+}
 // --- Funciones auxiliares para estatus ---
 const formatFecha = (fecha: string): string => {
   if (!fecha) return "N/A";
@@ -336,24 +343,138 @@ const FormSelectLaboratorio = ({
   </View>
 );
 
+const ProductoItem = React.memo<ProductoItemProps>(
+  ({ item, expandedId, onExpand, onViewDetails }) => {
+    return (
+      <TouchableOpacity
+        style={[
+          styles.row,
+          expandedId === item.id_producto && styles.rowExpanded,
+        ]}
+        onPress={() => onExpand(item.id_producto)}
+      >
+        <View style={styles.rowMain}>
+          <View style={styles.rowContent}>
+            <Text style={styles.rowTitle}>{item.nombre}</Text>
+            <Text style={styles.rowSubtitle}>
+              {item.marca} • {item.tipo}
+            </Text>
+          </View>
+          <View style={styles.rowStatusContainer}>
+            <View
+              style={[
+                styles.statusBadge,
+                { backgroundColor: getEstatusColor(item) + "20" },
+              ]}
+            >
+              <Text
+                style={[styles.rowStatus, { color: getEstatusColor(item) }]}
+              >
+                {getEstatusText(item)}
+              </Text>
+            </View>
+            <Icon
+              name={
+                expandedId === item.id_producto ? "expand-less" : "expand-more"
+              }
+              size={20}
+              color="#539DF3"
+              style={styles.expandIcon}
+            />
+          </View>
+        </View>
+
+        {expandedId === item.id_producto && (
+          <View style={styles.rowDetails}>
+            <View style={styles.detailsGrid}>
+              <View style={styles.detailItem}>
+                <Text style={styles.detailLabel}>Lote</Text>
+                <Text style={styles.detailValue}>{item.lote || "N/A"}</Text>
+              </View>
+              <View style={styles.detailItem}>
+                <Text style={styles.detailLabel}>Stock</Text>
+                <Text style={styles.detailValue}>
+                  {item.existencia_actual} / {item.stock_minimo}
+                </Text>
+              </View>
+              <View style={styles.detailItem}>
+                <Text style={styles.detailLabel}>Prioridad</Text>
+                <Text style={styles.detailValue}>
+                  {item.prioridad || "Media"}
+                </Text>
+              </View>
+            </View>
+
+            {/* Información adicional para reactivos */}
+            {item.id_tipo_producto === 1 && item.caducidad && (
+              <View style={styles.detailExtra}>
+                <Text style={styles.detailLabel}>Caducidad</Text>
+                <Text style={styles.detailValue}>
+                  {formatFecha(item.caducidad)}
+                  {(() => {
+                    const dias = calcularDiasHastaCaducidad(item.caducidad);
+                    if (dias === null) return null;
+
+                    if (dias < 0) {
+                      return null;
+                    } else if (dias === 0) {
+                      return (
+                        <Text style={{ color: "#D97706", fontWeight: "bold" }}>
+                          {" (Caduca hoy)"}
+                        </Text>
+                      );
+                    } else if (dias <= 15) {
+                      return (
+                        <Text style={{ color: "#ff6b6b", fontWeight: "bold" }}>
+                          {` (Quedan ${dias} días)`}
+                        </Text>
+                      );
+                    }
+                    return null;
+                  })()}
+                </Text>
+              </View>
+            )}
+
+            <TouchableOpacity
+              style={styles.detailButton}
+              onPress={() => onViewDetails(item.id_producto)}
+            >
+              <Text style={styles.detailButtonText}>Ver Detalles</Text>
+              <Icon name="arrow-forward" size={16} color="#539DF3" />
+            </TouchableOpacity>
+          </View>
+        )}
+      </TouchableOpacity>
+    );
+  }
+);
+
+// --- InventarioScreen Principal ---
 // --- InventarioScreen Principal ---
 export default function InventarioScreen() {
   const [productos, setProductos] = useState<any[]>([]);
   const [busqueda, setBusqueda] = useState("");
+  const [busquedaTerm, setBusquedaTerm] = useState(""); // PARA DEBOUNCE
   const [expandedId, setExpandedId] = useState<number | null>(null);
-  const router = useRouter(); //Para la ruta de productdetail
-  const { filter } = useLocalSearchParams<{ filter?: string }>(); // Para recibir el filtro inicial
+  const [cargandoInicial, setCargandoInicial] = useState(true);
+  const router = useRouter();
+  const { filter } = useLocalSearchParams<{ filter?: string }>();
+
+  // --- NUEVOS ESTADOS DE PAGINACIÓN ---
+  const [page, setPage] = useState(1);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [hasMore, setHasMore] = useState(true);
+  const PAGE_LIMIT = 20; // Debe coincidir con el 'limit' del backend
 
   // Estado y opciones para ordenamiento
-  const [orden, setOrden] = useState("antiguos"); // 'antiguos' o 'recientes'
+  const [orden, setOrden] = useState("antiguos");
   const ordenOptions: FilterOption[] = [
     { label: "Más antiguos", value: "antiguos" },
     { label: "Más recientes", value: "recientes" },
   ];
-
   // Estado para filtro de estatus
   const [estatusFiltro, setEstatusFiltro] = useState("todos");
-
   // Estados para Modals
   const [showFilters, setShowFilters] = useState(false);
   const [showAddModal, setShowAddModal] = useState(false);
@@ -362,14 +483,12 @@ export default function InventarioScreen() {
 
   // Estados del Formulario (para la inserción)
   const [formState, setFormState] = useState<any>({});
-
   // Estados de filtros
   const [periodo, setPeriodo] = useState("todos");
   const [tipoProductoFiltro, setTipoProductoFiltro] = useState("todos");
   const [prioridad, setPrioridad] = useState("todos");
   const [tiposDisponibles, setTiposDisponibles] = useState<ProductoTipo[]>([]);
   const [filtrosAplicados, setFiltrosAplicados] = useState(false);
-
   // Nuevos estados para laboratorios y estatus
   const [laboratorios, setLaboratorios] = useState<any[]>([]);
   const [estatusProductos, setEstatusProductos] = useState<any[]>([]);
@@ -401,37 +520,113 @@ export default function InventarioScreen() {
   ];
 
   // --- Funciones de Carga de Datos ---
-  const fetchProducts = async () => {
+const fetchProducts = async (
+    pageToFetch = 1,
+    isRefresh = false,
+    estatusOverride: string | null = null
+  ) => {
+    // Evitar cargas múltiples si ya se está cargando o si no hay más páginas
+    if (loadingMore || (!hasMore && !isRefresh)) return;
+
+    if (pageToFetch > 1) {
+      setLoadingMore(true);
+    } else {
+      setCargandoInicial(true);
+    }
+
     try {
-      console.log("🔄 Cargando productos...");
-
-      // ✅ Cargar con orden por defecto (más antiguos primero)
-      const res = await fetch(`${API_BASE_URL}/api/productos?orden=antiguos`);
-      if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
-
-      const data = await res.json();
-      console.log("📦 Productos cargados:", data.length);
-
-      const productosUnicos = data.filter(
-        (producto: any, index: number, self: any[]) =>
-          index ===
-          self.findIndex((p: any) => p.id_producto === producto.id_producto)
+      console.log(
+        `🔄 Cargando productos... Página: ${pageToFetch}, Refresh: ${isRefresh}`
       );
 
-      // Ordenar por fecha_ingreso ascendente (más antiguos primero)
-      const productosOrdenados = productosUnicos.sort((a: any, b: any) => {
-        return (
-          new Date(a.fecha_ingreso).getTime() -
-          new Date(b.fecha_ingreso).getTime()
-        );
-      });
+      // 1. Construir los parámetros de consulta
+      const params = new URLSearchParams();
+      params.append("page", pageToFetch.toString());
+      params.append("limit", PAGE_LIMIT.toString());
+      params.append("orden", orden); // Añadir orden
+      
+      if (busquedaTerm.trim()) params.append("busqueda", busquedaTerm.trim());
+      if (tipoProductoFiltro !== "todos")
+        params.append("tipo", tipoProductoFiltro);
+      if (prioridad !== "todos") params.append("prioridad", prioridad); 
+      
+      // ✅ --- INICIO DE LA MODIFICACIÓN ---
+      // Esta lógica decide si usar el filtro de estado normal (estatusFiltro)
+      // o el filtro forzado que viene del dashboard (estatusOverride).
+      const finalEstatus = estatusOverride !== null ? estatusOverride : estatusFiltro;
+      if (finalEstatus !== "todos") { 
+        params.append("estatus", finalEstatus);
+      }
+      // ✅ --- FIN DE LA MODIFICACIÓN ---
 
-      setProductos(Array.isArray(productosOrdenados) ? productosOrdenados : []);
+      if (periodo !== "todos") params.append("periodo", periodo); 
+
+      // 2. Hacer el fetch
+      const res = await fetch(
+        `${API_BASE_URL}/api/productos?${params.toString()}` 
+      );
+      if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`); 
+
+      const data = await res.json(); 
+      const newProducts = data.products || [];
+      const newTotalCount = data.totalCount || 0;
+
+      console.log(
+        `📦 Productos cargados: ${newProducts.length} de ${newTotalCount}`
+      );
+
+      // 3. Actualizar el estado (con lógica anti-duplicados)
+      if (isRefresh || pageToFetch === 1) {
+        // 1. Para un refresh, solo necesitamos de-duplicar el nuevo batch
+        const uniqueIds = new Set();
+        const uniqueProducts = newProducts.filter((p: any) => {
+          if (!p || p.id_producto === null || p.id_producto === undefined)
+            return false;
+          if (uniqueIds.has(p.id_producto)) {
+            return false;
+          }
+          uniqueIds.add(p.id_producto);
+          return true;
+        });
+
+        setProductos(uniqueProducts); 
+        setPage(1); // Resetear contador de página
+      } else {
+        // 2. Para cargar más, de-duplicamos contra 'prev' Y contra sí mismo
+        setProductos((prev) => { 
+          // Usamos 'prev' como base para el Set
+          const existingIds = new Set(prev.map((p) => p.id_producto));
+
+          const uniqueNewProducts = newProducts.filter((p: any) => {
+            if (!p || p.id_producto === null || p.id_producto === undefined) {
+              return false; // Ignorar data mala
+            }
+
+            // Comprobar si ya existe (en prev O en el batch actual)
+            if (existingIds.has(p.id_producto)) {
+              return false;
+            }
+
+            // Añadir al set para de-duplicar el resto del batch
+            existingIds.add(p.id_producto);
+            return true;
+          });
+
+          return [...prev, ...uniqueNewProducts];
+        });
+      }
+
+      // 4. Actualizar estado de paginación
+      setHasMore(pageToFetch * PAGE_LIMIT < newTotalCount);
     } catch (err) {
-      console.error("❌ Error cargando productos:", err);
-      Alert.alert("Error", "No se pudieron cargar los productos");
+      console.error("❌ Error cargando productos:", err); 
+      Alert.alert("Error", "No se pudieron cargar los productos"); 
+    } finally {
+      setCargandoInicial(false); 
+      setLoadingMore(false); // Siempre detener el loading de "cargar más"
     }
   };
+  
 
   const fetchProductTypes = () => {
     fetch(`${API_BASE_URL}/api/productos/tipoproducto`)
@@ -500,33 +695,52 @@ export default function InventarioScreen() {
 
   // Cargar datos iniciales
   useEffect(() => {
-    fetchProducts();
     fetchProductTypes();
     fetchLaboratoriosYEstatus();
   }, []);
 
-  useFocusEffect(
+useFocusEffect(
     React.useCallback(() => {
-      // Recargar productos cuando la pantalla vuelve al foco
-      fetchProducts();
-    }, [])
+      // ✅ GUARDIA: Si el filtro "en-uso" está activo, no hagas nada.
+      // El useEffect anterior ya se encargó de la carga.
+      if (filter === "en-uso") {
+        return; 
+      }
+
+      // Si no hay filtro, carga los productos normalmente.
+      fetchProducts(1, true, null); // null = sin override
+    }, [filter]) // ✅ AÑADIR 'filter' a las dependencias
   );
+
+  // Debounce para búsqueda
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setBusquedaTerm(busqueda);
+    }, 300);
+
+    return () => clearTimeout(timer);
+  }, [busqueda]);
 
   // Efecto para aplicar el filtro "en-uso" desde el dashboard
 useEffect(() => {
-  console.log("Filter parameter:", filter); // 🔥 DEBUG
-  if (filter === "en-uso") {
-    // El ID de estatus "En Uso" es 5
-    setEstatusFiltro("5");
-    setFiltrosAplicados(true);
-    
-    // 🔥 LIMPIAR el parámetro después de usarlo para que funcione múltiples veces
-    setTimeout(() => {
-      // Opcional: limpiar el parámetro en la URL
-      router.setParams({ filter: undefined });
-    }, 1000);
-  }
-}, [filter, router]); // 🔥 AGREGAR router como dependencia
+    console.log("Filter parameter:", filter); // 🔥 DEBUG
+    if (filter === "en-uso") {
+      const statusEnUso = "5"; // El ID de estatus "En Uso" es 5
+      
+      // 1. Actualizar el estado para que la UI sea consistente
+      setEstatusFiltro(statusEnUso);
+      setFiltrosAplicados(true);
+
+      // 2. ✅ LLAMAR EL FETCH DIRECTAMENTE CON EL FILTRO
+      // Esto evita la condición de carrera
+      fetchProducts(1, true, statusEnUso); 
+      
+      // 3. 🔥 LIMPIAR el parámetro después de usarlo
+      setTimeout(() => {
+        router.setParams({ filter: undefined });
+      }, 1000);
+    }
+  }, [filter, router]);
 
   useEffect(() => {
     setFormState({});
@@ -542,6 +756,22 @@ useEffect(() => {
       });
     }
   }, [selectedProductType, tiposDisponibles, laboratorios]);
+
+  // ✅ NUEVO useEffect: Detecta cambios en CUALQUIER filtro y recarga la lista
+  useEffect(() => {
+    // No ejecutar en la carga inicial (cargandoInicial lo previene)
+    // El debounce de busquedaTerm previene recargas en cada tecla
+    if (!cargandoInicial) {
+      fetchProducts(1, true); // Es un nuevo filtro, resetea a página 1
+    }
+  }, [
+    busquedaTerm,
+    tipoProductoFiltro,
+    prioridad,
+    estatusFiltro,
+    periodo,
+    orden,
+  ]);
 
   // --- Lógica del Formulario ---
   const handleFormChange = (fieldName: string, value: any) => {
@@ -796,79 +1026,6 @@ useEffect(() => {
     }
   };
 
-  // Función para filtrar por periodo
-  const filtrarPorPeriodo = (producto: any, periodo: string): boolean => {
-    if (periodo === "todos") return true;
-
-    const fechaIngreso = new Date(producto.fecha_ingreso);
-    const hoy = new Date();
-
-    switch (periodo) {
-      case "semanal":
-        const unaSemanaAtras = new Date(hoy);
-        unaSemanaAtras.setDate(hoy.getDate() - 7);
-        return fechaIngreso >= unaSemanaAtras;
-
-      case "mensual":
-        const unMesAtras = new Date(hoy);
-        unMesAtras.setMonth(hoy.getMonth() - 1);
-        return fechaIngreso >= unMesAtras;
-
-      case "trimestral":
-        const tresMesesAtras = new Date(hoy);
-        tresMesesAtras.setMonth(hoy.getMonth() - 3);
-        return fechaIngreso >= tresMesesAtras;
-
-      case "anual":
-        const unAnioAtras = new Date(hoy);
-        unAnioAtras.setFullYear(hoy.getFullYear() - 1);
-        return fechaIngreso >= unAnioAtras;
-
-      default:
-        return true;
-    }
-  };
-  // --- Lógica de la Pantalla (Filtros y Renderizado) ---
-  const productosFiltrados = (productos || []).filter((producto) => {
-    const nombreProducto = producto.nombre?.toLowerCase() || "";
-    const tipoDelProducto = producto.tipo?.toLowerCase() || "";
-    const idPrioridadDelProducto = producto.id_prioridad?.toString() || "2";
-    const idEstatusDelProducto =
-      producto.id_estatus_producto?.toString() || "1";
-
-    const coincideBusqueda = nombreProducto.includes(
-      busqueda.toLowerCase().trim()
-    );
-    const coincideTipo =
-      tipoProductoFiltro === "todos" ||
-      tipoDelProducto === tipoProductoFiltro.toLowerCase();
-    const coincidePrioridad =
-      prioridad === "todos" || idPrioridadDelProducto === prioridad;
-    const coincideEstatus =
-      estatusFiltro === "todos" || idEstatusDelProducto === estatusFiltro;
-    const coincidePeriodo = filtrarPorPeriodo(producto, periodo);
-
-    return (
-      coincideBusqueda &&
-      coincideTipo &&
-      coincidePrioridad &&
-      coincideEstatus &&
-      coincidePeriodo
-    );
-  });
-
-  // --- ORDENAMIENTO: Aplicar después del filtrado ---
-  const productosOrdenados = [...productosFiltrados].sort((a, b) => {
-    const fechaA = new Date(a.fecha_ingreso).getTime();
-    const fechaB = new Date(b.fecha_ingreso).getTime();
-
-    if (orden === "antiguos") {
-      return fechaA - fechaB; // Más antiguos primero (orden ascendente)
-    } else {
-      return fechaB - fechaA; // Más recientes primero (orden descendente)
-    }
-  });
-
   const handleExpand = (id: number) => {
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
     setExpandedId(expandedId === id ? null : id);
@@ -893,6 +1050,25 @@ useEffect(() => {
     setPrioridad("todos");
     setEstatusFiltro("todos");
     setFiltrosAplicados(false);
+  };
+
+  const handleLoadMore = () => {
+    console.log("-> Intentando cargar más...", { loadingMore, hasMore });
+    if (!loadingMore && hasMore) {
+      const nextPage = page + 1;
+      setPage(nextPage);
+      fetchProducts(nextPage, false); // Pide la siguiente página, no es refresh
+    }
+  };
+
+  // ✅ NUEVA FUNCIÓN: Renderizar el spinner al final de la lista
+  const renderFooter = () => {
+    if (!loadingMore) return null;
+    return (
+      <View style={{ paddingVertical: 20 }}>
+        <ActivityIndicator size="large" color="#539DF3" />
+      </View>
+    );
   };
 
   return (
@@ -953,6 +1129,60 @@ useEffect(() => {
             <Text style={styles.addText}>Añadir</Text>
           </TouchableOpacity>
         </View>
+
+        {/* Loading inicial */}
+        {cargandoInicial && productos.length === 0 ? ( // Mostrar solo si la lista está vacía
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator size="large" color="#539DF3" />
+            <Text style={styles.loadingText}>Cargando productos...</Text>
+          </View>
+        ) : (
+          /* Lista de Productos OPTIMIZADA */
+          <FlatList
+            data={productos} // ✅ AHORA USA 'productos' DIRECTAMENTE
+            keyExtractor={(item) => item.id_producto.toString()}
+            initialNumToRender={15}
+            maxToRenderPerBatch={10}
+            windowSize={7}
+            removeClippedSubviews={true}
+            updateCellsBatchingPeriod={50}
+            // --- ✅ PROPIEDADES DE PAGINACIÓN AÑADIDAS ---
+            onEndReached={handleLoadMore}
+            onEndReachedThreshold={0.5} // Cargar cuando esté a medio item del final
+            ListFooterComponent={renderFooter} // Muestra el spinner
+            renderItem={({ item }) => (
+              <ProductoItem
+                item={item}
+                expandedId={expandedId}
+                onExpand={handleExpand}
+                onViewDetails={(id) =>
+                  router.push({
+                    pathname: "/detail/[id]",
+                    params: { id: id.toString() },
+                  })
+                }
+              />
+            )}
+            ListEmptyComponent={
+              // No mostrar 'empty state' si solo está cargando inicialmente
+              !cargandoInicial ? (
+                <View style={styles.emptyState}>
+                  <Icon name="inventory" size={60} color="#ccc" />
+                  <Text style={styles.emptyStateTitle}>
+                    {filtrosAplicados
+                      ? "No se encontraron resultados"
+                      : "No hay productos"}
+                  </Text>
+                  <Text style={styles.emptyStateText}>
+                    {filtrosAplicados
+                      ? "Intenta con otros filtros"
+                      : "Comienza agregando tu primer producto"}
+                  </Text>
+                </View>
+              ) : null // No mostrar nada si está en carga inicial
+            }
+          />
+        )}
 
         {/* Modal de Añadir Producto */}
         <Modal visible={showAddModal} animationType="slide" transparent>
@@ -1215,148 +1445,6 @@ useEffect(() => {
             </View>
           </View>
         </Modal>
-
-        {/* Lista de Productos */}
-        <FlatList
-          data={productosOrdenados}
-          keyExtractor={(item) => item.id_producto.toString()}
-          renderItem={({ item }) => (
-            <TouchableOpacity
-              style={[
-                styles.row,
-                expandedId === item.id_producto && styles.rowExpanded,
-              ]}
-              onPress={() => handleExpand(item.id_producto)}
-            >
-              <View style={styles.rowMain}>
-                <View style={styles.rowContent}>
-                  <Text style={styles.rowTitle}>{item.nombre}</Text>
-                  <Text style={styles.rowSubtitle}>
-                    {item.marca} • {item.tipo}
-                  </Text>
-                </View>
-                <View style={styles.rowStatusContainer}>
-                  <View
-                    style={[
-                      styles.statusBadge,
-                      { backgroundColor: getEstatusColor(item) + "20" },
-                    ]}
-                  >
-                    <Text
-                      style={[
-                        styles.rowStatus,
-                        { color: getEstatusColor(item) },
-                      ]}
-                    >
-                      {getEstatusText(item)}
-                    </Text>
-                  </View>
-                  <Icon
-                    name={
-                      expandedId === item.id_producto
-                        ? "expand-less"
-                        : "expand-more"
-                    }
-                    size={20}
-                    color="#539DF3"
-                    style={styles.expandIcon}
-                  />
-                </View>
-              </View>
-
-              {expandedId === item.id_producto && (
-                <View style={styles.rowDetails}>
-                  <View style={styles.detailsGrid}>
-                    <View style={styles.detailItem}>
-                      <Text style={styles.detailLabel}>Lote</Text>
-                      <Text style={styles.detailValue}>
-                        {item.lote || "N/A"}
-                      </Text>
-                    </View>
-                    <View style={styles.detailItem}>
-                      <Text style={styles.detailLabel}>Stock</Text>
-                      <Text style={styles.detailValue}>
-                        {item.existencia_actual} / {item.stock_minimo}
-                      </Text>
-                    </View>
-                    <View style={styles.detailItem}>
-                      <Text style={styles.detailLabel}>Prioridad</Text>
-                      <Text style={styles.detailValue}>
-                        {item.prioridad || "Media"}
-                      </Text>
-                    </View>
-                  </View>
-
-                  {/* Información adicional para reactivos */}
-                  {item.id_tipo_producto === 1 && item.caducidad && (
-                    <View style={styles.detailExtra}>
-                      <Text style={styles.detailLabel}>Caducidad</Text>
-                      <Text style={styles.detailValue}>
-                        {formatFecha(item.caducidad)}
-                        {(() => {
-                          const dias = calcularDiasHastaCaducidad(
-                            item.caducidad
-                          );
-                          if (dias === null) return null; // Si no hay fecha, no mostrar nada
-
-                          if (dias < 0) {
-                            // Si ya caducó, no mostramos los días
-                            return null;
-                          } else if (dias === 0) {
-                            return (
-                              <Text
-                                style={{ color: "#D97706", fontWeight: "bold" }}
-                              >
-                                {" (Caduca hoy)"}
-                              </Text>
-                            );
-                          } else if (dias <= 15) {
-                            return (
-                              <Text
-                                style={{ color: "#ff6b6b", fontWeight: "bold" }}
-                              >
-                                {` (Quedan ${dias} días)`}
-                              </Text>
-                            );
-                          }
-                          return null;
-                        })()}
-                      </Text>
-                    </View>
-                  )}
-
-                  <TouchableOpacity
-                    style={styles.detailButton}
-                    onPress={() => {
-                      router.push({
-                        pathname: "/detail/[id]",
-                        params: { id: item.id_producto.toString() },
-                      });
-                    }}
-                  >
-                    <Text style={styles.detailButtonText}>Ver Detalles</Text>
-                    <Icon name="arrow-forward" size={16} color="#539DF3" />
-                  </TouchableOpacity>
-                </View>
-              )}
-            </TouchableOpacity>
-          )}
-          ListEmptyComponent={
-            <View style={styles.emptyState}>
-              <Icon name="inventory" size={60} color="#ccc" />
-              <Text style={styles.emptyStateTitle}>
-                {productos.length === 0
-                  ? "No hay productos"
-                  : "No se encontraron resultados"}
-              </Text>
-              <Text style={styles.emptyStateText}>
-                {productos.length === 0
-                  ? "Comienza agregando tu primer producto"
-                  : "Intenta con otros términos de búsqueda"}
-              </Text>
-            </View>
-          }
-        />
       </View>
     </SafeAreaView>
   );
@@ -1725,8 +1813,8 @@ const styles = StyleSheet.create({
     borderColor: "#e1e5e9",
   },
   filterOptionActive: {
-    backgroundColor: "#539DF3",
-    borderColor: "#539DF3",
+    backgroundColor: "#3B82F6",
+    borderColor: "#3B82F6",
   },
   filterOptionText: {
     fontFamily: "Poppins_400Regular",
@@ -1954,5 +2042,15 @@ const styles = StyleSheet.create({
   androidCloseButtonText: {
     color: "#fff",
     fontWeight: "600",
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  loadingText: {
+    marginTop: 10,
+    color: "#666",
+    fontSize: 16,
   },
 });

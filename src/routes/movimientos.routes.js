@@ -6,12 +6,16 @@ import {
   registrarEntrada,
   registrarBaja,
   registrarSalida, 
+  getUsuarios
 } from "../controllers/movimientos.controller.js";
 
 const router = express.Router();
 
 // Obtener todos los motivos de baja
 router.get("/motivos-baja", getMotivosBaja);
+
+// Obtener todos los usuarios
+router.get('/usuarios', getUsuarios);
 
 // MODIFICADO: Esta es la nueva ruta para obtener el historial completo de un producto
 // Usa el endpoint: GET /api/movimientos/historial/:id_producto

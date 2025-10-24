@@ -90,32 +90,128 @@ export const getPrioridades = async (req, res) => {
 };
 
 // Obtener todos los productos
+// Obtener todos los productos (AHORA CON PAGINACIÓN Y FILTROS)
+// Obtener todos los productos (PAGINACIÓN Y FILTROS CORREGIDOS)
 export const getProductos = async (req, res) => {
   try {
-    const [rows] = await pool.query(`
+    // 1. CAPTURAR PARÁMETROS (sin cambios)
+    const {
+      page = 1,
+      limit = 20,
+      orden = "antiguos",
+      busqueda = "",
+      tipo = "todos",
+      prioridad = "todos",
+      estatus = "todos",
+      periodo = "todos",
+    } = req.query;
+
+    const offset = (Number(page) - 1) * Number(limit);
+
+    // 2. CONSTRUIR 'WHERE' (sin cambios)
+    let whereClauses = [];
+    let params = []; 
+
+    if (busqueda) {
+      whereClauses.push("p.nombre LIKE ?");
+      params.push(`%${busqueda}%`);
+    }
+    if (tipo !== "todos") {
+whereClauses.push("tp.nombre_tipo = ?");
+params.push(tipo);
+    }
+    if (prioridad !== "todos") {
+      whereClauses.push("p.id_prioridad = ?");
+      params.push(prioridad);
+    }
+    if (estatus !== "todos") {
+      whereClauses.push("p.id_estatus_producto = ?");
+      params.push(estatus);
+    }
+
+    // 3. LÓGICA DE PERIODO (sin cambios)
+    switch (periodo) {
+case "semanal":
+whereClauses.push("p.fecha_ingreso >= CURDATE() - INTERVAL 7 DAY");
+        break;
+      case "mensual":
+whereClauses.push("p.fecha_ingreso >= CURDATE() - INTERVAL 1 MONTH");
+        break;
+      case "trimestral":
+whereClauses.push("p.fecha_ingreso >= CURDATE() - INTERVAL 3 MONTH");
+        break;
+      case "anual":
+whereClauses.push("p.fecha_ingreso >= CURDATE() - INTERVAL 1 YEAR");
+        break;
+    }
+
+    const whereString =
+      whereClauses.length > 0 ? `WHERE ${whereClauses.join(" AND ")}` : "";
+
+    // 4. LÓGICA DE ORDENAMIENTO (sin cambios)
+const orderBy =
+      orden === "recientes"
+        ? "ORDER BY p.fecha_ingreso DESC, p.id_producto DESC"
+        : "ORDER BY p.fecha_ingreso ASC, p.id_producto ASC";
+
+    // 5. PRIMERA CONSULTA: CONTEO TOTAL
+    // Esta consulta SÍ necesita los joins para que los filtros (ej: por tipo) funcionen
+    const countQuery = `
+      SELECT COUNT(DISTINCT p.id_producto) as totalCount
+      FROM Producto p
+      -- Se necesita tipoproducto por si se filtra por 'tipo'
+      JOIN tipoproducto tp ON p.id_tipo_producto = tp.id_tipo_producto
+      ${whereString}
+    `;
+    const [countRows] = await pool.query(countQuery, params);
+    const totalCount = countRows[0].totalCount || 0;
+
+    // 6. SEGUNDA CONSULTA: OBTENER LOS PRODUCTOS DE LA PÁGINA ACTUAL
+    // ✅ MODIFICACIÓN: Se añade MAX() a todas las columnas que no son de la tabla 'p'
+    //    y se RE-INTRODUCE el GROUP BY p.id_producto
+    const dataQuery = `
       SELECT 
           p.*,
-          pr.nombre_prioridad AS prioridad,
-          tp.nombre_tipo AS tipo,
-          e.nombre_estatus AS estatus,
-          eq.id_equipo, eq.id_agk, eq.modelo, eq.numero_serie, eq.rango_medicion, 
-          eq.resolucion, eq.intervalo_trabajo, eq.id_laboratorio AS equipo_laboratorio_id,
-          le.nombre AS equipo_laboratorio_nombre,
-          r.presentacion, r.caducidad
+          -- Envolver columnas de tablas unidas en MAX() para compatibilidad con GROUP BY
+          MAX(pr.nombre_prioridad) AS prioridad,
+          MAX(tp.nombre_tipo) AS tipo,
+          MAX(e.nombre_estatus) AS estatus,
+          MAX(eq.id_equipo) AS id_equipo, 
+          MAX(eq.id_agk) AS id_agk, 
+          MAX(eq.modelo) AS modelo, 
+          MAX(eq.numero_serie) AS numero_serie, 
+          MAX(eq.rango_medicion) AS rango_medicion, 
+  MAX(eq.resolucion) AS resolucion, 
+          MAX(eq.intervalo_trabajo) AS intervalo_trabajo, 
+          MAX(eq.id_laboratorio) AS equipo_laboratorio_id,
+          MAX(le.nombre) AS equipo_laboratorio_nombre,
+          MAX(r.presentacion) AS presentacion, 
+          MAX(r.caducidad) AS caducidad
       FROM Producto p
       JOIN estatusproducto e ON p.id_estatus_producto = e.id_estatus_producto
       JOIN tipoproducto tp ON p.id_tipo_producto = tp.id_tipo_producto
       LEFT JOIN Prioridad pr ON p.id_prioridad = pr.id_prioridad
       LEFT JOIN Equipo eq ON p.id_producto = eq.id_producto
-      LEFT JOIN laboratorio le ON eq.id_laboratorio = le.id_laboratorio
+LEFT JOIN laboratorio le ON eq.id_laboratorio = le.id_laboratorio
       LEFT JOIN Reactivo r ON p.id_producto = r.id_producto
-      ORDER BY p.id_producto DESC
-    `);
-    res.json(rows);
+      ${whereString}
+      -- ✅ FORZAR QUE SOLO DEVUELVA UN REGISTRO POR PRODUCTO
+      GROUP BY p.id_producto 
+      ${orderBy}
+      LIMIT ? OFFSET ?
+    `;
+
+    // Añadir límite y offset a los parámetros
+    const finalParams = [...params, Number(limit), Number(offset)];
+
+    const [rows] = await pool.query(dataQuery, finalParams);
+
+    // 7. DEVOLVER UN OBJETO CON LOS PRODUCTOS Y EL CONTEO TOTAL
+res.json({ products: rows, totalCount: totalCount });
   } catch (error) {
     console.error("❌ Error en getProductos:", error);
     res.status(500).json({ error: "Error al obtener productos" });
-  }
+}
 };
 
 // Obtener un producto por ID
@@ -595,8 +691,8 @@ export const updateProductoImagen = async (req, res) => {
         .json({ error: "No se subió ningún archivo de imagen." });
     }
 
-    // ✅ FORZAR la URL completa
-    const imageUrl = `http://172.20.10.11:3000/uploads/${req.file.filename}`;
+    // Construir la URL completa de la imagen
+    const imageUrl = `http://192.168.0.166:3000/uploads/${req.file.filename}`;
 
     console.log("🖼️ URL COMPLETA que se guardará:", imageUrl);
 

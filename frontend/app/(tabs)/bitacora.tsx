@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect } from "react";
+import React, { useState, useCallback, useEffect, useMemo } from "react";
 import {
   View,
   TextInput,
@@ -8,13 +8,39 @@ import {
   RefreshControl,
   StyleSheet,
   Alert,
+  FlatList,
+  ActivityIndicator,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { ThemedText } from "@/components/themed-text";
 import { useRouter } from "expo-router";
 
 // Configuración de API
-const API_BASE_URL = "http://172.20.10.11:3000/api";
+const API_BASE_URL = "http://192.168.0.166:3000/api";
+
+interface Usuario {
+  id_usuario: string;
+  nombre_completo: string;
+  rol: string;
+}
+
+interface Filtros {
+  periodo: string;
+  tipoAccion: string;
+  usuario: string;
+}
+
+interface PaginationInfo {
+  currentPage: number;
+  totalPages: number;
+  totalItems: number;
+  itemsPerPage: number;
+}
+
+interface ApiResponse {
+  movimientos: Movimiento[];
+  pagination: PaginationInfo;
+}
 
 interface Movimiento {
   id_movimiento: string;
@@ -28,37 +54,30 @@ interface Movimiento {
   fecha: string;
 }
 
-interface Filtros {
-  periodo: string;
-  tipoAccion: string;
-}
-
-// Opciones para el periodo
-const periodoOptions = [
-  { value: "todos", label: "Todos" },
-  { value: "semana", label: "Esta semana" },
-  { value: "mes", label: "Este mes" },
-  { value: "trimestre", label: "Este trimestre" },
-  { value: "año", label: "Este año" },
-];
-
 export default function BitacoraScreen() {
   const router = useRouter();
   const [busqueda, setBusqueda] = useState("");
   const [refreshing, setRefreshing] = useState(false);
   const [filtrosVisible, setFiltrosVisible] = useState(false);
-  const [movimientos, setMovimientos] = useState<Movimiento[]>([]);
-  const [movimientosFiltrados, setMovimientosFiltrados] = useState<
-    Movimiento[]
-  >([]);
+  const [filtrosAplicados, setFiltrosAplicados] = useState(false);
+  const [usuarios, setUsuarios] = useState<Usuario[]>([]);
+  const [allMovimientos, setAllMovimientos] = useState<Movimiento[]>([]);
+  const [pagination, setPagination] = useState<PaginationInfo>({
+    currentPage: 1,
+    totalPages: 1,
+    totalItems: 0,
+    itemsPerPage: 50
+  });
   const [loading, setLoading] = useState(true);
+  const [hasMore, setHasMore] = useState(true);
   const [filtros, setFiltros] = useState<Filtros>({
     periodo: "todos",
     tipoAccion: "",
+    usuario: "todos",
   });
 
-  // 🔹 Función para fetch de datos
-  const fetchData = async (endpoint: string) => {
+  // 🔹 Función para fetch de datos optimizada
+  const fetchData = useCallback(async (endpoint: string) => {
     try {
       const response = await fetch(`${API_BASE_URL}${endpoint}`);
       if (!response.ok) {
@@ -69,80 +88,133 @@ export default function BitacoraScreen() {
       console.error(`❌ Error en ${endpoint}:`, error);
       throw error;
     }
-  };
+  }, []);
 
-  // 🔹 Cargar movimientos desde el backend
-  const fetchMovimientos = async () => {
+  const fetchUsuarios = useCallback(async () => {
     try {
-      setLoading(true);
-      console.log("🔄 Cargando historial de actividades...");
+      const usuariosData = await fetchData("/movimientos/usuarios");
+      console.log("✅ Usuarios cargados:", usuariosData.length);
+      setUsuarios(usuariosData);
+    } catch (error) {
+      console.error("❌ Error cargando usuarios:", error);
+      const usuariosRespaldo: Usuario[] = [
+        { id_usuario: "1", nombre_completo: "Santiago Gutierrez Calderón", rol: "Administrador" },
+        { id_usuario: "2", nombre_completo: "Pedro Ramirez Lopez", rol: "Laboratorista" },
+        { id_usuario: "3", nombre_completo: "Miriam Lopez Garcia", rol: "Laboratorista" },
+        { id_usuario: "4", nombre_completo: "David Garcia Martinez", rol: "Administrador" },
+      ];
+      setUsuarios(usuariosRespaldo);
+    }
+  }, [fetchData]);
 
-      const movimientosData = await fetchData("/movimientos");
+  // 🔹 Cargar movimientos desde el backend optimizado
+  const fetchMovimientos = useCallback(async (page: number = 1, isAppend: boolean = false) => {
+    try {
+      if (page === 1) {
+        setLoading(true);
+      }
 
-      console.log("✅ Movimientos cargados:", movimientosData);
+      console.log(`🔄 Cargando página ${page}...`);
 
-      setMovimientos(movimientosData);
-      setMovimientosFiltrados(movimientosData);
+      // Construir URL con parámetros
+      const params = new URLSearchParams({
+        page: page.toString(),
+        limit: '50',
+        search: busqueda,
+        periodo: filtros.periodo,
+        tipoAccion: filtros.tipoAccion,
+        usuario: filtros.usuario
+      });
+
+      const response: ApiResponse = await fetchData(`/movimientos?${params}`);
+      
+      if (isAppend) {
+        setAllMovimientos(prev => [...prev, ...response.movimientos]);
+      } else {
+        setAllMovimientos(response.movimientos);
+      }
+      
+      setPagination(response.pagination);
+      setHasMore(page < response.pagination.totalPages);
+      
+      console.log(`✅ Página ${page} cargada:`, response.movimientos.length, 'movimientos');
+      
     } catch (error) {
       console.error("❌ Error cargando movimientos:", error);
       Alert.alert("Error", "No se pudieron cargar las actividades");
 
-      // Datos de ejemplo como fallback
-      const datosEjemplo: Movimiento[] = [
-        {
-          id_movimiento: "1",
-          id_producto: "1",
-          producto: "Guantes de látex estéril talla M",
-          usuario: "Santiago Gutierrez",
-          nombre_tipo: "Entrada",
-          cantidad: 115,
-          fecha: "2024-01-15T16:29:00Z",
-        },
-        {
-          id_movimiento: "2",
-          id_producto: "2",
-          producto: "Agua destilada",
-          usuario: "Pedro Ramirez",
-          nombre_tipo: "Salida",
-          nombre_motivo: "Baja",
-          descripcion_adicional: "Producto agotado",
-          cantidad: 0,
-          fecha: "2024-01-15T16:29:00Z",
-        },
-        {
-          id_movimiento: "3",
-          id_producto: "3",
-          producto: "Fosfato de potasio dibásico",
-          usuario: "Miriam Lopez",
-          nombre_tipo: "Salida",
-          nombre_motivo: "Iniciar uso",
-          descripcion_adicional: "Inicio de uso en experimento",
-          cantidad: 1,
-          fecha: "2024-01-15T16:29:00Z",
-        },
-        {
-          id_movimiento: "4",
-          id_producto: "4",
-          producto: "Nitrito de sodio",
-          usuario: "David Garcia",
-          nombre_tipo: "Salida",
-          nombre_motivo: "Finalizar uso",
-          descripcion_adicional: "Duración: 6 días 23h",
-          cantidad: 1,
-          fecha: "2024-01-15T16:29:00Z",
-        },
-      ];
-
-      setMovimientos(datosEjemplo);
-      setMovimientosFiltrados(datosEjemplo);
+      if (!isAppend) {
+        const datosEjemplo: Movimiento[] = [
+          {
+            id_movimiento: "1",
+            id_producto: "1",
+            producto: "Guantes de látex estéril talla M",
+            usuario: "Santiago Gutierrez",
+            nombre_tipo: "Entrada",
+            cantidad: 115,
+            fecha: "2024-01-15T16:29:00Z",
+          },
+          {
+            id_movimiento: "2",
+            id_producto: "2",
+            producto: "Agua destilada",
+            usuario: "Pedro Ramirez",
+            nombre_tipo: "Salida",
+            nombre_motivo: "Baja",
+            descripcion_adicional: "Producto agotado",
+            cantidad: 0,
+            fecha: "2024-01-15T16:29:00Z",
+          },
+        ];
+        setAllMovimientos(datosEjemplo);
+      }
     } finally {
       setLoading(false);
       setRefreshing(false);
     }
-  };
+  }, [fetchData, busqueda, filtros]);
 
-  // 🔹 Generar descripción legible desde los datos reales
-  const obtenerAccion = (mov: Movimiento): string => {
+  const loadMoreData = useCallback(() => {
+    if (!loading && hasMore && allMovimientos.length > 0) {
+      console.log(`📥 Cargando página ${pagination.currentPage + 1}...`);
+      fetchMovimientos(pagination.currentPage + 1, true);
+    }
+  }, [loading, hasMore, pagination.currentPage, fetchMovimientos, allMovimientos.length]);
+
+  // 🔹 Aplicar filtros OPTIMIZADO con useMemo
+  const movimientosFiltrados = useMemo(() => {
+    return allMovimientos;
+  }, [allMovimientos]);
+
+  // 🔹 Actualizar estado de filtros aplicados
+  useEffect(() => {
+    const hayFiltrosActivos =
+      filtros.periodo !== "todos" ||
+      filtros.tipoAccion !== "" ||
+      filtros.usuario !== "todos" ||
+      busqueda.trim() !== "";
+
+    setFiltrosAplicados(hayFiltrosActivos);
+  }, [filtros, busqueda]);
+
+  // 🔹 Resetear filtros
+  const resetearFiltros = useCallback(() => {
+    setFiltros({
+      periodo: "todos",
+      tipoAccion: "",
+      usuario: "todos",
+    });
+    setBusqueda("");
+    setFiltrosAplicados(false);
+  }, []);
+
+  // 🔹 Aplicar filtros desde modal
+  const aplicarFiltrosDesdeModal = useCallback(() => {
+    setFiltrosVisible(false);
+  }, []);
+
+  // 🔹 Generar descripción legible
+  const obtenerAccion = useCallback((mov: Movimiento): string => {
     const { nombre_motivo, nombre_tipo, cantidad } = mov;
 
     if (nombre_motivo === "Iniciar uso") {
@@ -158,93 +230,10 @@ export default function BitacoraScreen() {
     } else {
       return `${nombre_tipo?.toLowerCase() || "movimiento"} de`;
     }
-  };
-
-  // 🔹 Obtener fecha límite según el periodo seleccionado
-  const getFechaLimite = (periodo: string): Date => {
-    const ahora = new Date();
-    switch (periodo) {
-      case "semana":
-        return new Date(
-          ahora.getFullYear(),
-          ahora.getMonth(),
-          ahora.getDate() - 7
-        );
-      case "mes":
-        return new Date(
-          ahora.getFullYear(),
-          ahora.getMonth() - 1,
-          ahora.getDate()
-        );
-      case "trimestre":
-        return new Date(
-          ahora.getFullYear(),
-          ahora.getMonth() - 3,
-          ahora.getDate()
-        );
-      case "año":
-        return new Date(
-          ahora.getFullYear() - 1,
-          ahora.getMonth(),
-          ahora.getDate()
-        );
-      default:
-        return new Date(0); // Fecha muy antigua para "todos"
-    }
-  };
-
-  // 🔹 Aplicar filtros
-  const aplicarFiltros = () => {
-    let filtered = [...movimientos];
-
-    // Filtro de búsqueda (producto)
-    if (busqueda.trim()) {
-      filtered = filtered.filter((mov) =>
-        mov.producto.toLowerCase().includes(busqueda.toLowerCase())
-      );
-    }
-
-    // Filtro por periodo
-    if (filtros.periodo !== "todos") {
-      const fechaLimite = getFechaLimite(filtros.periodo);
-      filtered = filtered.filter((mov) => {
-        try {
-          const fechaMov = new Date(mov.fecha);
-          return fechaMov >= fechaLimite;
-        } catch (error) {
-          return true;
-        }
-      });
-    }
-
-    // Filtro por tipo de acción (Entrada o Motivos de Baja)
-    if (filtros.tipoAccion) {
-      if (filtros.tipoAccion === "Entrada") {
-        filtered = filtered.filter((mov) => mov.nombre_tipo === "Entrada");
-      } else {
-        filtered = filtered.filter(
-          (mov) => mov.nombre_motivo === filtros.tipoAccion
-        );
-      }
-    }
-
-    setMovimientosFiltrados(filtered);
-    setFiltrosVisible(false);
-  };
-
-  // 🔹 Resetear filtros
-  const resetearFiltros = () => {
-    setFiltros({
-      periodo: "todos",
-      tipoAccion: "",
-    });
-    setBusqueda("");
-    setMovimientosFiltrados(movimientos);
-    setFiltrosVisible(false);
-  };
+  }, []);
 
   // 🔹 Formatear fecha
-  const formatFecha = (fechaString: string) => {
+  const formatFecha = useCallback((fechaString: string) => {
     try {
       const fecha = new Date(fechaString);
       return (
@@ -263,10 +252,10 @@ export default function BitacoraScreen() {
     } catch (error) {
       return fechaString;
     }
-  };
+  }, []);
 
-  // 🔹 Obtener icono y color según tipo de movimiento
-  const getIcono = (mov: Movimiento) => {
+  // 🔹 Obtener icono y color
+  const getIcono = useCallback((mov: Movimiento) => {
     const { nombre_tipo, nombre_motivo } = mov;
 
     if (nombre_motivo === "Iniciar uso") {
@@ -282,33 +271,22 @@ export default function BitacoraScreen() {
     } else {
       return { icon: "information-circle-outline", color: "#CBD5E1" };
     }
-  };
+  }, []);
 
   // 🔹 Cargar datos al montar
   useEffect(() => {
-    fetchMovimientos();
-  }, []);
-
-  // 🔹 Efecto para búsqueda en tiempo real
-  useEffect(() => {
-    if (
-      busqueda.trim() === "" &&
-      filtros.periodo === "todos" &&
-      !filtros.tipoAccion
-    ) {
-      setMovimientosFiltrados(movimientos);
-    } else {
-      aplicarFiltros();
-    }
-  }, [busqueda, movimientos, filtros]);
+    fetchMovimientos(1, false);
+    fetchUsuarios();
+  }, [fetchMovimientos, fetchUsuarios]);
 
   // 🔹 Pull to refresh
   const onRefresh = useCallback(() => {
     setRefreshing(true);
-    fetchMovimientos();
-  }, []);
+    setAllMovimientos([]);
+    fetchMovimientos(1, false);
+  }, [fetchMovimientos]);
 
-  if (loading) {
+  if (loading && allMovimientos.length === 0) {
     return (
       <View style={styles.loadingContainer}>
         <View style={styles.loadingContent}>
@@ -328,8 +306,22 @@ export default function BitacoraScreen() {
         <ThemedText type="title" style={styles.headerTitle}>
           Bitácora de Movimientos
         </ThemedText>
-        <View style={{ width: 26 }} />
       </View>
+
+      {/* 🔹 Badge de filtros activos */}
+      {filtrosAplicados && (
+        <View style={styles.badgeContainer}>
+          <TouchableOpacity
+            style={styles.filtrosActivosBadge}
+            onPress={resetearFiltros}
+          >
+            <ThemedText style={styles.filtrosActivosText}>
+              Filtros activos
+            </ThemedText>
+            <Ionicons name="close" size={16} color="#fff" />
+          </TouchableOpacity>
+        </View>
+      )}
 
       {/* 🔹 Buscador y filtros */}
       <View style={styles.searchContainer}>
@@ -344,95 +336,103 @@ export default function BitacoraScreen() {
           />
         </View>
         <TouchableOpacity
-          style={styles.filterButton}
+          style={[
+            styles.filterButton,
+            filtrosAplicados && styles.filterButtonActive,
+          ]}
           onPress={() => setFiltrosVisible(true)}
         >
-          <Ionicons name="filter-outline" size={18} color="#1E293B" />
-          <ThemedText style={styles.filterText}>Filtros</ThemedText>
+          <Ionicons
+            name="filter-outline"
+            size={18}
+            color={filtrosAplicados ? "#fff" : "#1E293B"}
+          />
+          <ThemedText
+            style={[
+              styles.filterText,
+              filtrosAplicados && styles.filterTextActive,
+            ]}
+          >
+            Filtros
+          </ThemedText>
         </TouchableOpacity>
       </View>
 
-      {/* 🔹 Lista de actividades */}
-      <ScrollView
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={styles.scrollContent}
+      {/* 🔹 Lista de actividades CON PAGINACIÓN */}
+      <FlatList
+        data={movimientosFiltrados}
+        keyExtractor={(item) => item.id_movimiento}
+        renderItem={({ item }) => {
+          const { icon, color } = getIcono(item);
+          const accion = obtenerAccion(item);
+
+          return (
+            <TouchableOpacity
+              style={styles.item}
+              onPress={() => {
+                if (item.id_producto) {
+                  router.push(`/detail/${item.id_producto}`);
+                }
+              }}
+            >
+              <View style={[styles.iconContainer, { backgroundColor: color + "15" }]}>
+                <Ionicons name={icon as any} size={20} color={color} />
+              </View>
+              <View style={styles.itemInfo}>
+                <ThemedText style={styles.descripcionCompleta}>
+                  <ThemedText type="defaultSemiBold" style={styles.usuario}>
+                    {item.usuario}
+                  </ThemedText>{" "}
+                  <ThemedText style={styles.accion}>{accion}</ThemedText>{" "}
+                  <ThemedText type="defaultSemiBold" style={styles.productoNombre}>
+                    {item.producto}
+                  </ThemedText>
+                </ThemedText>
+                {item.descripcion_adicional && (
+                  <ThemedText style={styles.detalleAdicional}>
+                    {item.descripcion_adicional}
+                  </ThemedText>
+                )}
+                <ThemedText style={styles.fecha}>
+                  {formatFecha(item.fecha)}
+                </ThemedText>
+              </View>
+            </TouchableOpacity>
+          );
+        }}
+        onEndReached={loadMoreData}
+        onEndReachedThreshold={0.5}
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
         }
-      >
-        {movimientosFiltrados.length > 0 ? (
-          movimientosFiltrados.map((mov) => {
-            const { icon, color } = getIcono(mov);
-            const accion = obtenerAccion(mov);
-
-            return (
-              <TouchableOpacity
-                key={mov.id_movimiento}
-                style={styles.item}
-                onPress={() => {
-                  if (mov.id_producto) {
-                    router.push(`/detail/${mov.id_producto}`);
-                  }
-                }}
-              >
-                <View
-                  style={[
-                    styles.iconContainer,
-                    { backgroundColor: color + "15" },
-                  ]}
-                >
-                  <Ionicons name={icon as any} size={20} color={color} />
-                </View>
-                <View style={styles.itemInfo}>
-                  <ThemedText style={styles.descripcionCompleta}>
-                    <ThemedText type="defaultSemiBold" style={styles.usuario}>
-                      {mov.usuario}
-                    </ThemedText>{" "}
-                    <ThemedText style={styles.accion}>
-                      {obtenerAccion(mov)}
-                    </ThemedText>{" "}
-                    <ThemedText
-                      type="defaultSemiBold"
-                      style={styles.productoNombre}
-                    >
-                      {mov.producto}
-                    </ThemedText>
-                  </ThemedText>
-                  {mov.descripcion_adicional && (
-                    <ThemedText style={styles.detalleAdicional}>
-                      {mov.descripcion_adicional}
-                    </ThemedText>
-                  )}
-                  <ThemedText style={styles.fecha}>
-                    {formatFecha(mov.fecha)}
-                  </ThemedText>
-                </View>
-              </TouchableOpacity>
-            );
-          })
-        ) : (
-          <View style={styles.emptyState}>
-            <Ionicons name="list-outline" size={48} color="#CBD5E1" />
-            <ThemedText style={styles.emptyStateText}>
-              {busqueda || filtros.periodo !== "todos" || filtros.tipoAccion
-                ? "No se encontraron resultados"
-                : "No hay actividades registradas"}
-            </ThemedText>
-            {(busqueda ||
-              filtros.periodo !== "todos" ||
-              filtros.tipoAccion) && (
-              <TouchableOpacity
-                style={styles.resetButton}
-                onPress={resetearFiltros}
-              >
-                <ThemedText style={styles.resetButtonText}>
-                  Resetear filtros
-                </ThemedText>
-              </TouchableOpacity>
-            )}
-          </View>
-        )}
-      </ScrollView>
+        ListFooterComponent={
+          loading && allMovimientos.length > 0 ? (
+            <View style={styles.loadingFooter}>
+              <ActivityIndicator size="small" color="#4B9CD3" />
+              <ThemedText style={styles.loadingFooterText}>Cargando más...</ThemedText>
+            </View>
+          ) : null
+        }
+        ListEmptyComponent={
+          !loading ? (
+            <View style={styles.emptyState}>
+              <Ionicons name="list-outline" size={48} color="#CBD5E1" />
+              <ThemedText style={styles.emptyStateText}>
+                {busqueda || filtros.periodo !== "todos" || filtros.tipoAccion
+                  ? "No se encontraron resultados"
+                  : "No hay actividades registradas"}
+              </ThemedText>
+              {(busqueda || filtros.periodo !== "todos" || filtros.tipoAccion) && (
+                <TouchableOpacity style={styles.resetButton} onPress={resetearFiltros}>
+                  <ThemedText style={styles.resetButtonText}>Resetear filtros</ThemedText>
+                </TouchableOpacity>
+              )}
+            </View>
+          ) : null
+        }
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={styles.scrollContent}
+      />
 
       {/* 🔹 Modal de Filtros */}
       <Modal visible={filtrosVisible} animationType="slide" transparent>
@@ -453,33 +453,35 @@ export default function BitacoraScreen() {
             <ScrollView style={styles.filtersScroll}>
               {/* Filtro: Periodo */}
               <View style={styles.filterCard}>
-                <ThemedText
-                  type="defaultSemiBold"
-                  style={styles.filterCardTitle}
-                >
+                <ThemedText type="defaultSemiBold" style={styles.filterCardTitle}>
                   Selección de periodo
                 </ThemedText>
                 <View style={styles.filterOptions}>
-                  {periodoOptions.map((option) => (
+                  {[
+                    { value: "todos", label: "Todos" },
+                    { value: "hoy", label: "Hoy" },
+                    { value: "7dias", label: "Últimos 7 días" },
+                    { value: "este_mes", label: "Este mes" },
+                    { value: "mes_pasado", label: "Mes pasado" },
+                    { value: "este_año", label: "Este año" },
+                  ].map((option) => (
                     <TouchableOpacity
                       key={option.value}
                       style={[
                         styles.filterOption,
-                        filtros.periodo === option.value &&
-                          styles.filterOptionActive,
+                        filtros.periodo === option.value && styles.filterOptionActive,
                       ]}
-                      onPress={() =>
+                      onPress={() => {
                         setFiltros((prev) => ({
                           ...prev,
                           periodo: option.value,
-                        }))
-                      }
+                        }));
+                      }}
                     >
                       <ThemedText
                         style={[
                           styles.filterOptionText,
-                          filtros.periodo === option.value &&
-                            styles.filterOptionTextActive,
+                          filtros.periodo === option.value && styles.filterOptionTextActive,
                         ]}
                       >
                         {option.label}
@@ -491,10 +493,7 @@ export default function BitacoraScreen() {
 
               {/* Filtro: Tipo de Acción */}
               <View style={styles.filterCard}>
-                <ThemedText
-                  type="defaultSemiBold"
-                  style={styles.filterCardTitle}
-                >
+                <ThemedText type="defaultSemiBold" style={styles.filterCardTitle}>
                   Tipo de Acción
                 </ThemedText>
                 <View style={styles.filterOptions}>
@@ -503,52 +502,97 @@ export default function BitacoraScreen() {
                       styles.filterOption,
                       filtros.tipoAccion === "" && styles.filterOptionActive,
                     ]}
-                    onPress={() =>
+                    onPress={() => {
                       setFiltros((prev) => ({
                         ...prev,
                         tipoAccion: "",
-                      }))
-                    }
+                      }));
+                    }}
                   >
                     <ThemedText
                       style={[
                         styles.filterOptionText,
-                        filtros.tipoAccion === "" &&
-                          styles.filterOptionTextActive,
+                        filtros.tipoAccion === "" && styles.filterOptionTextActive,
                       ]}
                     >
                       Todos
                     </ThemedText>
                   </TouchableOpacity>
-                  {[
-                    "Entrada",
-                    "Iniciar uso",
-                    "Finalizar uso",
-                    "Incidencia",
-                    "Baja",
-                  ].map((tipo) => (
+                  {["Entrada", "Iniciar uso", "Finalizar uso", "Incidencia", "Baja"].map((tipo) => (
                     <TouchableOpacity
                       key={tipo}
                       style={[
                         styles.filterOption,
-                        filtros.tipoAccion === tipo &&
-                          styles.filterOptionActive,
+                        filtros.tipoAccion === tipo && styles.filterOptionActive,
                       ]}
-                      onPress={() =>
+                      onPress={() => {
                         setFiltros((prev) => ({
                           ...prev,
                           tipoAccion: prev.tipoAccion === tipo ? "" : tipo,
-                        }))
-                      }
+                        }));
+                      }}
                     >
                       <ThemedText
                         style={[
                           styles.filterOptionText,
-                          filtros.tipoAccion === tipo &&
-                            styles.filterOptionTextActive,
+                          filtros.tipoAccion === tipo && styles.filterOptionTextActive,
                         ]}
                       >
                         {tipo}
+                      </ThemedText>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              </View>
+
+              {/* Filtro: Usuario */}
+              <View style={styles.filterCard}>
+                <ThemedText type="defaultSemiBold" style={styles.filterCardTitle}>
+                  Usuario
+                </ThemedText>
+                <View style={styles.filterOptions}>
+                  <TouchableOpacity
+                    style={[
+                      styles.filterOption,
+                      filtros.usuario === "todos" && styles.filterOptionActive,
+                    ]}
+                    onPress={() => {
+                      setFiltros((prev) => ({
+                        ...prev,
+                        usuario: "todos",
+                      }));
+                    }}
+                  >
+                    <ThemedText
+                      style={[
+                        styles.filterOptionText,
+                        filtros.usuario === "todos" && styles.filterOptionTextActive,
+                      ]}
+                    >
+                      Todos
+                    </ThemedText>
+                  </TouchableOpacity>
+                  {usuarios.map((usuario) => (
+                    <TouchableOpacity
+                      key={usuario.id_usuario}
+                      style={[
+                        styles.filterOption,
+                        filtros.usuario === usuario.id_usuario && styles.filterOptionActive,
+                      ]}
+                      onPress={() => {
+                        setFiltros((prev) => ({
+                          ...prev,
+                          usuario: prev.usuario === usuario.id_usuario ? "todos" : usuario.id_usuario,
+                        }));
+                      }}
+                    >
+                      <ThemedText
+                        style={[
+                          styles.filterOptionText,
+                          filtros.usuario === usuario.id_usuario && styles.filterOptionTextActive,
+                        ]}
+                      >
+                        {usuario.nombre_completo}
                       </ThemedText>
                     </TouchableOpacity>
                   ))}
@@ -559,7 +603,13 @@ export default function BitacoraScreen() {
             <View style={styles.filterActions}>
               <TouchableOpacity
                 style={styles.resetBtn}
-                onPress={resetearFiltros}
+                onPress={() => {
+                  setFiltros({
+                    periodo: "todos",
+                    tipoAccion: "",
+                    usuario: "todos",
+                  });
+                }}
               >
                 <ThemedText style={styles.resetBtnText}>
                   Limpiar Filtros
@@ -567,7 +617,7 @@ export default function BitacoraScreen() {
               </TouchableOpacity>
               <TouchableOpacity
                 style={styles.applyBtn}
-                onPress={aplicarFiltros}
+                onPress={aplicarFiltrosDesdeModal}
               >
                 <ThemedText style={styles.applyBtnText}>
                   Aplicar Filtros
@@ -611,6 +661,26 @@ const styles = StyleSheet.create({
     color: "#000000ff",
     fontFamily: "Poppins_700Bold",
   },
+  badgeContainer: {
+    flexDirection: "row",
+    justifyContent: "flex-start",
+    marginBottom: 12,
+    paddingHorizontal: 0,
+  },
+  filtrosActivosBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#539DF3",
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 20,
+  },
+  filtrosActivosText: {
+    color: "#fff",
+    fontSize: 12,
+    fontFamily: "Poppins_500Medium",
+    marginRight: 6,
+  },
   searchContainer: {
     flexDirection: "row",
     alignItems: "center",
@@ -649,10 +719,16 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 2,
   },
+  filterButtonActive: {
+    backgroundColor: "#539DF3",
+  },
   filterText: {
     fontSize: 14,
     color: "#1E293B",
     fontFamily: "Poppins_500Medium",
+  },
+  filterTextActive: {
+    color: "#FFFFFF",
   },
   scrollContent: { paddingBottom: 100, gap: 12 },
   item: {
@@ -751,21 +827,32 @@ const styles = StyleSheet.create({
   },
   modalTitle: {
     fontSize: 20,
+    fontFamily: "Poppins_700Bold",
     color: "#1F2937",
   },
   closeButton: {
     padding: 4,
   },
   filtersScroll: {
-    padding: 20,
+    maxHeight: 400,
+    paddingVertical: 8,
   },
   filterCard: {
-    backgroundColor: "#F9FAFB",
-    borderRadius: 12,
-    padding: 16,
+    backgroundColor: "#fff",
+    borderRadius: 16,
+    padding: 20,
+    marginHorizontal: 20,
     marginBottom: 16,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 2,
+    borderWidth: 1,
+    borderColor: "#f1f5f9",
   },
   filterCardTitle: {
+    fontFamily: "Poppins_500Medium",
     fontSize: 16,
     color: "#374151",
     marginBottom: 12,
@@ -776,24 +863,26 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   filterOption: {
-    backgroundColor: "#FFFFFF",
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 8,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 20,
+    backgroundColor: "#f8fafc",
     borderWidth: 1,
-    borderColor: "#D1D5DB",
+    borderColor: "#e1e5e9",
   },
   filterOptionActive: {
     backgroundColor: "#3B82F6",
     borderColor: "#3B82F6",
   },
   filterOptionText: {
+    fontFamily: "Poppins_400Regular",
     fontSize: 14,
-    color: "#6B7280",
-    fontFamily: "Poppins_500Medium",
+    color: "#666",
+    fontWeight: "500",
   },
   filterOptionTextActive: {
-    color: "#FFFFFF",
+    color: "#fff",
+    fontWeight: "600",
   },
   filterActions: {
     flexDirection: "row",
@@ -804,28 +893,47 @@ const styles = StyleSheet.create({
   },
   resetBtn: {
     flex: 1,
-    backgroundColor: "#F3F4F6",
-    paddingVertical: 14,
-    borderRadius: 12,
+    backgroundColor: "#f8fafc",
+    padding: 16,
     alignItems: "center",
+    borderRadius: 12,
     borderWidth: 1,
-    borderColor: "#D1D5DB",
+    borderColor: "#e1e5e9",
   },
   applyBtn: {
-    flex: 2,
-    backgroundColor: "#3B82F6",
-    paddingVertical: 14,
-    borderRadius: 12,
+    flex: 1,
+    backgroundColor: "#539DF3",
+    padding: 16,
     alignItems: "center",
+    borderRadius: 12,
+    shadowColor: "#539DF3",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 4,
   },
   resetBtnText: {
-    color: "#374151",
+    fontWeight: "600",
+    color: "#666",
     fontSize: 16,
-    fontFamily: "Poppins_600Bold",
+    fontFamily: "Poppins_500Medium",
   },
   applyBtnText: {
-    color: "#FFFFFF",
-    fontSize: 16,
-    fontFamily: "Poppins_600Bold",
+    color: "#fff",
+    fontWeight: "600",
+    fontSize: 15,
+    fontFamily: "Poppins_700Bold",
+  },
+  loadingFooter: {
+    padding: 20,
+    alignItems: 'center',
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: 10,
+  },
+  loadingFooterText: {
+    fontSize: 14,
+    color: '#64748B',
+    fontFamily: 'Poppins_400Regular',
   },
 });

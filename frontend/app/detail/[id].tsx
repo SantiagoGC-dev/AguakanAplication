@@ -23,11 +23,35 @@ import * as ImagePicker from "expo-image-picker";
 import TendenciaStockChart from "../../components/TendenciaStockChart";
 
 // Constantes
-const API_BASE_URL = "http://172.20.10.11:3000";
+const API_BASE_URL = "http://192.168.0.166:3000";
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get("window");
 
+interface ProductoEdicion {
+  nombre: string;
+  marca: string;
+  lote: string;
+  existencia_actual: number;
+  stock_minimo: number;
+  id_estatus_producto: number;
+  id_prioridad: number;
+  id_tipo_producto: number;
+  imagen: string;
+  // Propiedades opcionales para diferentes tipos
+  presentacion?: string | null;
+  caducidad?: string | null;
+  cantidad_ingresada_reactivo?: number;
+  id_agk?: string | null;
+  modelo?: string | null;
+  numero_serie?: string | null;
+  rango_medicion?: string | null;
+  resolucion?: string | null;
+  intervalo_trabajo?: string | null;
+  id_laboratorio?: number | null;
+}
+
 // Interfaces (sin cambios)
+// ACTUALIZAR la interfaz Producto (al inicio del archivo)
 interface Producto {
   id_producto: number;
   nombre: string;
@@ -41,7 +65,7 @@ interface Producto {
   prioridad: string;
   tipo: string;
   estatus: string;
-  id_estatus_producto?: number;
+  id_estatus_producto?: number; // ✅ Hacer opcional
   id_prioridad?: number;
   presentacion?: string;
   caducidad?: string;
@@ -103,7 +127,8 @@ function calcularDiferenciaFechas(inicio: string, fin: string): string {
       return "N/A";
     }
 
-    let diffMs = fechaFin - fechaInicio;
+    // ✅ CORREGIDO: Asegurar que son números
+    const diffMs = fechaFin.getTime() - fechaInicio.getTime();
 
     // Si la diferencia es negativa, podría ser un error
     if (diffMs < 0) {
@@ -116,10 +141,10 @@ function calcularDiferenciaFechas(inicio: string, fin: string): string {
     }
 
     const dias = Math.floor(diffMs / (1000 * 60 * 60 * 24));
-    diffMs -= dias * (1000 * 60 * 60 * 24);
-    const horas = Math.floor(diffMs / (1000 * 60 * 60));
-    diffMs -= horas * (1000 * 60 * 60);
-    const minutos = Math.floor(diffMs / (1000 * 60));
+    const diffMsRestante = diffMs - dias * (1000 * 60 * 60 * 24);
+    const horas = Math.floor(diffMsRestante / (1000 * 60 * 60));
+    const diffMsFinal = diffMsRestante - horas * (1000 * 60 * 60);
+    const minutos = Math.floor(diffMsFinal / (1000 * 60));
 
     let resultado = "";
     if (dias > 0) resultado += `${dias} día(s) `;
@@ -602,105 +627,101 @@ export default function ProductDetail() {
   };
 
   // Guardar cambios del producto - VERSIÓN CORREGIDA
-  const handleSaveEdit = async () => {
-    if (!producto) return;
+const handleSaveEdit = async () => {
+  if (!producto) return;
 
-    try {
-      // PREPARAR DATOS BÁSICOS CON CONVERSIÓN EXPLÍCITA
-      const datosBasicos = {
-        nombre: editForm.nombre,
-        marca: editForm.marca,
-        lote: editForm.lote,
-        existencia_actual: parseInt(editForm.existencia_actual) || 0,
-        stock_minimo: parseInt(editForm.stock_minimo) || 0,
-        id_estatus_producto: parseInt(editForm.id_estatus_producto) || 1,
-        id_prioridad: parseInt(editForm.id_prioridad) || 2,
-        id_tipo_producto: producto.id_tipo_producto,
-        imagen: producto.imagen,
+  try {
+    // PREPARAR DATOS BÁSICOS CON CONVERSIÓN EXPLÍCITA
+    const datosBasicos: ProductoEdicion = {
+      nombre: editForm.nombre,
+      marca: editForm.marca,
+      lote: editForm.lote,
+      existencia_actual: parseInt(editForm.existencia_actual) || 0,
+      stock_minimo: parseInt(editForm.stock_minimo) || 0,
+      id_estatus_producto: parseInt(editForm.id_estatus_producto) || 1,
+      id_prioridad: parseInt(editForm.id_prioridad) || 2,
+      id_tipo_producto: producto.id_tipo_producto,
+      imagen: producto.imagen,
+    };
+
+    let datosCompletos: ProductoEdicion = { ...datosBasicos };
+
+    if (producto.id_tipo_producto === 1) {
+      // REACTIVO
+      let caducidadParaEnviar = editForm.caducidad;
+      if (caducidadParaEnviar) {
+        if (caducidadParaEnviar.includes("T")) {
+          caducidadParaEnviar = caducidadParaEnviar.split("T")[0];
+        }
+        if (!caducidadParaEnviar.match(/^\d{4}-\d{2}-\d{2}$/)) {
+          console.error("❌ Formato de fecha inválido:", caducidadParaEnviar);
+          Alert.alert("Error", "Formato de fecha inválido. Use YYYY-MM-DD");
+          return;
+        }
+      }
+
+      datosCompletos = {
+        ...datosCompletos,
+        presentacion: editForm.presentacion || null,
+        caducidad: caducidadParaEnviar || null,
+        cantidad_ingresada_reactivo: parseInt(editForm.existencia_actual) || 0,
+      };
+    } else if (producto.id_tipo_producto === 2) {
+      datosCompletos = {
+        ...datosCompletos,
+        id_agk: editForm.id_agk || null,
+        modelo: editForm.modelo || null,
+        numero_serie: editForm.numero_serie || null,
+        rango_medicion: editForm.rango_medicion || null,
+        resolucion: editForm.resolucion || null,
+        intervalo_trabajo: editForm.intervalo_trabajo || null,
+        id_laboratorio: editForm.id_laboratorio
+          ? parseInt(editForm.id_laboratorio)
+          : null,
       };
 
-      let datosCompletos = { ...datosBasicos };
-
-      if (producto.id_tipo_producto === 1) {
-        // REACTIVO
-        let caducidadParaEnviar = editForm.caducidad;
-        if (caducidadParaEnviar) {
-          if (caducidadParaEnviar.includes("T")) {
-            caducidadParaEnviar = caducidadParaEnviar.split("T")[0];
-          }
-          if (!caducidadParaEnviar.match(/^\d{4}-\d{2}-\d{2}$/)) {
-            console.error("❌ Formato de fecha inválido:", caducidadParaEnviar);
-            Alert.alert("Error", "Formato de fecha inválido. Use YYYY-MM-DD");
-            return;
-          }
-        }
-
-        datosCompletos = {
-          ...datosCompletos,
-          presentacion: editForm.presentacion,
-          caducidad: caducidadParaEnviar,
-          cantidad_ingresada_reactivo:
-            parseInt(editForm.existencia_actual) || 0,
-        };
-      }
-      // ✅ CORRECCIÓN: Enviar TODOS los datos del equipo
-      else if (producto.id_tipo_producto === 2) {
-        datosCompletos = {
-          ...datosCompletos,
-          id_tipo_producto: 2,
-          id_agk: editForm.id_agk || "",
-          modelo: editForm.modelo || "",
-          numero_serie: editForm.numero_serie || "",
-          rango_medicion: editForm.rango_medicion || "",
-          resolucion: editForm.resolucion || "",
-          intervalo_trabajo: editForm.intervalo_trabajo || "",
-          id_laboratorio: editForm.id_laboratorio
-            ? parseInt(editForm.id_laboratorio)
-            : null,
-        };
-
-        console.log("🔍 DEBUG FRONTEND - Datos de equipo a enviar:", {
-          id_agk: editForm.id_agk,
-          modelo: editForm.modelo,
-          numero_serie: editForm.numero_serie,
-          rango_medicion: editForm.rango_medicion,
-          resolucion: editForm.resolucion,
-          intervalo_trabajo: editForm.intervalo_trabajo,
-          id_laboratorio: editForm.id_laboratorio,
-        });
-      }
-
-      console.log("🔄 ENVIANDO DATOS COMPLETOS AL BACKEND:", datosCompletos);
-
-      const response = await fetch(
-        `${API_BASE_URL}/api/productos/${producto.id_producto}`,
-        {
-          method: "PUT",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify(datosCompletos),
-        }
-      );
-
-      if (response.ok) {
-        Alert.alert("Éxito", "Producto actualizado correctamente");
-        setEditModalVisible(false);
-        await refreshProductData();
-      } else {
-        const errorData = await response.json();
-        console.error("❌ Error del backend:", errorData);
-        Alert.alert("Error", errorData.error || "No se pudo actualizar");
-      }
-    } catch (error) {
-      console.error("❌ Error:", error);
-      const errorMessage =
-        error instanceof Error
-          ? error.message
-          : "No se pudo actualizar el producto";
-      Alert.alert("Error", errorMessage);
+      console.log("🔍 DEBUG FRONTEND - Datos de equipo a enviar:", {
+        id_agk: editForm.id_agk,
+        modelo: editForm.modelo,
+        numero_serie: editForm.numero_serie,
+        rango_medicion: editForm.rango_medicion,
+        resolucion: editForm.resolucion,
+        intervalo_trabajo: editForm.intervalo_trabajo,
+        id_laboratorio: editForm.id_laboratorio,
+      });
     }
-  };
+
+    console.log("🔄 ENVIANDO DATOS COMPLETOS AL BACKEND:", datosCompletos);
+
+    const response = await fetch(
+      `${API_BASE_URL}/api/productos/${producto.id_producto}`,
+      {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(datosCompletos),
+      }
+    );
+
+    if (response.ok) {
+      Alert.alert("Éxito", "Producto actualizado correctamente");
+      setEditModalVisible(false);
+      await refreshProductData();
+    } else {
+      const errorData = await response.json();
+      console.error("❌ Error del backend:", errorData);
+      Alert.alert("Error", errorData.error || "No se pudo actualizar");
+    }
+  } catch (error) {
+    console.error("❌ Error:", error);
+    const errorMessage =
+      error instanceof Error
+        ? error.message
+        : "No se pudo actualizar el producto";
+    Alert.alert("Error", errorMessage);
+  }
+};
 
   // Reportar salida - VERSIÓN ACTUALIZADA CON NUEVAS VALIDACIONES DEL BACKEND
   const handleReportBaja = async () => {
@@ -726,12 +747,12 @@ export default function ProductDetail() {
       );
     }
 
-    if (motivo === 1 && ![1, 3, 8].includes(producto.id_estatus_producto)) {
-      return Alert.alert(
-        "No se puede iniciar uso",
-        `Solo puedes iniciar uso cuando el producto está Disponible, Bajo stock o Próximo a caducar.`
-      );
-    }
+if (motivo === 1 && producto.id_estatus_producto && ![1, 3, 8].includes(producto.id_estatus_producto)) {
+  return Alert.alert(
+    "No se puede iniciar uso",
+    `Solo puedes iniciar uso cuando el producto está Disponible, Bajo stock o Próximo a caducar.`
+  );
+}
 
     if (motivo === 2 && !reportForm.descripcion_adicional?.trim()) {
       return Alert.alert(
