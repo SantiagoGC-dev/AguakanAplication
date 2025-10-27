@@ -1,9 +1,6 @@
 import pool from "../config/db.js";
 
-/**
- * Obtener estadísticas generales para el dashboard
- * 🔥 MODIFICADO: Lógica de 'productosBajoStock' ajustada a la regla (3, 5, 8)
- */
+//
 export const getDashboardStats = async (req, res) => {
   try {
     const [stats] = await pool.query(`
@@ -51,10 +48,7 @@ export const getDashboardStats = async (req, res) => {
   }
 };
 
-/**
- * Obtener productos actualmente en uso
- * (Sin cambios)
- */
+//
 export const getProductosEnUso = async (req, res) => {
   try {
     const [productos] = await pool.query(`
@@ -80,10 +74,7 @@ export const getProductosEnUso = async (req, res) => {
   }
 };
 
-/**
- * Obtener últimos movimientos para el dashboard
- * (Sin cambios)
- */
+//
 export const getMovimientosRecientes = async (req, res) => {
   try {
     const [movimientos] = await pool.query(`
@@ -112,10 +103,7 @@ export const getMovimientosRecientes = async (req, res) => {
   }
 };
 
-/**
- * Obtener alertas de productos que necesitan atención
- * 🔥 MODIFICADO: Lógica de 'Bajo Stock' ajustada a la regla (3, 5, 8)
- */
+//
 export const getAlertasDashboard = async (req, res) => {
   try {
     const [alertas] = await pool.query(`
@@ -168,14 +156,11 @@ export const getAlertasDashboard = async (req, res) => {
   }
 };
 
-/**
- * Obtener todos los datos del dashboard en una sola llamada
- * 🔥 MODIFICADO: Lógica de 'stats' y 'alertas' actualizada a la nueva regla.
- */
+//
 export const getDashboardData = async (req, res) => {
   try {
     const [stats, productos, movimientos, alertas] = await Promise.all([
-      // Query de Stats (Actualizada)
+      // Query de Stats
       pool.query(`
         SELECT
           (SELECT COUNT(*) 
@@ -203,7 +188,7 @@ export const getDashboardData = async (req, res) => {
           ) as proximosCaducar
       `),
 
-      // Query de Productos en Uso (Sin cambios)
+      // Query de Productos en Uso
       pool.query(`
         SELECT 
           p.id_producto as id,
@@ -220,7 +205,7 @@ export const getDashboardData = async (req, res) => {
         LIMIT 5
       `),
 
-      // Query de Movimientos (Sin cambios)
+      // Query de Movimientos
       pool.query(`
         SELECT 
           m.id_movimiento as id,
@@ -239,7 +224,7 @@ export const getDashboardData = async (req, res) => {
         LIMIT 5
       `),
 
-      // Query de Alertas (Actualizada)
+      // Query de Alertas
       pool.query(`
         (
           -- Productos próximos a caducar (se mantiene igual)

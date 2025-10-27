@@ -3,6 +3,7 @@ import productosRoutes from "./routes/productos.routes.js";
 import movimientosRoutes from "./routes/movimientos.routes.js";
 import documentosRoutes from "./routes/documentos.routes.js";
 import dashboardRoutes from './routes/dashboard.routes.js';
+import reportesRoutes from './routes/reportes.routes.js';
 
 
 const app = express();
@@ -19,6 +20,9 @@ app.use('/uploads', express.static('uploads'));
 
 // Rutas del dashboard
 app.use('/api/dashboard', dashboardRoutes);
+
+// Rutas para los reportes
+app.use('/api/reportes', reportesRoutes);
 
 
 export default app;

@@ -2,22 +2,25 @@ import React, { useState, useCallback, useEffect, useMemo } from "react";
 import {
   View,
   TouchableOpacity,
-  ScrollView,
   Modal,
   RefreshControl,
   StyleSheet,
   Alert,
   FlatList,
   Dimensions,
+  Platform,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import DateTimePicker from "@react-native-community/datetimepicker";
 import { ThemedText } from "@/components/themed-text";
 import { useRouter } from "expo-router";
-const { width: screenWidth } = Dimensions.get("window");
+import * as FileSystem from "expo-file-system";
+import * as Sharing from "expo-sharing";
 
 // Configuración de API
 const API_BASE_URL = "http://172.20.10.11:3000/api";
 
+// --- Interfaces (Sin cambios) ---
 interface ProductoGrupo {
   id: string;
   nombre: string;
@@ -61,135 +64,27 @@ export default function ReportesScreen() {
     periodo: "mensual",
     tipoProducto: "todos",
   });
-  // Datos de ejemplo según la nueva estructura
-  const [productos, setProductos] = useState<ProductoGrupo[]>([
-    {
-      id: "1",
-      nombre: "Agua destilada",
-      tipo: "reactivo",
-      stockActual: 12,
-      lotes: [
-        {
-          id: "1-1",
-          lote: "ABC123",
-          cantidadConsumida: 5,
 
-          stockActual: 7,
-          fechaCaducidad: "12/Nov/2025",
-          fechaIngreso: "01/Ene/2024",
-          estatus: "activo",
-          diasRestantes: 20,
-        },
-        {
-          id: "1-2",
-          lote: "DEF456",
-          cantidadConsumida: 3,
+  // Estados para datos reales
+  const [productos, setProductos] = useState<ProductoGrupo[]>([]);
 
-          stockActual: 5,
-          fechaCaducidad: "15/Dic/2025",
-          fechaIngreso: "01/Feb/2024",
-          estatus: "activo",
-          diasRestantes: 53,
-        },
-      ],
-    },
-    {
-      id: "2",
-      nombre: "Guantes de látex estéril",
-      tipo: "material",
+  // Estados para contadores
+  const [contadores, setContadores] = useState({
+    todos: 0,
+    reactivo: 0,
+    material: 0,
+    equipo: 0,
+  });
 
-      stockActual: 120,
-      lotes: [
-        {
-          id: "2-1",
-          lote: "MAT001",
-          stockActual: 80,
-          fechaIngreso: "15/Mar/2024",
-          marca: "MediSafe",
-          estatus: "activo",
-        },
+  // 🔹 Estados para selector de fechas
+  const [fechaDesdeTemp, setFechaDesdeTemp] = useState(new Date());
+  const [fechaHastaTemp, setFechaHastaTemp] = useState(new Date());
+  const [fechaDesdeAplicada, setFechaDesdeAplicada] = useState(new Date());
+  const [fechaHastaAplicada, setFechaHastaAplicada] = useState(new Date());
 
-        {
-          id: "2-2",
-          lote: "MAT002",
-          stockActual: 40,
-          fechaIngreso: "20/Abr/2024",
-          marca: "MediSafe",
-          estatus: "activo",
-        },
-      ],
-    },
-    {
-      id: "3",
+  // 🔹 Texto del periodo seleccionado
+  const [periodoTexto, setPeriodoTexto] = useState("Desde - Hasta");
 
-      nombre: "Centrífuga de laboratorio",
-      tipo: "equipo",
-      stockActual: 2,
-      lotes: [
-        {
-          id: "3-1",
-          lote: "EQP001",
-          stockActual: 1,
-          fechaIngreso: "10/Ene/2024",
-          marca: "LabTech",
-
-          idAgk: "AGK-CENT-001",
-          modelo: "CT-5000",
-          numeroSerie: "SN123456",
-          estatus: "activo",
-        },
-        {
-          id: "3-2",
-          lote: "EQP002",
-          stockActual: 1,
-          fechaIngreso: "15/Feb/2024",
-
-          marca: "LabTech",
-          idAgk: "AGK-CENT-002",
-          modelo: "CT-5000",
-          numeroSerie: "SN123457",
-          estatus: "inactivo",
-        },
-      ],
-    },
-    {
-      id: "4",
-      nombre: "Ácido glutámico",
-      tipo: "reactivo",
-
-      stockActual: 9,
-      lotes: [
-        {
-          id: "4-1",
-          lote: "ACD001",
-          cantidadConsumida: 2,
-          stockActual: 3,
-          fechaCaducidad: "08/Nov/2025",
-          fechaIngreso: "01/Mar/2024",
-          estatus: "activo",
-
-          diasRestantes: 16,
-        },
-      ],
-    },
-    {
-      id: "5",
-      nombre: "Jeringas desechables",
-      tipo: "material",
-      stockActual: 200,
-      lotes: [
-        {
-          id: "5-1",
-          lote: "MAT003",
-
-          stockActual: 200,
-          fechaIngreso: "05/May/2024",
-          marca: "SafeMed",
-          estatus: "activo",
-        },
-      ],
-    },
-  ]);
   // 🔹 Función para alternar expansión de productos
   const toggleProductoExpandido = useCallback((productoId: string) => {
     setProductosExpandidos((prev) => ({
@@ -197,6 +92,7 @@ export default function ReportesScreen() {
       [productoId]: !prev[productoId],
     }));
   }, []);
+
   // 🔹 Filtrar productos según los filtros aplicados
   const productosFiltrados = useMemo(() => {
     if (filtros.tipoProducto === "todos") {
@@ -206,6 +102,7 @@ export default function ReportesScreen() {
       (producto) => producto.tipo === filtros.tipoProducto
     );
   }, [productos, filtros.tipoProducto]);
+
   // 🔹 Función para determinar el color según los días restantes
   const getColorCaducidad = useCallback((dias?: number) => {
     if (!dias) return "#6B7280";
@@ -213,6 +110,7 @@ export default function ReportesScreen() {
     if (dias <= 30) return "#F59E0B";
     return "#16A34A";
   }, []);
+
   // 🔹 Función para determinar el estado del stock
   const getEstadoStock = useCallback((stockActual: number) => {
     if (stockActual === 0) return { estado: "agotado", color: "#EF4444" };
@@ -220,54 +118,188 @@ export default function ReportesScreen() {
     if (stockActual <= 15) return { estado: "bajo", color: "#F59E0B" };
     return { estado: "normal", color: "#16A34A" };
   }, []);
-  // 🔹 Función para obtener texto del periodo (Eliminada, ya no se usa)
-  // 🔹 Contadores por tipo
-  const contadores = useMemo(
-    () => ({
-      todos: productos.length,
-      reactivo: productos.filter((p) => p.tipo === "reactivo").length,
-      material: productos.filter((p) => p.tipo === "material").length,
-      equipo: productos.filter((p) => p.tipo === "equipo").length,
-    }),
-    [productos]
-  );
-  // 🔹 Cargar datos al montar
+
+  // 🔹 Cargar datos al montar y cuando cambien los filtros
   useEffect(() => {
-    setTimeout(() => {
-      setLoading(false);
-    }, 1000);
-  }, []);
+    cargarReportes();
+  }, [filtros.tipoProducto, fechaDesdeAplicada, fechaHastaAplicada]);
+
   // 🔹 Aplicar filtros desde modal
   const aplicarFiltrosDesdeModal = useCallback(() => {
+    if (fechaHastaTemp < fechaDesdeTemp) {
+      Alert.alert(
+        "Rango inválido",
+        "La fecha 'Hasta' no puede ser anterior a la fecha 'Desde'."
+      );
+      return;
+    }
+
+    // Actualizar fechas aplicadas
+    setFechaDesdeAplicada(fechaDesdeTemp);
+    setFechaHastaAplicada(fechaHastaTemp);
+
+    const desdeTexto = formatearFecha(fechaDesdeTemp);
+    const hastaTexto = formatearFecha(fechaHastaTemp);
+
+    setPeriodoTexto(`${desdeTexto} - ${hastaTexto}`);
     setFiltrosVisible(false);
-  }, []);
+
+  }, [fechaDesdeTemp, fechaHastaTemp]);
+
+  // 🔹 Función para cargar reportes
+  const cargarReportes = async () => {
+    try {
+      setLoading(true);
+      console.log("🔄 Cargando reportes...");
+
+      // Intentar cargar estadísticas
+      try {
+        const estadisticasResponse = await fetch(
+          `${API_BASE_URL}/reportes/estadisticas?${new URLSearchParams({
+            fechaDesde: fechaDesdeAplicada.toISOString().split("T")[0],
+            fechaHasta: fechaHastaAplicada.toISOString().split("T")[0],
+          })}`
+        );
+        if (estadisticasResponse.ok) {
+          const estadisticasData = await estadisticasResponse.json();
+          if (estadisticasData.success) {
+            setContadores(estadisticasData.data);
+            console.log("✅ Estadísticas cargadas:", estadisticasData.data);
+          }
+        }
+      } catch (error) {
+        console.warn("⚠️ No se pudieron cargar estadísticas:", error);
+      }
+
+      // Intentar cargar productos
+      try {
+        const productosResponse = await fetch(
+          `${API_BASE_URL}/reportes/productos?${new URLSearchParams({
+            tipoProducto: filtros.tipoProducto,
+            fechaDesde: fechaDesdeAplicada.toISOString().split("T")[0],
+            fechaHasta: fechaHastaAplicada.toISOString().split("T")[0],
+          })}`
+        );
+        if (productosResponse.ok) {
+          const productosData = await productosResponse.json();
+          if (productosData.success) {
+            setProductos(productosData.data);
+            console.log("✅ Productos cargados:", productosData.data.length);
+          } else {
+            throw new Error(productosData.error);
+          }
+        } else {
+          throw new Error(`HTTP ${productosResponse.status}`);
+        }
+      } catch (error) {
+        console.error("❌ Error cargando productos:", error);
+        setProductos([]);
+        console.warn("⚠️ No se pudieron cargar productos");
+      }
+
+      setLoading(false);
+    } catch (error) {
+      console.error("💥 Error general cargando reportes:", error);
+      setLoading(false);
+    }
+  };
+
+  // 🔹 Función de exportación a Excel
+  const exportarExcel = async () => {
+    try {
+      Alert.alert(
+        "Exportar Reporte",
+        "¿Deseas exportar el reporte actual a Excel?",
+        [
+          { text: "Cancelar", style: "cancel" },
+          {
+            text: "Exportar",
+            onPress: async () => {
+              try {
+                console.log("📤 Iniciando exportación a Excel...");
+
+                const { Linking } = require("react-native");
+
+                // 🔹 USAR PARÁMETROS GET
+                const params = new URLSearchParams({
+                  tipoProducto: filtros.tipoProducto,
+                  fechaDesde: fechaDesdeAplicada.toISOString().split("T")[0],
+                  fechaHasta: fechaHastaAplicada.toISOString().split("T")[0],
+                });
+
+                const downloadUrl = `${API_BASE_URL}/reportes/exportar/excel?${params}`;
+
+                console.log("🔗 URL de descarga:", downloadUrl);
+
+                // Abrir en el navegador del dispositivo
+                const canOpen = await Linking.canOpenURL(downloadUrl);
+
+                if (canOpen) {
+                  await Linking.openURL(downloadUrl);
+                  Alert.alert(
+                    "✅ Descarga Iniciada",
+                    "El reporte Excel se está descargando. Revisa las notificaciones de tu dispositivo.",
+                    [{ text: "Aceptar" }]
+                  );
+                } else {
+                  Alert.alert(
+                    "❌ Error",
+                    "No se puede abrir el enlace de descarga.",
+                    [{ text: "Aceptar" }]
+                  );
+                }
+              } catch (error: any) {
+                console.error("❌ Error exportando Excel:", error);
+                Alert.alert(
+                  "❌ Error",
+                  "No se pudo descargar el Excel: " +
+                    (error.message || "Error desconocido"),
+                  [{ text: "Aceptar" }]
+                );
+              }
+            },
+          },
+        ]
+      );
+    } catch (error: any) {
+      Alert.alert("Error", "No se pudo iniciar la exportación");
+    }
+  };
+
   // 🔹 Pull to refresh
   const onRefresh = useCallback(() => {
     setRefreshing(true);
-    setTimeout(() => {
+    cargarReportes().finally(() => {
       setRefreshing(false);
-    }, 1000);
-  }, []);
-  // 🔹 Funciones de exportación
-  const exportarPDF = useCallback(() => {
-    Alert.alert("Éxito", "Reporte exportado a PDF correctamente");
-  }, []);
-  const exportarExcel = useCallback(() => {
-    Alert.alert("Éxito", "Reporte exportado a Excel correctamente");
-  }, []);
-  // 🔹 Render Item para productos
+    });
+  }, [filtros.tipoProducto, fechaDesdeAplicada, fechaHastaAplicada]);
+
+  // Función para formatear fecha
+  const formatearFecha = (fecha: Date) => {
+    const meses = [
+      "Ene",
+      "Feb",
+      "Mar",
+      "Abr",
+      "May",
+      "Jun",
+      "Jul",
+      "Ago",
+      "Sep",
+      "Oct",
+      "Nov",
+      "Dic",
+    ];
+    return `${fecha.getDate()}/${
+      meses[fecha.getMonth()]
+    }/${fecha.getFullYear()}`;
+  };
+
+  // 🔹 Render Item para productos (Sin cambios)
   const renderProductoItem = useCallback(
     ({ item }: { item: ProductoGrupo }) => {
       const isExpanded = productosExpandidos[item.id];
       const { estado, color } = getEstadoStock(item.stockActual);
-      const estadoText =
-        estado === "agotado"
-          ? "Agotado"
-          : estado === "critico"
-          ? "Crítico"
-          : estado === "bajo"
-          ? "Bajo"
-          : "Normal";
 
       return (
         <View style={styles.productoContainer}>
@@ -280,7 +312,6 @@ export default function ReportesScreen() {
               <ThemedText style={styles.productoNombre}>
                 {item.nombre}
               </ThemedText>
-
               <View style={styles.productoMeta}>
                 <ThemedText style={styles.productoTipo}>
                   {item.tipo === "reactivo"
@@ -290,19 +321,17 @@ export default function ReportesScreen() {
                     : "Equipo"}
                 </ThemedText>
                 <View style={styles.separator} />
-
                 <ThemedText style={styles.lotesCount}>
                   {item.lotes.length}{" "}
                   {item.lotes.length === 1 ? "lote" : "lotes"}
                 </ThemedText>
               </View>
             </View>
-
             <View style={styles.productoActions}>
               <View
-                style={[styles.stockBadge, { backgroundColor: color + "15" }]}
+                style={[styles.stockBadge, { backgroundColor: "#f6f6f6ff" }]}
               >
-                <ThemedText style={[styles.stockText, { color }]}>
+                <ThemedText style={[styles.stockText, { color: "#539DF3" }]}>
                   {item.stockActual} unidades
                 </ThemedText>
               </View>
@@ -314,14 +343,13 @@ export default function ReportesScreen() {
             </View>
           </TouchableOpacity>
 
-          {/* Detalles expandidos */}
+          {/* Detalles expandidos (Sin cambios) */}
           {isExpanded && (
             <View style={styles.lotesContainer}>
               {/* Header específico por tipo */}
               <View style={styles.tableHeader}>
                 {item.tipo === "reactivo" && (
                   <>
-                    {/* Columnas Reactivo */}
                     <ThemedText style={styles.tableHeaderText}>Lote</ThemedText>
                     <ThemedText style={styles.tableHeaderText}>
                       Consumido
@@ -334,10 +362,8 @@ export default function ReportesScreen() {
                     </ThemedText>
                   </>
                 )}
-
                 {item.tipo === "material" && (
                   <>
-                    {/* Columnas Material */}
                     <ThemedText style={styles.tableHeaderText}>Lote</ThemedText>
                     <ThemedText style={styles.tableHeaderText}>
                       Marca
@@ -350,10 +376,8 @@ export default function ReportesScreen() {
                     </ThemedText>
                   </>
                 )}
-
                 {item.tipo === "equipo" && (
                   <>
-                    {/* Columnas Equipo */}
                     <ThemedText style={styles.tableHeaderText}>
                       Marca/Modelo
                     </ThemedText>
@@ -372,12 +396,11 @@ export default function ReportesScreen() {
                   </>
                 )}
               </View>
-
+              {/* Lotes (Sin cambios) */}
               {item.lotes.map((lote) => (
                 <View key={lote.id} style={styles.loteRow}>
                   {item.tipo === "reactivo" && (
                     <>
-                      {/* Datos Reactivo */}
                       <ThemedText style={styles.loteText}>
                         {lote.lote}
                       </ThemedText>
@@ -392,10 +415,8 @@ export default function ReportesScreen() {
                       </ThemedText>
                     </>
                   )}
-
                   {item.tipo === "material" && (
                     <>
-                      {/* Datos Material */}
                       <ThemedText style={styles.loteText}>
                         {lote.lote}
                       </ThemedText>
@@ -410,10 +431,8 @@ export default function ReportesScreen() {
                       </ThemedText>
                     </>
                   )}
-
                   {item.tipo === "equipo" && (
                     <>
-                    {/* Datos Equipo */}
                       <ThemedText style={styles.loteText}>
                         {lote.marca} / {lote.modelo}
                       </ThemedText>
@@ -467,21 +486,9 @@ export default function ReportesScreen() {
       toggleProductoExpandido,
     ]
   );
-  if (loading) {
-    return (
-      <View style={styles.loadingContainer}>
-        <View style={styles.loadingContent}>
-          <Ionicons name="document-text" size={48} color="#4B9CD3" />
-          <ThemedText type="title" style={styles.loadingText}>
-            Cargando reportes...
-          </ThemedText>
-        </View>
-      </View>
-    );
-  }
 
-  return (
-    <View style={styles.container}>
+  const renderListHeader = () => (
+    <>
       {/* 🔹 Header */}
       <View style={styles.header}>
         <View style={styles.headerTop}>
@@ -503,19 +510,12 @@ export default function ReportesScreen() {
         {/* 🔹 Periodo actual */}
         <View style={styles.periodoContainer}>
           <ThemedText style={styles.periodoText}>
-            Periodo: Ene 2025 - Abr 2025
+            Periodo: {periodoTexto}
           </ThemedText>
         </View>
 
         {/* 🔹 Botones de exportar */}
         <View style={styles.exportButtons}>
-          <TouchableOpacity
-            style={styles.exportButtonBig}
-            onPress={exportarPDF}
-          >
-            <Ionicons name="document-text-outline" size={20} color="#D9534F" />
-            <ThemedText style={styles.exportButtonText}>PDF</ThemedText>
-          </TouchableOpacity>
           <TouchableOpacity
             style={styles.exportButtonBig}
             onPress={exportarExcel}
@@ -656,30 +656,61 @@ export default function ReportesScreen() {
           </ThemedText>
         </TouchableOpacity>
       </View>
+    </>
+  );
 
-      {/* 🔹 Contenido de Reportes */}
-      <ScrollView
-        style={styles.scrollView}
+  // --- Pantalla de Carga ---
+  if (loading && productos.length === 0) {
+    return (
+      <View style={styles.loadingContainer}>
+        <View style={styles.loadingContent}>
+          <Ionicons name="document-text" size={48} color="#4B9CD3" />
+          <ThemedText type="title" style={styles.loadingText}>
+            Cargando reportes...
+          </ThemedText>
+        </View>
+      </View>
+    );
+  }
+
+  // --- Render Principal ---
+  return (
+    <View style={styles.container}>
+      {/* 🔹 ✅ FLATLIST AHORA ES EL CONTENEDOR PRINCIPAL */}
+      <FlatList
+        // --- Props de Datos ---
+        data={productosFiltrados}
+        keyExtractor={(item) => item.id}
+        renderItem={renderProductoItem}
+        // --- Props de Header y Footer ---
+        ListHeaderComponent={renderListHeader}
+        ListFooterComponent={<View style={styles.spacer} />}
+        // --- Prop de Estado Vacío ---
+        ListEmptyComponent={
+          !loading ? ( // Solo muestra si no está cargando
+            <View style={styles.emptyState}>
+              <Ionicons
+                name="document-text-outline"
+                size={48}
+                color="#64748B"
+              />
+              <ThemedText style={styles.emptyStateText}>
+                No hay productos para mostrar con los filtros actuales
+              </ThemedText>
+            </View>
+          ) : null
+        }
+        // --- Props de Scroll y Refresh ---
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
         }
         showsVerticalScrollIndicator={false}
-      >
-        {/* 🔹 Lista de productos */}
-        <View style={styles.productosList}>
-          <FlatList
-            data={productosFiltrados}
-            keyExtractor={(item) => item.id}
-            renderItem={renderProductoItem}
-            scrollEnabled={false}
-            contentContainerStyle={styles.listContent}
-          />
-        </View>
+        // --- Estilos ---
+        contentContainerStyle={styles.listContent}
+        style={{ flex: 1 }}
+      />
 
-        <View style={styles.spacer} />
-      </ScrollView>
-
-      {/* 🔹 Modal de Filtros de Periodo */}
+      {/* 🔹 Modal de Filtros de Periodo (se queda igual) */}
       <Modal visible={filtrosVisible} animationType="slide" transparent>
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
@@ -695,11 +726,26 @@ export default function ReportesScreen() {
               </TouchableOpacity>
             </View>
 
-            {/* MODIFICACIÓN 1: Opciones de periodo eliminadas */}
             <View style={styles.periodoOptions}>
-              <ThemedText style={styles.placeholderText}>
-                Aquí irá el selector de rango de fechas (ej. "Desde" y "Hasta").
+              <ThemedText style={styles.label}>Desde:</ThemedText>
+              <DateTimePicker
+                value={fechaDesdeTemp}
+                mode="date"
+                display={Platform.OS === "ios" ? "spinner" : "default"}
+                onChange={(_, date) => date && setFechaDesdeTemp(date)}
+                style={styles.datePicker}
+              />
+
+              <ThemedText style={[styles.label, { marginTop: 10 }]}>
+                Hasta:
               </ThemedText>
+              <DateTimePicker
+                value={fechaHastaTemp}
+                mode="date"
+                display={Platform.OS === "ios" ? "spinner" : "default"}
+                onChange={(_, date) => date && setFechaHastaTemp(date)}
+                style={styles.datePicker}
+              />
             </View>
 
             <View style={styles.filterActions}>
@@ -737,29 +783,25 @@ const styles = StyleSheet.create({
   loadingText: {
     fontSize: 18,
     fontFamily: "Poppins_500Medium",
-    color: "#4B9CD3",
+    color: "#539DF3",
     textAlign: "center",
   },
   header: {
-    backgroundColor: "#FFFFFF",
-    paddingHorizontal: 20,
-    paddingTop: 60,
+    backgroundColor: "#F8FAFC",
+    paddingHorizontal: 1,
+    paddingTop: Platform.OS === "ios" ? 60 : 40, 
     paddingBottom: 16,
     borderBottomLeftRadius: 20,
     borderBottomRightRadius: 20,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 4,
   },
   headerTop: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
+    marginBottom: 8, 
   },
   headerTitle: {
-    fontSize: 24,
+    fontSize: 25,
     color: "#000000",
     fontFamily: "Poppins_700Bold",
   },
@@ -788,19 +830,20 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 12,
-    marginTop: 16,
+    marginTop: 12,
   },
   exportButtonBig: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
     backgroundColor: "#F8FAFC",
-    borderRadius: 12,
-    height: 40,
+    borderRadius: 10,
+    height: 38,
     flex: 1,
-    gap: 8,
+    gap: 6,
     borderWidth: 1,
     borderColor: "#E5E7EB",
+    paddingHorizontal: 12,
   },
   exportButtonText: {
     fontSize: 14,
@@ -819,16 +862,17 @@ const styles = StyleSheet.create({
   },
   filtrosContainer: {
     flexDirection: "row",
-    paddingHorizontal: 20,
-    paddingVertical: 16,
+    paddingHorizontal: 1,
+    paddingVertical: 12,
     gap: 8,
+    flexWrap: "wrap", 
   },
   filtroCard: {
-    flex: 1,
+    minWidth: 70, 
     alignItems: "center",
     backgroundColor: "#FFFFFF",
     borderRadius: 12,
-    padding: 12,
+    padding: 10, 
     gap: 4,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
@@ -837,10 +881,11 @@ const styles = StyleSheet.create({
     elevation: 2,
     borderWidth: 1,
     borderColor: "#F1F5F9",
+    flex: 1, 
   },
   filtroCardActive: {
-    backgroundColor: "#4B9CD3",
-    shadowColor: "#4B9CD3",
+    backgroundColor: "#539DF3",
+    shadowColor: "#539DF3",
     shadowOpacity: 0.2,
     elevation: 4,
   },
@@ -869,24 +914,34 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
   },
   listContent: {
+    paddingHorizontal: 16, 
     paddingBottom: 20,
+    flexGrow: 1, 
+  },
+  emptyState: {
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 40,
+  },
+  emptyStateText: {
+    fontSize: 16,
+    color: "#64748B",
+    textAlign: "center",
+    marginTop: 16,
   },
   productoContainer: {
     backgroundColor: "#FFFFFF",
     borderRadius: 12,
-    marginBottom: 12,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 2,
+    marginBottom: 8, 
+    elevation: 1, 
     overflow: "hidden",
+    marginHorizontal: 1, 
   },
   productoHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    padding: 16,
+    padding: 14,
   },
   productoInfo: {
     flex: 1,
@@ -895,7 +950,7 @@ const styles = StyleSheet.create({
   productoNombre: {
     fontSize: 16,
     color: "#1E293B",
-    fontFamily: "Poppins_600SemiBold",
+    fontFamily: "Poppins_500Medium",
   },
   productoMeta: {
     flexDirection: "row",
@@ -929,22 +984,22 @@ const styles = StyleSheet.create({
   },
   stockText: {
     fontSize: 11,
-    fontFamily: "Poppins_600SemiBold",
+    fontFamily: "Poppins_500Medium",
   },
   lotesContainer: {
     backgroundColor: "#F8FAFC",
-    padding: 12,
+    padding: 10,
     borderTopWidth: 1,
     borderTopColor: "#F1F5F9",
   },
   tableHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
-    paddingVertical: 8,
-    paddingHorizontal: 4,
+    paddingVertical: 6, 
+    paddingHorizontal: 2, 
     borderBottomWidth: 1,
     borderBottomColor: "#E5E7EB",
-    marginBottom: 8,
+    marginBottom: 6, 
   },
   tableHeaderText: {
     fontSize: 10,
@@ -977,7 +1032,7 @@ const styles = StyleSheet.create({
   },
   diasText: {
     fontSize: 8,
-    fontFamily: "Poppins_600SemiBold",
+    fontFamily: "Poppins_500Medium",
   },
   estadoBadge: {
     paddingHorizontal: 6,
@@ -987,10 +1042,7 @@ const styles = StyleSheet.create({
   },
   estadoText: {
     fontSize: 8,
-    fontFamily: "Poppins_600SemiBold",
-  },
-  spacer: {
-    height: 20,
+    fontFamily: "Poppins_500Medium",
   },
   modalOverlay: {
     flex: 1,
@@ -1001,7 +1053,8 @@ const styles = StyleSheet.create({
     backgroundColor: "#FFFFFF",
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
-    paddingBottom: 34,
+    paddingBottom: Platform.OS === "ios" ? 40 : 20, 
+    maxHeight: "80%", 
   },
   modalHeader: {
     flexDirection: "row",
@@ -1037,19 +1090,33 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
   },
   applyBtn: {
-    backgroundColor: "#4B9CD3",
+    backgroundColor: "#539DF3",
     padding: 16,
     alignItems: "center",
     borderRadius: 12,
-    shadowColor: "#4B9CD3",
+    shadowColor: "#539DF3",
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 8,
     elevation: 4,
   },
   applyBtnText: {
-    fontFamily: "Poppins_600SemiBold",
+    fontFamily: "Poppins_500Medium",
     fontSize: 16,
     color: "#fff",
+  },
+  label: {
+    fontSize: 14,
+    color: "#475569",
+    fontFamily: "Poppins_500Medium",
+    alignSelf: "flex-start",
+  },
+  datePicker: {
+    backgroundColor: "#F1F5F9",
+    borderRadius: 10,
+    width: "100%",
+  },
+  spacer: {
+    height: Platform.OS === "ios" ? 30 : 20, 
   },
 });

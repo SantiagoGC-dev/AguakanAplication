@@ -699,17 +699,25 @@ export default function InventarioScreen() {
     fetchLaboratoriosYEstatus();
   }, []);
 
-  useFocusEffect(
+useFocusEffect(
     React.useCallback(() => {
-      // ✅ GUARDIA: Si el filtro "en-uso" está activo, no hagas nada.
-      // El useEffect anterior ya se encargó de la carga.
+      // ✅ GUARDIA 1: Si el filtro "en-uso" está activo, no hagas nada.
+      // El useEffect[filter] [cite: 124] se encargará de la carga inicial.
       if (filter === "en-uso") {
         return;
       }
 
-      // Si no hay filtro, carga los productos normalmente.
+      // ✅ GUARDIA 2: Si ya hay productos cargados (productos.length > 0),
+      // NO HAGAS NADA. Esto previene el reseteo al volver de "Detalles"
+      // y permite que la paginación funcione sin interrupciones.
+      if (productos.length > 0) {
+        return;
+      }
+
+      // Si no hay filtro "en-uso" Y la lista está vacía,
+      // carga los productos normalmente (página 1).
       fetchProducts(1, true, null); // null = sin override
-    }, [filter]) // ✅ AÑADIR 'filter' a las dependencias
+    }, [filter, productos.length]) // ✅ AÑADIR 'productos.length'
   );
 
   // Debounce para búsqueda
@@ -1038,20 +1046,24 @@ export default function InventarioScreen() {
     setShowFilters(false);
   };
 
-  const resetearFiltros = () => {
-    // 1. Poner el estado de la UI en "todos"
+const resetearFiltros = () => {
+    // 1. Poner el estado de la UI en "todos" o valores por defecto
     setPeriodo("todos");
     setTipoProductoFiltro("todos");
     setPrioridad("todos");
     setEstatusFiltro("todos");
+    setOrden("antiguos"); // <-- AÑADIDO: Resetea el orden
+    setBusqueda("");      // <-- AÑADIDO: Limpia la barra de búsqueda
+
     setFiltrosAplicados(false);
 
-    // 2. ✅ Limpiar el filtro de la URL
+    // 2. Limpiar el filtro de la URL
     router.setParams({ filter: undefined });
 
-    // 3. ✅ Forzar la recarga de productos con el filtro "todos"
-    // Usamos el override para garantizar que se pidan "todos"
-    fetchProducts(1, true, "todos");
+    // 3. ¡ELIMINADO! No llames a fetchProducts aquí.
+    // El useEffect  detectará estos cambios de estado
+    // y llamará a fetchProducts(1, true) automáticamente
+    // con el estado ya actualizado.
   };
 
   const handleLoadMore = () => {

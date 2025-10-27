@@ -5,7 +5,7 @@ export const updateProductosEstatus = async () => {
   try {
     await connection.beginTransaction();
 
-    // ✅ LÓGICA DE ESTATUS AUTOMÁTICOS ACTUALIZADA
+    // LÓGICA DE ESTATUS AUTOMÁTICOS ACTUALIZADA
     await connection.query(`
       UPDATE Producto p
       LEFT JOIN Reactivo r ON p.id_producto = r.id_producto
@@ -166,9 +166,7 @@ const orderBy =
     const [countRows] = await pool.query(countQuery, params);
     const totalCount = countRows[0].totalCount || 0;
 
-    // 6. SEGUNDA CONSULTA: OBTENER LOS PRODUCTOS DE LA PÁGINA ACTUAL
-    // ✅ MODIFICACIÓN: Se añade MAX() a todas las columnas que no son de la tabla 'p'
-    //    y se RE-INTRODUCE el GROUP BY p.id_producto
+    //
     const dataQuery = `
       SELECT 
           p.*,
@@ -206,7 +204,7 @@ LEFT JOIN laboratorio le ON eq.id_laboratorio = le.id_laboratorio
 
     const [rows] = await pool.query(dataQuery, finalParams);
 
-    // 7. DEVOLVER UN OBJETO CON LOS PRODUCTOS Y EL CONTEO TOTAL
+    //
 res.json({ products: rows, totalCount: totalCount });
   } catch (error) {
     console.error("❌ Error en getProductos:", error);
@@ -242,7 +240,7 @@ export const getProductoById = async (req, res) => {
       [id]
     );
 
-    // ✅ DEBUG PARA LABORATORIO
+    // DEBUG PARA LABORATORIO
     if (rows.length > 0 && rows[0].id_tipo_producto === 2) {
       console.log("🔍 DEBUG LABORATORIO EN GET:", {
         productoId: id,
@@ -648,8 +646,6 @@ export const deleteProducto = async (req, res) => {
     await connection.beginTransaction();
     const { id } = req.params;
 
-    // La eliminación en cascada (ON DELETE CASCADE) en la BD es más eficiente.
-    // Si no está configurada, este enfoque manual es correcto.
     await connection.query("DELETE FROM Equipo WHERE id_producto = ?", [id]);
     await connection.query("DELETE FROM Reactivo WHERE id_producto = ?", [id]);
     await connection.query("DELETE FROM Material WHERE id_producto = ?", [id]);
@@ -707,7 +703,7 @@ export const updateProductoImagen = async (req, res) => {
       return res.status(404).json({ error: "Producto no encontrado." });
     }
 
-    // ✅ VERIFICAR qué se guardó realmente
+    // VERIFICAR qué se guardó realmente
     const [verificacion] = await pool.query(
       "SELECT imagen FROM Producto WHERE id_producto = ?",
       [id]
