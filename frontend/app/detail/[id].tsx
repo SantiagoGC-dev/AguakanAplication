@@ -21,6 +21,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import * as ImagePicker from "expo-image-picker";
 import TendenciaStockChart from "../../components/TendenciaStockChart";
+import { Swipeable } from "react-native-gesture-handler";
 
 // Constantes
 const API_BASE_URL = "http://172.20.10.11:3000";
@@ -581,6 +582,50 @@ export default function ProductDetail() {
     }
   };
 
+  // ELIMINAR DOCUMENTO - NUEVA FUNCIÓN
+  const handleDeleteDocument = async (documento: Documento) => {
+    if (!documento.id_documento) {
+      Alert.alert("Error", "No se puede eliminar este documento");
+      return;
+    }
+
+    try {
+      Alert.alert(
+        "Confirmar Eliminación",
+        `¿Estás seguro de que quieres eliminar "${documento.nombre}"?`,
+        [
+          { text: "Cancelar", style: "cancel" },
+          {
+            text: "Eliminar",
+            style: "destructive",
+            onPress: async () => {
+              console.log("🗑️ Eliminando documento:", documento.id_documento);
+
+              const response = await fetch(
+                `${API_BASE_URL}/api/documentos/${documento.id_documento}`,
+                {
+                  method: "DELETE",
+                }
+              );
+
+              if (response.ok) {
+                Alert.alert("Éxito", "Documento eliminado correctamente");
+                await fetchDocumentos(); // Recargar lista
+              } else {
+                const errorText = await response.text();
+                console.error("❌ Error eliminando documento:", errorText);
+                Alert.alert("Error", "No se pudo eliminar el documento");
+              }
+            },
+          },
+        ]
+      );
+    } catch (error) {
+      console.error("❌ Error eliminando documento:", error);
+      Alert.alert("Error", "No se pudo eliminar el documento");
+    }
+  };
+
   // VER DOCUMENTO - VERSIÓN MEJORADA
   const handleViewDocument = async (documento: Documento) => {
     try {
@@ -627,101 +672,102 @@ export default function ProductDetail() {
   };
 
   // Guardar cambios del producto - VERSIÓN CORREGIDA
-const handleSaveEdit = async () => {
-  if (!producto) return;
+  const handleSaveEdit = async () => {
+    if (!producto) return;
 
-  try {
-    // PREPARAR DATOS BÁSICOS CON CONVERSIÓN EXPLÍCITA
-    const datosBasicos: ProductoEdicion = {
-      nombre: editForm.nombre,
-      marca: editForm.marca,
-      lote: editForm.lote,
-      existencia_actual: parseInt(editForm.existencia_actual) || 0,
-      stock_minimo: parseInt(editForm.stock_minimo) || 0,
-      id_estatus_producto: parseInt(editForm.id_estatus_producto) || 1,
-      id_prioridad: parseInt(editForm.id_prioridad) || 2,
-      id_tipo_producto: producto.id_tipo_producto,
-      imagen: producto.imagen,
-    };
-
-    let datosCompletos: ProductoEdicion = { ...datosBasicos };
-
-    if (producto.id_tipo_producto === 1) {
-      // REACTIVO
-      let caducidadParaEnviar = editForm.caducidad;
-      if (caducidadParaEnviar) {
-        if (caducidadParaEnviar.includes("T")) {
-          caducidadParaEnviar = caducidadParaEnviar.split("T")[0];
-        }
-        if (!caducidadParaEnviar.match(/^\d{4}-\d{2}-\d{2}$/)) {
-          console.error("❌ Formato de fecha inválido:", caducidadParaEnviar);
-          Alert.alert("Error", "Formato de fecha inválido. Use YYYY-MM-DD");
-          return;
-        }
-      }
-
-      datosCompletos = {
-        ...datosCompletos,
-        presentacion: editForm.presentacion || null,
-        caducidad: caducidadParaEnviar || null,
-        cantidad_ingresada_reactivo: parseInt(editForm.existencia_actual) || 0,
-      };
-    } else if (producto.id_tipo_producto === 2) {
-      datosCompletos = {
-        ...datosCompletos,
-        id_agk: editForm.id_agk || null,
-        modelo: editForm.modelo || null,
-        numero_serie: editForm.numero_serie || null,
-        rango_medicion: editForm.rango_medicion || null,
-        resolucion: editForm.resolucion || null,
-        intervalo_trabajo: editForm.intervalo_trabajo || null,
-        id_laboratorio: editForm.id_laboratorio
-          ? parseInt(editForm.id_laboratorio)
-          : null,
+    try {
+      // PREPARAR DATOS BÁSICOS CON CONVERSIÓN EXPLÍCITA
+      const datosBasicos: ProductoEdicion = {
+        nombre: editForm.nombre,
+        marca: editForm.marca,
+        lote: editForm.lote,
+        existencia_actual: parseInt(editForm.existencia_actual) || 0,
+        stock_minimo: parseInt(editForm.stock_minimo) || 0,
+        id_estatus_producto: parseInt(editForm.id_estatus_producto) || 1,
+        id_prioridad: parseInt(editForm.id_prioridad) || 2,
+        id_tipo_producto: producto.id_tipo_producto,
+        imagen: producto.imagen,
       };
 
-      console.log("🔍 DEBUG FRONTEND - Datos de equipo a enviar:", {
-        id_agk: editForm.id_agk,
-        modelo: editForm.modelo,
-        numero_serie: editForm.numero_serie,
-        rango_medicion: editForm.rango_medicion,
-        resolucion: editForm.resolucion,
-        intervalo_trabajo: editForm.intervalo_trabajo,
-        id_laboratorio: editForm.id_laboratorio,
-      });
-    }
+      let datosCompletos: ProductoEdicion = { ...datosBasicos };
 
-    console.log("🔄 ENVIANDO DATOS COMPLETOS AL BACKEND:", datosCompletos);
+      if (producto.id_tipo_producto === 1) {
+        // REACTIVO
+        let caducidadParaEnviar = editForm.caducidad;
+        if (caducidadParaEnviar) {
+          if (caducidadParaEnviar.includes("T")) {
+            caducidadParaEnviar = caducidadParaEnviar.split("T")[0];
+          }
+          if (!caducidadParaEnviar.match(/^\d{4}-\d{2}-\d{2}$/)) {
+            console.error("❌ Formato de fecha inválido:", caducidadParaEnviar);
+            Alert.alert("Error", "Formato de fecha inválido. Use YYYY-MM-DD");
+            return;
+          }
+        }
 
-    const response = await fetch(
-      `${API_BASE_URL}/api/productos/${producto.id_producto}`,
-      {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(datosCompletos),
+        datosCompletos = {
+          ...datosCompletos,
+          presentacion: editForm.presentacion || null,
+          caducidad: caducidadParaEnviar || null,
+          cantidad_ingresada_reactivo:
+            parseInt(editForm.existencia_actual) || 0,
+        };
+      } else if (producto.id_tipo_producto === 2) {
+        datosCompletos = {
+          ...datosCompletos,
+          id_agk: editForm.id_agk || null,
+          modelo: editForm.modelo || null,
+          numero_serie: editForm.numero_serie || null,
+          rango_medicion: editForm.rango_medicion || null,
+          resolucion: editForm.resolucion || null,
+          intervalo_trabajo: editForm.intervalo_trabajo || null,
+          id_laboratorio: editForm.id_laboratorio
+            ? parseInt(editForm.id_laboratorio)
+            : null,
+        };
+
+        console.log("🔍 DEBUG FRONTEND - Datos de equipo a enviar:", {
+          id_agk: editForm.id_agk,
+          modelo: editForm.modelo,
+          numero_serie: editForm.numero_serie,
+          rango_medicion: editForm.rango_medicion,
+          resolucion: editForm.resolucion,
+          intervalo_trabajo: editForm.intervalo_trabajo,
+          id_laboratorio: editForm.id_laboratorio,
+        });
       }
-    );
 
-    if (response.ok) {
-      Alert.alert("Éxito", "Producto actualizado correctamente");
-      setEditModalVisible(false);
-      await refreshProductData();
-    } else {
-      const errorData = await response.json();
-      console.error("❌ Error del backend:", errorData);
-      Alert.alert("Error", errorData.error || "No se pudo actualizar");
+      console.log("🔄 ENVIANDO DATOS COMPLETOS AL BACKEND:", datosCompletos);
+
+      const response = await fetch(
+        `${API_BASE_URL}/api/productos/${producto.id_producto}`,
+        {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(datosCompletos),
+        }
+      );
+
+      if (response.ok) {
+        Alert.alert("Éxito", "Producto actualizado correctamente");
+        setEditModalVisible(false);
+        await refreshProductData();
+      } else {
+        const errorData = await response.json();
+        console.error("❌ Error del backend:", errorData);
+        Alert.alert("Error", errorData.error || "No se pudo actualizar");
+      }
+    } catch (error) {
+      console.error("❌ Error:", error);
+      const errorMessage =
+        error instanceof Error
+          ? error.message
+          : "No se pudo actualizar el producto";
+      Alert.alert("Error", errorMessage);
     }
-  } catch (error) {
-    console.error("❌ Error:", error);
-    const errorMessage =
-      error instanceof Error
-        ? error.message
-        : "No se pudo actualizar el producto";
-    Alert.alert("Error", errorMessage);
-  }
-};
+  };
 
   // Reportar salida - VERSIÓN ACTUALIZADA CON NUEVAS VALIDACIONES DEL BACKEND
   const handleReportBaja = async () => {
@@ -747,12 +793,16 @@ const handleSaveEdit = async () => {
       );
     }
 
-if (motivo === 1 && producto.id_estatus_producto && ![1, 3, 8].includes(producto.id_estatus_producto)) {
-  return Alert.alert(
-    "No se puede iniciar uso",
-    `Solo puedes iniciar uso cuando el producto está Disponible, Bajo stock o Próximo a caducar.`
-  );
-}
+    if (
+      motivo === 1 &&
+      producto.id_estatus_producto &&
+      ![1, 3, 8].includes(producto.id_estatus_producto)
+    ) {
+      return Alert.alert(
+        "No se puede iniciar uso",
+        `Solo puedes iniciar uso cuando el producto está Disponible, Bajo stock o Próximo a caducar.`
+      );
+    }
 
     if (motivo === 2 && !reportForm.descripcion_adicional?.trim()) {
       return Alert.alert(
@@ -1497,7 +1547,7 @@ if (motivo === 1 && producto.id_estatus_producto && ![1, 3, 8].includes(producto
         )}
       </Animated.ScrollView>
 
-      {/* Modal de Documentos */}
+      {/* Modal de Documentos - VERSIÓN MEJORADA CON ELIMINACIÓN */}
       <Modal
         visible={documentModalVisible}
         animationType="slide"
@@ -1536,37 +1586,61 @@ if (motivo === 1 && producto.id_estatus_producto && ![1, 3, 8].includes(producto
                 documentos
                   .filter((doc) => doc.tipo === selectedDocType)
                   .map((doc, index) => (
-                    <TouchableOpacity
+                    <Swipeable
                       key={doc.id_documento || `doc-${index}`}
-                      style={styles.docItem}
-                      onPress={() => handleViewDocument(doc)}
-                    >
-                      <View style={styles.docIconContainer}>
-                        <Ionicons
-                          name="document-text-outline"
-                          size={24}
-                          color="#000000ff"
-                        />
-                      </View>
-                      <View style={styles.docInfo}>
-                        <Text style={styles.docName} numberOfLines={1}>
-                          {doc.nombre}
-                        </Text>
-                        <View style={styles.docMeta}>
-                          <Text style={styles.docMetaText}>PDF</Text>
-                          {doc.fecha_subida && (
-                            <Text style={styles.docDate}>
-                              {new Date(doc.fecha_subida).toLocaleDateString()}
+                      renderRightActions={(progress, dragX) => (
+                        <View style={styles.deleteAction}>
+                          <TouchableOpacity
+                            style={styles.deleteButton}
+                            onPress={() => handleDeleteDocument(doc)}
+                          >
+                            <Ionicons
+                              name="trash-outline"
+                              size={20}
+                              color="white"
+                            />
+                            <Text style={styles.deleteButtonText}>
+                              Eliminar
                             </Text>
-                          )}
+                          </TouchableOpacity>
                         </View>
-                      </View>
-                      <Ionicons
-                        name="chevron-forward"
-                        size={20}
-                        color="#CBD5E1"
-                      />
-                    </TouchableOpacity>
+                      )}
+                      rightThreshold={40}
+                    >
+                      <TouchableOpacity
+                        style={styles.docItem}
+                        onPress={() => handleViewDocument(doc)}
+                        activeOpacity={0.7}
+                      >
+                        <View style={styles.docIconContainer}>
+                          <Ionicons
+                            name="document-text-outline"
+                            size={24}
+                            color="#000000ff"
+                          />
+                        </View>
+                        <View style={styles.docInfo}>
+                          <Text style={styles.docName} numberOfLines={1}>
+                            {doc.nombre}
+                          </Text>
+                          <View style={styles.docMeta}>
+                            <Text style={styles.docMetaText}>PDF</Text>
+                            {doc.fecha_subida && (
+                              <Text style={styles.docDate}>
+                                {new Date(
+                                  doc.fecha_subida
+                                ).toLocaleDateString()}
+                              </Text>
+                            )}
+                          </View>
+                        </View>
+                        <Ionicons
+                          name="chevron-forward"
+                          size={20}
+                          color="#CBD5E1"
+                        />
+                      </TouchableOpacity>
+                    </Swipeable>
                   ))
               )}
 
@@ -1594,12 +1668,14 @@ if (motivo === 1 && producto.id_estatus_producto && ![1, 3, 8].includes(producto
                 <Text style={styles.formatInfoText}>
                   Solo se permiten archivos PDF (máx. 10MB)
                 </Text>
+                <Text style={styles.formatInfoSubtext}>
+                  Desliza hacia la izquierda sobre un documento para eliminarlo
+                </Text>
               </View>
             </ScrollView>
           </View>
         </View>
       </Modal>
-
       {/* Modal de Edición */}
       <Modal
         visible={editModalVisible}
@@ -1979,7 +2055,6 @@ if (motivo === 1 && producto.id_estatus_producto && ![1, 3, 8].includes(producto
                 showsVerticalScrollIndicator={true}
                 contentContainerStyle={styles.modalScrollContent}
               >
-                {/* === INICIO DE LA SECCIÓN CORREGIDA === */}
                 <View style={styles.formSection}>
                   {/* Campo: Cantidad - OCULTAR para Baja */}
                   {reportForm.id_motivo_baja !== "4" && (
@@ -2086,7 +2161,7 @@ if (motivo === 1 && producto.id_estatus_producto && ![1, 3, 8].includes(producto
                               </Text>
                             </TouchableOpacity>
                           ));
-                      })() // <-- Los paréntesis finales () ejecutan la función
+                      })()
                     )}
                   </View>
                   {/* Campo: Descripción adicional */}
@@ -2103,13 +2178,17 @@ if (motivo === 1 && producto.id_estatus_producto && ![1, 3, 8].includes(producto
                           descripcion_adicional: text,
                         })
                       }
-                      placeholder="Ej: Caducó, se prestó, se consumió, etc."
+                      placeholder="Ej: Se prestó, se abrió, se consumió, etc."
                       multiline
                       numberOfLines={3}
+                      blurOnSubmit={true}
+                      returnKeyType="done"
+                      onSubmitEditing={() => {
+                        Keyboard.dismiss();
+                      }}
                     />
                   </View>
                 </View>
-                {/* === FIN DE LA SECCIÓN CORREGIDA === */}
 
                 {/* Botón para confirmar la acción */}
                 <TouchableOpacity
@@ -2713,5 +2792,35 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontFamily: "Poppins_400Regular",
     flex: 1,
+  },
+  // === NUEVOS ESTILOS PARA ELIMINACIÓN DE DOCUMENTOS ===
+  deleteAction: {
+    backgroundColor: "#DC2626",
+    justifyContent: "center",
+    alignItems: "center",
+    borderRadius: 12,
+    marginBottom: 8,
+    marginLeft: 8,
+    width: 100,
+  },
+  deleteButton: {
+    justifyContent: "center",
+    alignItems: "center",
+    flex: 1,
+    paddingHorizontal: 16,
+  },
+  deleteButtonText: {
+    color: "white",
+    fontSize: 12,
+    fontFamily: "Poppins_500Medium",
+    marginTop: 4,
+  },
+  formatInfoSubtext: {
+    fontSize: 11,
+    fontFamily: "Poppins_400Regular",
+    color: "#94A3B8",
+    textAlign: "center",
+    marginTop: 4,
+    fontStyle: "italic",
   },
 });

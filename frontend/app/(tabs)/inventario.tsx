@@ -15,6 +15,7 @@ import {
   KeyboardAvoidingView,
   Keyboard,
   ActivityIndicator,
+  RefreshControl,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import Icon from "react-native-vector-icons/MaterialIcons";
@@ -494,6 +495,9 @@ export default function InventarioScreen() {
   const [estatusProductos, setEstatusProductos] = useState<any[]>([]);
   const [loadingData, setLoadingData] = useState(true);
 
+  //Estado para el refresh
+  const [refreshing, setRefreshing] = useState(false);
+
   // --- Opciones estáticas para filtros ---
   const periodoOptions: FilterOption[] = [
     { label: "Todos", value: "todos" },
@@ -519,6 +523,26 @@ export default function InventarioScreen() {
     })),
   ];
 
+  //Funcion para el pulldown refresh
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    try {
+      await fetchProducts(1, true);
+    } catch (error) {
+      console.error("Error en refresh:", error);
+      Alert.alert("Error", "No se pudo actualizar el inventario");
+    } finally {
+      setRefreshing(false);
+    }
+  }, [
+    busquedaTerm,
+    tipoProductoFiltro,
+    prioridad,
+    estatusFiltro,
+    periodo,
+    orden,
+  ]);
+
   // --- Funciones de Carga de Datos ---
   const fetchProducts = async (
     pageToFetch = 1,
@@ -526,11 +550,11 @@ export default function InventarioScreen() {
     estatusOverride: string | null = null
   ) => {
     // Evitar cargas múltiples si ya se está cargando o si no hay más páginas
-    if (loadingMore || (!hasMore && !isRefresh)) return;
+    if ((loadingMore && !isRefresh) || (!hasMore && !isRefresh)) return;
 
     if (pageToFetch > 1) {
       setLoadingMore(true);
-    } else {
+    } else if (!isRefresh) {
       setCargandoInicial(true);
     }
 
@@ -699,7 +723,7 @@ export default function InventarioScreen() {
     fetchLaboratoriosYEstatus();
   }, []);
 
-useFocusEffect(
+  useFocusEffect(
     React.useCallback(() => {
       // ✅ GUARDIA 1: Si el filtro "en-uso" está activo, no hagas nada.
       // El useEffect[filter] [cite: 124] se encargará de la carga inicial.
@@ -1046,14 +1070,14 @@ useFocusEffect(
     setShowFilters(false);
   };
 
-const resetearFiltros = () => {
+  const resetearFiltros = () => {
     // 1. Poner el estado de la UI en "todos" o valores por defecto
     setPeriodo("todos");
     setTipoProductoFiltro("todos");
     setPrioridad("todos");
     setEstatusFiltro("todos");
     setOrden("antiguos"); // <-- AÑADIDO: Resetea el orden
-    setBusqueda("");      // <-- AÑADIDO: Limpia la barra de búsqueda
+    setBusqueda(""); // <-- AÑADIDO: Limpia la barra de búsqueda
 
     setFiltrosAplicados(false);
 
@@ -1092,7 +1116,7 @@ const resetearFiltros = () => {
         <View style={styles.header}>
           <View>
             <Text style={styles.title}>Inventario</Text>
-            <Text style={styles.subtitle}>Encuentra todos tus productos</Text>
+            <Text style={styles.subtitle}>Todos tus productos</Text>
           </View>
           {filtrosAplicados && (
             <TouchableOpacity
@@ -1151,19 +1175,29 @@ const resetearFiltros = () => {
             <Text style={styles.loadingText}>Cargando productos...</Text>
           </View>
         ) : (
-          /* Lista de Productos OPTIMIZADA */
+          /* Lista de Productos CON PULLDOWN REFRESH */
           <FlatList
-            data={productos} // ✅ AHORA USA 'productos' DIRECTAMENTE
+            data={productos}
             keyExtractor={(item) => item.id_producto.toString()}
             initialNumToRender={15}
             maxToRenderPerBatch={10}
             windowSize={7}
             removeClippedSubviews={true}
             updateCellsBatchingPeriod={50}
-            // --- ✅ PROPIEDADES DE PAGINACIÓN AÑADIDAS ---
+            // ✅ AÑADIDO: RefreshControl para pulldown refresh
+            refreshControl={
+              <RefreshControl
+                refreshing={refreshing}
+                onRefresh={onRefresh}
+                colors={["#539DF3"]}
+                tintColor="#539DF3"
+                title="Actualizando..."
+                titleColor="#666"
+              />
+            }
             onEndReached={handleLoadMore}
-            onEndReachedThreshold={0.5} // Cargar cuando esté a medio item del final
-            ListFooterComponent={renderFooter} // Muestra el spinner
+            onEndReachedThreshold={0.5}
+            ListFooterComponent={renderFooter}
             renderItem={({ item }) => (
               <ProductoItem
                 item={item}
@@ -1178,7 +1212,6 @@ const resetearFiltros = () => {
               />
             )}
             ListEmptyComponent={
-              // No mostrar 'empty state' si solo está cargando inicialmente
               !cargandoInicial ? (
                 <View style={styles.emptyState}>
                   <Icon name="inventory" size={60} color="#ccc" />
@@ -1192,8 +1225,17 @@ const resetearFiltros = () => {
                       ? "Intenta con otros filtros"
                       : "Comienza agregando tu primer producto"}
                   </Text>
+
+                  {/* ✅ AÑADIDO: Botón de refresh en empty state */}
+                  <TouchableOpacity
+                    style={styles.refreshButton}
+                    onPress={onRefresh}
+                  >
+                    <Icon name="refresh" size={20} color="#539DF3" />
+                    <Text style={styles.refreshButtonText}>Actualizar</Text>
+                  </TouchableOpacity>
                 </View>
-              ) : null // No mostrar nada si está en carga inicial
+              ) : null
             }
           />
         )}
@@ -1475,17 +1517,17 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     alignItems: "flex-start",
     marginBottom: 20,
-    paddingTop: 10,
+    paddingTop: 1,
   },
   title: {
-    fontSize: 32,
+    fontSize: 30,
     fontFamily: "Poppins_700Bold",
     fontWeight: "700",
     color: "#000000ff",
-    marginBottom: 4,
+    marginBottom: 1,
   },
   subtitle: {
-    fontSize: 16,
+    fontSize: 15,
     fontFamily: "Poppins_400Regular",
     color: "#666",
     fontWeight: "400",
@@ -1505,7 +1547,6 @@ const styles = StyleSheet.create({
     fontWeight: "500",
     marginRight: 6,
   },
-
   // Top Bar
   topBar: {
     flexDirection: "row",
@@ -1898,7 +1939,6 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontFamily: "Poppins_700Bold",
   },
-
   // Empty State
   emptyState: {
     alignItems: "center",
@@ -1919,7 +1959,6 @@ const styles = StyleSheet.create({
     textAlign: "center",
     lineHeight: 20,
   },
-
   // Form Select
   selectLabel: {
     fontSize: 12,
@@ -1951,7 +1990,6 @@ const styles = StyleSheet.create({
   optionChipTextSelected: {
     color: "#fff",
   },
-
   // Filter Actions
   filterActions: {
     flexDirection: "row",
@@ -1961,7 +1999,6 @@ const styles = StyleSheet.create({
     gap: 12,
     backgroundColor: "#fff",
   },
-
   // Info Text
   requiredNote: {
     fontSize: 12,
@@ -1981,7 +2018,6 @@ const styles = StyleSheet.create({
     marginBottom: 8,
     marginHorizontal: 20,
   },
-
   detailExtra: {
     marginBottom: 12,
     padding: 8,
@@ -2066,5 +2102,23 @@ const styles = StyleSheet.create({
     marginTop: 10,
     color: "#666",
     fontSize: 16,
+  },
+  refreshButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#f8fafc",
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: "#e1e5e9",
+    marginTop: 16,
+    gap: 8,
+  },
+  refreshButtonText: {
+    color: "#539DF3",
+    fontWeight: "600",
+    fontSize: 14,
+    fontFamily: "Poppins_500Medium",
   },
 });

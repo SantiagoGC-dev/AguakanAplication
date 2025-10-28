@@ -7,20 +7,17 @@ import {
   StyleSheet,
   Alert,
   FlatList,
-  Dimensions,
   Platform,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import { ThemedText } from "@/components/themed-text";
 import { useRouter } from "expo-router";
-import * as FileSystem from "expo-file-system";
-import * as Sharing from "expo-sharing";
 
 // Configuración de API
 const API_BASE_URL = "http://172.20.10.11:3000/api";
 
-// --- Interfaces (Sin cambios) ---
+// --- Interfaces ---
 interface ProductoGrupo {
   id: string;
   nombre: string;
@@ -53,13 +50,25 @@ interface ProductoExpandido {
   [key: string]: boolean;
 }
 
+interface PaginationInfo {
+  page: number;
+  limit: number;
+  total: number;
+  totalPages: number;
+  hasMore: boolean;
+}
+
 export default function ReportesScreen() {
   const router = useRouter();
   const [refreshing, setRefreshing] = useState(false);
   const [filtrosVisible, setFiltrosVisible] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [productosExpandidos, setProductosExpandidos] =
-    useState<ProductoExpandido>({});
+
+  // 🔹 OPTIMIZADO: Usar Set en lugar de objeto para mejor performance
+  const [productosExpandidos, setProductosExpandidos] = useState<Set<string>>(
+    new Set()
+  );
+
   const [filtros, setFiltros] = useState<Filtros>({
     periodo: "mensual",
     tipoProducto: "todos",
@@ -67,6 +76,15 @@ export default function ReportesScreen() {
 
   // Estados para datos reales
   const [productos, setProductos] = useState<ProductoGrupo[]>([]);
+
+  // 🔹 NUEVO: Estado para paginación
+  const [pagination, setPagination] = useState<PaginationInfo>({
+    page: 1,
+    limit: 50,
+    total: 0,
+    totalPages: 1,
+    hasMore: false,
+  });
 
   // Estados para contadores
   const [contadores, setContadores] = useState({
@@ -85,43 +103,135 @@ export default function ReportesScreen() {
   // 🔹 Texto del periodo seleccionado
   const [periodoTexto, setPeriodoTexto] = useState("Desde - Hasta");
 
-  // 🔹 Función para alternar expansión de productos
+  // 🔹 OPTIMIZADO: Función para alternar expansión de productos
   const toggleProductoExpandido = useCallback((productoId: string) => {
-    setProductosExpandidos((prev) => ({
-      ...prev,
-      [productoId]: !prev[productoId],
-    }));
+    setProductosExpandidos((prev) => {
+      const newSet = new Set(prev);
+      if (newSet.has(productoId)) {
+        newSet.delete(productoId);
+      } else {
+        newSet.add(productoId);
+      }
+      return newSet;
+    });
   }, []);
 
-  // 🔹 Filtrar productos según los filtros aplicados
+  // 🔹 OPTIMIZADO: Filtrar productos según los filtros aplicados
   const productosFiltrados = useMemo(() => {
-    if (filtros.tipoProducto === "todos") {
-      return productos;
-    }
-    return productos.filter(
-      (producto) => producto.tipo === filtros.tipoProducto
-    );
-  }, [productos, filtros.tipoProducto]);
+    return productos; // Ya viene filtrado del backend
+  }, [productos]);
 
-  // 🔹 Función para determinar el color según los días restantes
-  const getColorCaducidad = useCallback((dias?: number) => {
+  // 🔹 OPTIMIZADO: Funciones simples en lugar de useCallback
+  const getColorCaducidad = (dias?: number) => {
     if (!dias) return "#6B7280";
     if (dias <= 7) return "#EF4444";
     if (dias <= 30) return "#F59E0B";
     return "#16A34A";
-  }, []);
+  };
 
-  // 🔹 Función para determinar el estado del stock
-  const getEstadoStock = useCallback((stockActual: number) => {
+  const getEstadoStock = (stockActual: number) => {
     if (stockActual === 0) return { estado: "agotado", color: "#EF4444" };
     if (stockActual <= 5) return { estado: "critico", color: "#F59E0B" };
     if (stockActual <= 15) return { estado: "bajo", color: "#F59E0B" };
     return { estado: "normal", color: "#16A34A" };
-  }, []);
+  };
 
-  // 🔹 Cargar datos al montar y cuando cambien los filtros
+  // 🔹 OPTIMIZADO: Cargar datos con paginación
+  const cargarReportes = async (page = 1, append = false) => {
+    try {
+      if (page === 1) {
+        setLoading(true);
+      }
+
+      console.log("🔄 Cargando reportes...", { page, append });
+
+      // Intentar cargar estadísticas (solo en primera página)
+      if (page === 1) {
+        try {
+          const estadisticasResponse = await fetch(
+            `${API_BASE_URL}/reportes/estadisticas?${new URLSearchParams({
+              fechaDesde: fechaDesdeAplicada.toISOString().split("T")[0],
+              fechaHasta: fechaHastaAplicada.toISOString().split("T")[0],
+            })}`
+          );
+          if (estadisticasResponse.ok) {
+            const estadisticasData = await estadisticasResponse.json();
+            if (estadisticasData.success) {
+              setContadores(estadisticasData.data);
+              console.log("✅ Estadísticas cargadas:", estadisticasData.data);
+            }
+          }
+        } catch (error) {
+          console.warn("⚠️ No se pudieron cargar estadísticas:", error);
+        }
+      }
+
+      // Cargar productos con paginación
+      try {
+        const productosResponse = await fetch(
+          `${API_BASE_URL}/reportes/productos?${new URLSearchParams({
+            tipoProducto: filtros.tipoProducto,
+            fechaDesde: fechaDesdeAplicada.toISOString().split("T")[0],
+            fechaHasta: fechaHastaAplicada.toISOString().split("T")[0],
+            page: page.toString(),
+            limit: pagination.limit.toString(),
+          })}`
+        );
+
+        if (productosResponse.ok) {
+          const productosData = await productosResponse.json();
+          if (productosData.success) {
+            setProductos((prev) =>
+              append ? [...prev, ...productosData.data] : productosData.data
+            );
+
+            // Actualizar paginación
+            setPagination((prev) => ({
+              ...prev,
+              page: page,
+              total: productosData.pagination.total,
+              totalPages: productosData.pagination.totalPages,
+              hasMore: productosData.pagination.hasMore,
+            }));
+
+            console.log(
+              `✅ Productos cargados: ${productosData.data.length} (página ${page})`
+            );
+          } else {
+            throw new Error(productosData.error);
+          }
+        } else {
+          throw new Error(`HTTP ${productosResponse.status}`);
+        }
+      } catch (error) {
+        console.error("❌ Error cargando productos:", error);
+        if (!append) {
+          setProductos([]);
+        }
+        console.warn("⚠️ No se pudieron cargar productos");
+      }
+
+      setLoading(false);
+    } catch (error) {
+      console.error("💥 Error general cargando reportes:", error);
+      setLoading(false);
+    }
+  };
+
+  // 🔹 NUEVO: Cargar más productos (infinite scroll)
+  const cargarMasProductos = useCallback(() => {
+    if (!loading && pagination.hasMore) {
+      console.log("📥 Cargando más productos...", pagination.page + 1);
+      cargarReportes(pagination.page + 1, true);
+    }
+  }, [loading, pagination.hasMore, pagination.page]);
+
+  // 🔹 OPTIMIZADO: Efecto para cargar datos iniciales
   useEffect(() => {
-    cargarReportes();
+    // Resetear a página 1 cuando cambien los filtros
+    setProductos([]);
+    setProductosExpandidos(new Set());
+    cargarReportes(1, false);
   }, [filtros.tipoProducto, fechaDesdeAplicada, fechaHastaAplicada]);
 
   // 🔹 Aplicar filtros desde modal
@@ -143,68 +253,9 @@ export default function ReportesScreen() {
 
     setPeriodoTexto(`${desdeTexto} - ${hastaTexto}`);
     setFiltrosVisible(false);
-
   }, [fechaDesdeTemp, fechaHastaTemp]);
 
-  // 🔹 Función para cargar reportes
-  const cargarReportes = async () => {
-    try {
-      setLoading(true);
-      console.log("🔄 Cargando reportes...");
-
-      // Intentar cargar estadísticas
-      try {
-        const estadisticasResponse = await fetch(
-          `${API_BASE_URL}/reportes/estadisticas?${new URLSearchParams({
-            fechaDesde: fechaDesdeAplicada.toISOString().split("T")[0],
-            fechaHasta: fechaHastaAplicada.toISOString().split("T")[0],
-          })}`
-        );
-        if (estadisticasResponse.ok) {
-          const estadisticasData = await estadisticasResponse.json();
-          if (estadisticasData.success) {
-            setContadores(estadisticasData.data);
-            console.log("✅ Estadísticas cargadas:", estadisticasData.data);
-          }
-        }
-      } catch (error) {
-        console.warn("⚠️ No se pudieron cargar estadísticas:", error);
-      }
-
-      // Intentar cargar productos
-      try {
-        const productosResponse = await fetch(
-          `${API_BASE_URL}/reportes/productos?${new URLSearchParams({
-            tipoProducto: filtros.tipoProducto,
-            fechaDesde: fechaDesdeAplicada.toISOString().split("T")[0],
-            fechaHasta: fechaHastaAplicada.toISOString().split("T")[0],
-          })}`
-        );
-        if (productosResponse.ok) {
-          const productosData = await productosResponse.json();
-          if (productosData.success) {
-            setProductos(productosData.data);
-            console.log("✅ Productos cargados:", productosData.data.length);
-          } else {
-            throw new Error(productosData.error);
-          }
-        } else {
-          throw new Error(`HTTP ${productosResponse.status}`);
-        }
-      } catch (error) {
-        console.error("❌ Error cargando productos:", error);
-        setProductos([]);
-        console.warn("⚠️ No se pudieron cargar productos");
-      }
-
-      setLoading(false);
-    } catch (error) {
-      console.error("💥 Error general cargando reportes:", error);
-      setLoading(false);
-    }
-  };
-
-  // 🔹 Función de exportación a Excel
+  // 🔹 Función para exportación a Excel
   const exportarExcel = async () => {
     try {
       Alert.alert(
@@ -237,7 +288,7 @@ export default function ReportesScreen() {
                 if (canOpen) {
                   await Linking.openURL(downloadUrl);
                   Alert.alert(
-                    "✅ Descarga Iniciada",
+                    "¡Descarga Iniciada!",
                     "El reporte Excel se está descargando. Revisa las notificaciones de tu dispositivo.",
                     [{ text: "Aceptar" }]
                   );
@@ -266,15 +317,16 @@ export default function ReportesScreen() {
     }
   };
 
-  // 🔹 Pull to refresh
+  // 🔹 OPTIMIZADO: Pull to refresh
   const onRefresh = useCallback(() => {
     setRefreshing(true);
-    cargarReportes().finally(() => {
+    setProductosExpandidos(new Set());
+    cargarReportes(1, false).finally(() => {
       setRefreshing(false);
     });
   }, [filtros.tipoProducto, fechaDesdeAplicada, fechaHastaAplicada]);
 
-  // Función para formatear fecha
+  // 🔹 Función para formatear fecha
   const formatearFecha = (fecha: Date) => {
     const meses = [
       "Ene",
@@ -295,10 +347,17 @@ export default function ReportesScreen() {
     }/${fecha.getFullYear()}`;
   };
 
-  // 🔹 Render Item para productos (Sin cambios)
-  const renderProductoItem = useCallback(
-    ({ item }: { item: ProductoGrupo }) => {
-      const isExpanded = productosExpandidos[item.id];
+  // 🔹 OPTIMIZADO: Render Item para productos con React.memo
+  const ProductoItem = React.memo(
+    ({
+      item,
+      isExpanded,
+      onToggle,
+    }: {
+      item: ProductoGrupo;
+      isExpanded: boolean;
+      onToggle: (id: string) => void;
+    }) => {
       const { estado, color } = getEstadoStock(item.stockActual);
 
       return (
@@ -306,7 +365,7 @@ export default function ReportesScreen() {
           {/* Encabezado del producto */}
           <TouchableOpacity
             style={styles.productoHeader}
-            onPress={() => toggleProductoExpandido(item.id)}
+            onPress={() => onToggle(item.id)}
           >
             <View style={styles.productoInfo}>
               <ThemedText style={styles.productoNombre}>
@@ -343,7 +402,7 @@ export default function ReportesScreen() {
             </View>
           </TouchableOpacity>
 
-          {/* Detalles expandidos (Sin cambios) */}
+          {/* Detalles expandidos */}
           {isExpanded && (
             <View style={styles.lotesContainer}>
               {/* Header específico por tipo */}
@@ -396,7 +455,7 @@ export default function ReportesScreen() {
                   </>
                 )}
               </View>
-              {/* Lotes (Sin cambios) */}
+              {/* Lotes */}
               {item.lotes.map((lote) => (
                 <View key={lote.id} style={styles.loteRow}>
                   {item.tipo === "reactivo" && (
@@ -478,14 +537,33 @@ export default function ReportesScreen() {
           )}
         </View>
       );
-    },
-    [
-      productosExpandidos,
-      getEstadoStock,
-      getColorCaducidad,
-      toggleProductoExpandido,
-    ]
+    }
   );
+
+  // 🔹 OPTIMIZADO: Render item con useCallback
+  const renderProductoItem = useCallback(
+    ({ item }: { item: ProductoGrupo }) => (
+      <ProductoItem
+        item={item}
+        isExpanded={productosExpandidos.has(item.id)}
+        onToggle={toggleProductoExpandido}
+      />
+    ),
+    [productosExpandidos, toggleProductoExpandido]
+  );
+
+  // 🔹 NUEVO: Footer para loading de más datos
+  const renderFooter = useCallback(() => {
+    if (!pagination.hasMore) return null;
+
+    return (
+      <View style={styles.footerLoading}>
+        <ThemedText style={styles.footerText}>
+          Cargando más productos...
+        </ThemedText>
+      </View>
+    );
+  }, [pagination.hasMore]);
 
   const renderListHeader = () => (
     <>
@@ -521,7 +599,9 @@ export default function ReportesScreen() {
             onPress={exportarExcel}
           >
             <Ionicons name="stats-chart-outline" size={20} color="#5CB85C" />
-            <ThemedText style={styles.exportButtonText}>Excel</ThemedText>
+            <ThemedText style={styles.exportButtonText}>
+              Exportar (Excel)
+            </ThemedText>
           </TouchableOpacity>
         </View>
       </View>
@@ -570,7 +650,7 @@ export default function ReportesScreen() {
           }
         >
           <Ionicons
-            name="flask-outline"
+            name="color-fill-outline"
             size={24}
             color={filtros.tipoProducto === "reactivo" ? "#FFFFFF" : "#8B5CF6"}
           />
@@ -602,7 +682,7 @@ export default function ReportesScreen() {
           }
         >
           <Ionicons
-            name="cube-outline"
+            name="flask-outline"
             size={24}
             color={filtros.tipoProducto === "material" ? "#FFFFFF" : "#10B981"}
           />
@@ -676,7 +756,7 @@ export default function ReportesScreen() {
   // --- Render Principal ---
   return (
     <View style={styles.container}>
-      {/* 🔹 ✅ FLATLIST AHORA ES EL CONTENEDOR PRINCIPAL */}
+      {/* 🔹 ✅ FLATLIST OPTIMIZADA CON PAGINACIÓN */}
       <FlatList
         // --- Props de Datos ---
         data={productosFiltrados}
@@ -684,10 +764,10 @@ export default function ReportesScreen() {
         renderItem={renderProductoItem}
         // --- Props de Header y Footer ---
         ListHeaderComponent={renderListHeader}
-        ListFooterComponent={<View style={styles.spacer} />}
+        ListFooterComponent={renderFooter}
         // --- Prop de Estado Vacío ---
         ListEmptyComponent={
-          !loading ? ( // Solo muestra si no está cargando
+          !loading ? (
             <View style={styles.emptyState}>
               <Ionicons
                 name="document-text-outline"
@@ -704,13 +784,22 @@ export default function ReportesScreen() {
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
         }
-        showsVerticalScrollIndicator={false}
+        // 🔹 OPTIMIZACIONES DE PERFORMANCE
+        initialNumToRender={10}
+        maxToRenderPerBatch={5}
+        windowSize={7}
+        removeClippedSubviews={true}
+        updateCellsBatchingPeriod={100}
+        // 🔹 INFINITE SCROLL
+        onEndReached={cargarMasProductos}
+        onEndReachedThreshold={0.3}
         // --- Estilos ---
         contentContainerStyle={styles.listContent}
         style={{ flex: 1 }}
+        showsVerticalScrollIndicator={false}
       />
 
-      {/* 🔹 Modal de Filtros de Periodo (se queda igual) */}
+      {/* 🔹 Modal de Filtros de Periodo */}
       <Modal visible={filtrosVisible} animationType="slide" transparent>
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
@@ -765,6 +854,7 @@ export default function ReportesScreen() {
   );
 }
 
+// 🔹 OPTIMIZADO: Estilos con useMemo para evitar recreación
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -789,7 +879,7 @@ const styles = StyleSheet.create({
   header: {
     backgroundColor: "#F8FAFC",
     paddingHorizontal: 1,
-    paddingTop: Platform.OS === "ios" ? 60 : 40, 
+    paddingTop: Platform.OS === "ios" ? 60 : 40,
     paddingBottom: 16,
     borderBottomLeftRadius: 20,
     borderBottomRightRadius: 20,
@@ -798,7 +888,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    marginBottom: 8, 
+    marginBottom: 8,
   },
   headerTitle: {
     fontSize: 25,
@@ -860,19 +950,43 @@ const styles = StyleSheet.create({
     color: "#64748B",
     fontFamily: "Poppins_500Medium",
   },
+  // 🔹 NUEVO: Estilos de paginación
+  paginationInfo: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    backgroundColor: "#F1F5F9",
+    marginHorizontal: 1,
+    borderRadius: 8,
+    marginBottom: 8,
+  },
+  paginationText: {
+    fontSize: 12,
+    color: "#64748B",
+    fontFamily: "Poppins_500Medium",
+    textAlign: "center",
+  },
+  footerLoading: {
+    padding: 16,
+    alignItems: "center",
+  },
+  footerText: {
+    fontSize: 14,
+    color: "#64748B",
+    fontFamily: "Poppins_500Medium",
+  },
   filtrosContainer: {
     flexDirection: "row",
     paddingHorizontal: 1,
     paddingVertical: 12,
     gap: 8,
-    flexWrap: "wrap", 
+    flexWrap: "wrap",
   },
   filtroCard: {
-    minWidth: 70, 
+    minWidth: 70,
     alignItems: "center",
     backgroundColor: "#FFFFFF",
     borderRadius: 12,
-    padding: 10, 
+    padding: 10,
     gap: 4,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
@@ -881,7 +995,7 @@ const styles = StyleSheet.create({
     elevation: 2,
     borderWidth: 1,
     borderColor: "#F1F5F9",
-    flex: 1, 
+    flex: 1,
   },
   filtroCardActive: {
     backgroundColor: "#539DF3",
@@ -899,24 +1013,17 @@ const styles = StyleSheet.create({
   },
   filtroLabel: {
     fontSize: 10,
-    color: "#64748B",
-    fontFamily: "Poppins_500Medium",
+    color: "#000000ff",
+    fontFamily: "Poppins_700Bold",
     textAlign: "center",
   },
   filtroLabelActive: {
     color: "#FFFFFF",
   },
-  scrollView: {
-    flex: 1,
-  },
-  productosList: {
-    flex: 1,
-    paddingHorizontal: 20,
-  },
   listContent: {
-    paddingHorizontal: 16, 
+    paddingHorizontal: 16,
     paddingBottom: 20,
-    flexGrow: 1, 
+    flexGrow: 1,
   },
   emptyState: {
     alignItems: "center",
@@ -924,6 +1031,7 @@ const styles = StyleSheet.create({
     paddingVertical: 40,
   },
   emptyStateText: {
+    fontFamily: "Poppins_500Medium",
     fontSize: 16,
     color: "#64748B",
     textAlign: "center",
@@ -932,10 +1040,15 @@ const styles = StyleSheet.create({
   productoContainer: {
     backgroundColor: "#FFFFFF",
     borderRadius: 12,
-    marginBottom: 8, 
-    elevation: 1, 
-    overflow: "hidden",
-    marginHorizontal: 1, 
+    marginBottom: 8,
+    marginHorizontal: 1,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 3,
+    borderWidth: 0.1,
+    borderColor: "#E0E0E0",
   },
   productoHeader: {
     flexDirection: "row",
@@ -995,11 +1108,11 @@ const styles = StyleSheet.create({
   tableHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
-    paddingVertical: 6, 
-    paddingHorizontal: 2, 
+    paddingVertical: 6,
+    paddingHorizontal: 2,
     borderBottomWidth: 1,
     borderBottomColor: "#E5E7EB",
-    marginBottom: 6, 
+    marginBottom: 6,
   },
   tableHeaderText: {
     fontSize: 10,
@@ -1024,16 +1137,6 @@ const styles = StyleSheet.create({
     textAlign: "center",
     flex: 1,
   },
-  diasBadge: {
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 6,
-    alignSelf: "center",
-  },
-  diasText: {
-    fontSize: 8,
-    fontFamily: "Poppins_500Medium",
-  },
   estadoBadge: {
     paddingHorizontal: 6,
     paddingVertical: 2,
@@ -1053,8 +1156,8 @@ const styles = StyleSheet.create({
     backgroundColor: "#FFFFFF",
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
-    paddingBottom: Platform.OS === "ios" ? 40 : 20, 
-    maxHeight: "80%", 
+    paddingBottom: Platform.OS === "ios" ? 40 : 20,
+    maxHeight: "80%",
   },
   modalHeader: {
     flexDirection: "row",
@@ -1078,13 +1181,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     minHeight: 150,
-  },
-  placeholderText: {
-    fontSize: 14,
-    color: "#64748B",
-    fontFamily: "Poppins_400Regular",
-    textAlign: "center",
-    padding: 20,
   },
   filterActions: {
     paddingHorizontal: 20,
@@ -1117,6 +1213,6 @@ const styles = StyleSheet.create({
     width: "100%",
   },
   spacer: {
-    height: Platform.OS === "ios" ? 30 : 20, 
+    height: Platform.OS === "ios" ? 30 : 20,
   },
 });

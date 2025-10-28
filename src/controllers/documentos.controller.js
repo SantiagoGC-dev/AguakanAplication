@@ -37,6 +37,7 @@ export const uploadDocumento = async (req, res) => {
   try {
     console.log("📤 Subiendo documento:", req.params);
     
+    // ✅ VALIDACIÓN MEJORADA
     if (!req.file) {
       return res.status(400).json({ 
         success: false, 
@@ -46,12 +47,15 @@ export const uploadDocumento = async (req, res) => {
 
     const { id_producto, id_tipo_documento } = req.params;
     
-    console.log("📄 Archivo recibido:", {
-      originalname: req.file.originalname,
-      filename: req.file.filename,
-      size: req.file.size,
-      mimetype: req.file.mimetype
-    });
+    // Validar que los parámetros sean números válidos
+    if (!id_producto || isNaN(id_producto) || !id_tipo_documento || isNaN(id_tipo_documento)) {
+      // Eliminar archivo si los parámetros son inválidos
+      fs.unlinkSync(req.file.path);
+      return res.status(400).json({
+        success: false,
+        error: "Parámetros inválidos"
+      });
+    }
 
     // Guardar en BD
     const [result] = await pool.query(
@@ -134,6 +138,71 @@ export const getDocumentosByProducto = async (req, res) => {
     res.status(500).json({ 
       success: false,
       error: "Error al obtener documentos: " + error.message 
+    });
+  }
+};
+// Eliminar documento
+export const deleteDocumento = async (req, res) => {
+  try {
+    const { id_documento } = req.params;
+    
+    console.log("🗑️ Eliminando documento:", id_documento);
+
+    // 1. Primero obtener información del documento para eliminar el archivo físico
+    const [documento] = await pool.query(
+      `SELECT nombre_archivo FROM documentoreactivo WHERE id_documento = ?`,
+      [id_documento]
+    );
+
+    if (documento.length === 0) {
+      return res.status(404).json({
+        success: false,
+        error: "Documento no encontrado"
+      });
+    }
+
+    const nombreArchivo = documento[0].nombre_archivo;
+    const filePath = `./uploads/${nombreArchivo}`;
+
+    // 2. Eliminar de la base de datos
+    const [result] = await pool.query(
+      `DELETE FROM documentoreactivo WHERE id_documento = ?`,
+      [id_documento]
+    );
+
+    if (result.affectedRows === 0) {
+      return res.status(404).json({
+        success: false,
+        error: "No se pudo eliminar el documento"
+      });
+    }
+
+    // 3. Eliminar el archivo físico
+    try {
+      if (fs.existsSync(filePath)) {
+        fs.unlinkSync(filePath);
+        console.log("✅ Archivo físico eliminado:", filePath);
+      } else {
+        console.warn("⚠️ Archivo físico no encontrado:", filePath);
+      }
+    } catch (fileError) {
+      console.error("❌ Error eliminando archivo físico:", fileError);
+      // No retornamos error aquí porque ya se eliminó de la BD
+    }
+
+    console.log("✅ Documento eliminado correctamente, ID:", id_documento);
+
+    res.json({
+      success: true,
+      message: "Documento eliminado correctamente",
+      id_documento: parseInt(id_documento)
+    });
+
+  } catch (error) {
+    console.error("❌ Error al eliminar documento:", error);
+    res.status(500).json({
+      success: false,
+      error: "Error al eliminar documento: " + error.message
     });
   }
 };
