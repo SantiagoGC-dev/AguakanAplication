@@ -15,7 +15,7 @@ import { ThemedText } from "@/components/themed-text";
 import { useRouter } from "expo-router";
 
 // Configuración de API
-const API_BASE_URL = "http://172.20.10.11:3000/api";
+const API_BASE_URL = "http://192.168.0.169:3000/api";
 
 // --- Interfaces ---
 interface ProductoGrupo {
@@ -77,7 +77,7 @@ export default function ReportesScreen() {
   // Estados para datos reales
   const [productos, setProductos] = useState<ProductoGrupo[]>([]);
 
-  // 🔹 NUEVO: Estado para paginación
+  // NUEVO: Estado para paginación
   const [pagination, setPagination] = useState<PaginationInfo>({
     page: 1,
     limit: 50,
@@ -94,16 +94,16 @@ export default function ReportesScreen() {
     equipo: 0,
   });
 
-  // 🔹 Estados para selector de fechas
+  // Estados para selector de fechas
   const [fechaDesdeTemp, setFechaDesdeTemp] = useState(new Date());
   const [fechaHastaTemp, setFechaHastaTemp] = useState(new Date());
   const [fechaDesdeAplicada, setFechaDesdeAplicada] = useState(new Date());
   const [fechaHastaAplicada, setFechaHastaAplicada] = useState(new Date());
 
-  // 🔹 Texto del periodo seleccionado
+  //  Texto del periodo seleccionado
   const [periodoTexto, setPeriodoTexto] = useState("Desde - Hasta");
 
-  // 🔹 OPTIMIZADO: Función para alternar expansión de productos
+  //  Función para alternar expansión de productos
   const toggleProductoExpandido = useCallback((productoId: string) => {
     setProductosExpandidos((prev) => {
       const newSet = new Set(prev);
@@ -116,18 +116,11 @@ export default function ReportesScreen() {
     });
   }, []);
 
-  // 🔹 OPTIMIZADO: Filtrar productos según los filtros aplicados
+  //  Filtrar productos según los filtros aplicados
   const productosFiltrados = useMemo(() => {
     return productos; // Ya viene filtrado del backend
   }, [productos]);
 
-  // 🔹 OPTIMIZADO: Funciones simples en lugar de useCallback
-  const getColorCaducidad = (dias?: number) => {
-    if (!dias) return "#6B7280";
-    if (dias <= 7) return "#EF4444";
-    if (dias <= 30) return "#F59E0B";
-    return "#16A34A";
-  };
 
   const getEstadoStock = (stockActual: number) => {
     if (stockActual === 0) return { estado: "agotado", color: "#EF4444" };
@@ -136,7 +129,7 @@ export default function ReportesScreen() {
     return { estado: "normal", color: "#16A34A" };
   };
 
-  // 🔹 OPTIMIZADO: Cargar datos con paginación
+  // Cargar datos con paginación
   const cargarReportes = async (page = 1, append = false) => {
     try {
       if (page === 1) {
@@ -218,7 +211,7 @@ export default function ReportesScreen() {
     }
   };
 
-  // 🔹 NUEVO: Cargar más productos (infinite scroll)
+  // Cargar más productos (infinite scroll)
   const cargarMasProductos = useCallback(() => {
     if (!loading && pagination.hasMore) {
       console.log("📥 Cargando más productos...", pagination.page + 1);
@@ -226,7 +219,7 @@ export default function ReportesScreen() {
     }
   }, [loading, pagination.hasMore, pagination.page]);
 
-  // 🔹 OPTIMIZADO: Efecto para cargar datos iniciales
+  //  Efecto para cargar datos iniciales
   useEffect(() => {
     // Resetear a página 1 cuando cambien los filtros
     setProductos([]);
@@ -234,7 +227,7 @@ export default function ReportesScreen() {
     cargarReportes(1, false);
   }, [filtros.tipoProducto, fechaDesdeAplicada, fechaHastaAplicada]);
 
-  // 🔹 Aplicar filtros desde modal
+  // Aplicar filtros desde modal
   const aplicarFiltrosDesdeModal = useCallback(() => {
     if (fechaHastaTemp < fechaDesdeTemp) {
       Alert.alert(
@@ -255,7 +248,7 @@ export default function ReportesScreen() {
     setFiltrosVisible(false);
   }, [fechaDesdeTemp, fechaHastaTemp]);
 
-  // 🔹 Función para exportación a Excel
+  // Función para exportación a Excel
   const exportarExcel = async () => {
     try {
       Alert.alert(
@@ -317,7 +310,7 @@ export default function ReportesScreen() {
     }
   };
 
-  // 🔹 OPTIMIZADO: Pull to refresh
+  // OPTIMIZADO: Pull to refresh
   const onRefresh = useCallback(() => {
     setRefreshing(true);
     setProductosExpandidos(new Set());
@@ -326,7 +319,7 @@ export default function ReportesScreen() {
     });
   }, [filtros.tipoProducto, fechaDesdeAplicada, fechaHastaAplicada]);
 
-  // 🔹 Función para formatear fecha
+  // Función para formatear fecha
   const formatearFecha = (fecha: Date) => {
     const meses = [
       "Ene",
@@ -347,7 +340,7 @@ export default function ReportesScreen() {
     }/${fecha.getFullYear()}`;
   };
 
-  // 🔹 OPTIMIZADO: Render Item para productos con React.memo
+  // OPTIMIZADO: Render Item para productos con React.memo
   const ProductoItem = React.memo(
     ({
       item,
@@ -540,7 +533,7 @@ export default function ReportesScreen() {
     }
   );
 
-  // 🔹 OPTIMIZADO: Render item con useCallback
+  // OPTIMIZADO: Render item con useCallback
   const renderProductoItem = useCallback(
     ({ item }: { item: ProductoGrupo }) => (
       <ProductoItem
@@ -552,7 +545,7 @@ export default function ReportesScreen() {
     [productosExpandidos, toggleProductoExpandido]
   );
 
-  // 🔹 NUEVO: Footer para loading de más datos
+  // NUEVO: Footer para loading de más datos
   const renderFooter = useCallback(() => {
     if (!pagination.hasMore) return null;
 
@@ -567,7 +560,7 @@ export default function ReportesScreen() {
 
   const renderListHeader = () => (
     <>
-      {/* 🔹 Header */}
+      {/* Header */}
       <View style={styles.header}>
         <View style={styles.headerTop}>
           <ThemedText type="title" style={styles.headerTitle}>
@@ -585,14 +578,14 @@ export default function ReportesScreen() {
           </View>
         </View>
 
-        {/* 🔹 Periodo actual */}
+        {/* Periodo actual */}
         <View style={styles.periodoContainer}>
           <ThemedText style={styles.periodoText}>
             Periodo: {periodoTexto}
           </ThemedText>
         </View>
 
-        {/* 🔹 Botones de exportar */}
+        {/* Botones de exportar */}
         <View style={styles.exportButtons}>
           <TouchableOpacity
             style={styles.exportButtonBig}
@@ -606,7 +599,7 @@ export default function ReportesScreen() {
         </View>
       </View>
 
-      {/* 🔹 Filtros por tipo de producto */}
+      {/* Filtros por tipo de producto */}
       <View style={styles.filtrosContainer}>
         <TouchableOpacity
           style={[
@@ -756,7 +749,7 @@ export default function ReportesScreen() {
   // --- Render Principal ---
   return (
     <View style={styles.container}>
-      {/* 🔹 ✅ FLATLIST OPTIMIZADA CON PAGINACIÓN */}
+      {/* FLATLIST OPTIMIZADA CON PAGINACIÓN */}
       <FlatList
         // --- Props de Datos ---
         data={productosFiltrados}
@@ -784,13 +777,13 @@ export default function ReportesScreen() {
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
         }
-        // 🔹 OPTIMIZACIONES DE PERFORMANCE
+        // OPTIMIZACIONES DE PERFORMANCE
         initialNumToRender={10}
         maxToRenderPerBatch={5}
         windowSize={7}
         removeClippedSubviews={true}
         updateCellsBatchingPeriod={100}
-        // 🔹 INFINITE SCROLL
+        // INFINITE SCROLL
         onEndReached={cargarMasProductos}
         onEndReachedThreshold={0.3}
         // --- Estilos ---
@@ -799,7 +792,7 @@ export default function ReportesScreen() {
         showsVerticalScrollIndicator={false}
       />
 
-      {/* 🔹 Modal de Filtros de Periodo */}
+      {/* Modal de Filtros de Periodo */}
       <Modal visible={filtrosVisible} animationType="slide" transparent>
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
@@ -854,7 +847,7 @@ export default function ReportesScreen() {
   );
 }
 
-// 🔹 OPTIMIZADO: Estilos con useMemo para evitar recreación
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -950,7 +943,6 @@ const styles = StyleSheet.create({
     color: "#64748B",
     fontFamily: "Poppins_500Medium",
   },
-  // 🔹 NUEVO: Estilos de paginación
   paginationInfo: {
     paddingHorizontal: 16,
     paddingVertical: 8,

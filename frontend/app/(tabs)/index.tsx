@@ -12,6 +12,7 @@ import { Image } from "expo-image";
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import { ThemedText } from "@/components/themed-text";
 import { useRouter } from "expo-router";
+import { useAuth } from "../../context/AuthContext";
 
 interface DashboardStats {
   totalProductos: number;
@@ -61,7 +62,7 @@ interface Usuario {
   nombre_completo: string;
   correo: string;
   id_rol: number;
-  rol: string;
+  rol: number;
   id_laboratorio: number;
   laboratorio: string;
   ubicacion_laboratorio: string;
@@ -69,7 +70,7 @@ interface Usuario {
 }
 
 // Configuración de API
-const API_BASE_URL = "http://172.20.10.11:3000/api";
+const API_BASE_URL = "http://192.168.0.169:3000/api";
 
 // Darle formato a la fecha
 function formatDate(dateString: string) {
@@ -89,7 +90,7 @@ export default function HomeScreen() {
   const router = useRouter();
 
   // Estados
-  const [userData, setUserData] = useState<Usuario | null>(null);
+  const { user: authUser } = useAuth();
   const [userName, setUserName] = useState("Usuario");
   const [userRole, setUserRole] = useState("Laboratorista");
   const [showModal, setShowModal] = useState(false);
@@ -109,7 +110,7 @@ export default function HomeScreen() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
-  // 🔹 Función helper para hacer peticiones fetch
+  // Función helper para hacer peticiones fetch
   const fetchData = async (endpoint: string) => {
     try {
       const response = await fetch(`${API_BASE_URL}${endpoint}`);
@@ -123,35 +124,7 @@ export default function HomeScreen() {
     }
   };
 
-  const fetchUserData = async () => {
-    try {
-      console.log("🔄 Cargando datos del usuario...");
-      const userDataFromAPI = {
-        id_usuario: 1,
-        primer_nombre: "David Santiago",
-        apellido_paterno: "Gutiérrez",
-        apellido_materno: "Calderón",
-        nombre_completo: "David Santiago Gutiérrez Calderón",
-        correo: "santiago@aguakan.com",
-        id_rol: 1,
-        rol: "Administrador",
-        id_laboratorio: 1,
-        laboratorio: "Laboratorio Potable",
-        ubicacion_laboratorio: "Gonzalo Guerrero",
-        estatus: "Activo",
-      };
-
-      setUserData(userDataFromAPI);
-      setUserName(userDataFromAPI.primer_nombre);
-      setUserRole(userDataFromAPI.rol);
-    } catch (error) {
-      console.error("❌ Error cargando datos del usuario:", error);
-      setUserName("Usuario");
-      setUserRole("Laboratorista");
-    }
-  };
-
-  // 🔹 Cargar datos del dashboard
+  // Cargar datos del dashboard
   const fetchDashboardData = async () => {
     try {
       setLoading(true);
@@ -174,7 +147,7 @@ export default function HomeScreen() {
 
       setStats(statsData);
 
-      // 🔥 CORRECCIÓN: Asegurar claves únicas
+      // Asegurar claves únicas
       const productosUnicos = productosData.map(
         (producto: ProductoEnUso, index: number) => ({
           ...producto,
@@ -191,7 +164,7 @@ export default function HomeScreen() {
       );
       setMovimientos(movimientosUnicos);
 
-      // 🔥 CORRECCIÓN: Filtrar duplicados ANTES de agregar uniqueKey
+      // Filtrar duplicados ANTES de agregar uniqueKey
       const alertasMap = new Map();
       alertasData.forEach((alerta: Alerta) => {
         // Usamos una clave compuesta de ID y Tipo para definir la unicidad
@@ -229,7 +202,7 @@ export default function HomeScreen() {
     }
   };
 
-  // 🔹 CALCULAR ALERTAS CON useMemo PARA QUE SE ACTUALICEN AUTOMÁTICAMENTE
+  // CALCULAR ALERTAS CON useMemo PARA QUE SE ACTUALICEN AUTOMÁTICAMENTE
   const alertasCaducidad = React.useMemo(
     () => alertas.filter((a) => a.tipo === "caducidad"),
     [alertas] // Se recalcula cuando 'alertas' cambia
@@ -240,19 +213,31 @@ export default function HomeScreen() {
     [alertas] // Se recalcula cuando 'alertas' cambia
   );
 
-  // 🔹 Cargar datos al montar el componente
+  // Cargar datos al montar el componente
   useEffect(() => {
-    fetchUserData();
-    fetchDashboardData();
-  }, []);
+    // Usar el usuario del contexto
+    if (authUser) {
+      console.log("✅ Usuario cargado desde Contexto:", authUser.primer_nombre);
+      setUserName(authUser.primer_nombre);
+      const roleName = authUser.rol === 1 ? "Administrador" : "Laboratorista";
+      setUserRole(roleName);
+    } else {
+      console.log("ℹ️ No hay usuario logueado en contexto");
+      setUserName("Usuario");
+      setUserRole("Laboratorista");
+    }
 
-  // 🔹 Pull to refresh
+    // Cargar los datos del dashboard
+    fetchDashboardData();
+  }, [authUser]); // 🔥 Ejecutar esto solo cuando 'authUser' cambie
+
+  // Pull to refresh
   const onRefresh = React.useCallback(() => {
     setRefreshing(true);
     fetchDashboardData();
   }, []);
 
-  // 🔹 Función para manejar clic en notificación
+  //  Función para manejar clic en notificación
   const handleNotificacionPress = () => {
     if (alertasCaducidad.length > 0 || alertasStock.length > 0) {
       setShowModal(true); // Primero actualiza el estado
@@ -267,21 +252,21 @@ export default function HomeScreen() {
     }
   };
 
-  // 🔹 Función para manejar "Ver todos" en movimientos
+  // Función para manejar "Ver todos" en movimientos
   const handleVerTodosMovimientos = () => {
     console.log("Navegar a historial de actividades");
     router.push("/(tabs)/bitacora");
   };
 
-  // 🔹 Función para manejar "Ver más" en productos en uso
+  // Función para manejar "Ver más" en productos en uso
   const handleVerMasProductos = () => {
     console.log("Navegar a productos en uso");
-    // 🔥 SOLUCIÓN: Usar query parameters en lugar de params
+    // Usar query parameters en lugar de params
     router.push({
       pathname: "/(tabs)/inventario",
       params: {
         filter: "en-uso",
-        timestamp: Date.now(), // 🔥 FORZAR actualización
+        timestamp: Date.now(), // FORZAR actualización
       },
     });
   };
@@ -311,7 +296,7 @@ export default function HomeScreen() {
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
         }
       >
-        {/* 🔸 Header Mejorado */}
+        {/* Header Mejorado */}
         <View style={styles.headerContainer}>
           <View style={styles.headerContent}>
             <View style={styles.userInfo}>
@@ -325,9 +310,14 @@ export default function HomeScreen() {
                 </ThemedText>
               </View>
               <View>
-                <ThemedText type="title" style={styles.welcomeText}>
-                  Hola, {userName}
-                </ThemedText>
+                <View style={styles.welcomeContainer}>
+                  <ThemedText type="title" style={styles.welcomeText}>
+                    Hola,{" "}
+                  </ThemedText>
+                  <ThemedText type="title" style={styles.userNameText}>
+                    {userName}
+                  </ThemedText>
+                </View>
                 <ThemedText type="subtitle" style={styles.subtitleText}>
                   {userRole}
                 </ThemedText>
@@ -353,7 +343,7 @@ export default function HomeScreen() {
           </View>
         </View>
 
-        {/* 🔸 Tarjetas de resumen mejoradas */}
+        {/* Tarjetas de resumen mejoradas */}
         <View style={styles.cardsContainer}>
           <SummaryCard
             icon="cube-outline"
@@ -385,7 +375,7 @@ export default function HomeScreen() {
           />
         </View>
 
-        {/* 🔸 SECCIÓN MEJORADA: Alertas con diseño más atractivo */}
+        {/* SECCIÓN MEJORADA: Alertas con diseño más atractivo */}
         {(alertasCaducidad.length > 0 || alertasStock.length > 0) && (
           <View style={styles.alertasSection}>
             <View style={styles.sectionHeader}>
@@ -424,7 +414,7 @@ export default function HomeScreen() {
           </View>
         )}
 
-        {/* 🔸 Sección de productos en uso */}
+        {/* Sección de productos en uso */}
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
             <View style={styles.sectionTitleContainer}>
@@ -463,7 +453,7 @@ export default function HomeScreen() {
           )}
         </View>
 
-        {/* 🔸 Movimientos recientes mejorados */}
+        {/* Movimientos recientes mejorados */}
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
             <View style={styles.sectionTitleContainer}>
@@ -498,7 +488,7 @@ export default function HomeScreen() {
         </View>
       </ScrollView>
 
-      {/* 🔸 Modal de Notificaciones - MEJORADO */}
+      {/* Modal de Notificaciones - MEJORADO */}
       <Modal
         animationType="slide"
         transparent={true}
@@ -677,7 +667,6 @@ function SummaryCard({
   );
 }
 
-/* ✅ Componente: Producto en uso mejorado SIN navegación */
 function ActiveProductCard({
   producto,
   onPress,
@@ -729,7 +718,7 @@ function ActiveProductCard({
   );
 }
 
-/* ✅ Componente: Movimiento reciente mejorado */
+/* Componente: Movimiento reciente mejorado */
 function MovimientoItem({ movimiento }: { movimiento: Movimiento }) {
   const getIconConfig = (mov: Movimiento) => {
     // VERIFICAR PRIMERO EL MOTIVO_BAJA para movimientos de uso
@@ -785,7 +774,7 @@ function MovimientoItem({ movimiento }: { movimiento: Movimiento }) {
   );
 }
 
-/* ✅ Componente: Tarjeta de Alerta SIN navegación */
+/* Componente: Tarjeta de Alerta SIN navegación */
 function AlertaCard({
   alerta,
   onPress,
@@ -923,11 +912,22 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontFamily: "Poppins_700Bold",
   },
+  welcomeContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    flexWrap: "wrap",
+  },
   welcomeText: {
     fontSize: 23,
     marginBottom: 2,
     color: "#000000ff",
-    fontFamily: "Poppins_700Bold",
+    fontFamily: "Poppins_400Regular", // Normal weight para "Hola,"
+  },
+  userNameText: {
+    fontSize: 23,
+    marginBottom: 2,
+    color: "#000000ff",
+    fontFamily: "Poppins_700Bold", // Bold weight solo para el nombre
   },
   subtitleText: {
     fontSize: 14,
@@ -959,7 +959,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 6,
-    paddingLeft: 62, // Align with text
+    paddingLeft: 62,
   },
   dateText: {
     fontSize: 14,
@@ -967,7 +967,7 @@ const styles = StyleSheet.create({
     textTransform: "capitalize",
     fontFamily: "Poppins_400Regular",
   },
-  // 🔸 Alertas Mejoradas
+  // Alertas Mejoradas
   alertasSection: {
     marginBottom: 24,
     backgroundColor: "#FFFFFF",
@@ -1197,7 +1197,7 @@ const styles = StyleSheet.create({
   movProduct: {
     fontSize: 15,
     color: "#000000ff",
-    fontFamily: "Poppins_600Bold",
+    fontFamily: "Poppins_700Bold",
   },
   movDetails: {
     fontSize: 13,
@@ -1265,7 +1265,7 @@ const styles = StyleSheet.create({
     fontSize: 18,
     color: "#000000ff",
     marginBottom: 4,
-    fontFamily: "Poppins_600Bold",
+    fontFamily: "Poppins_700Bold",
   },
   modalSubtitle: {
     fontSize: 14,

@@ -24,7 +24,7 @@ import TendenciaStockChart from "../../components/TendenciaStockChart";
 import { Swipeable } from "react-native-gesture-handler";
 
 // Constantes
-const API_BASE_URL = "http://172.20.10.11:3000";
+const API_BASE_URL = "http://192.168.0.169:3000";
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get("window");
 
@@ -38,6 +38,7 @@ interface ProductoEdicion {
   id_prioridad: number;
   id_tipo_producto: number;
   imagen: string;
+
   // Propiedades opcionales para diferentes tipos
   presentacion?: string | null;
   caducidad?: string | null;
@@ -51,7 +52,6 @@ interface ProductoEdicion {
   id_laboratorio?: number | null;
 }
 
-// Interfaces (sin cambios)
 // ACTUALIZAR la interfaz Producto (al inicio del archivo)
 interface Producto {
   id_producto: number;
@@ -66,7 +66,7 @@ interface Producto {
   prioridad: string;
   tipo: string;
   estatus: string;
-  id_estatus_producto?: number; // ✅ Hacer opcional
+  id_estatus_producto?: number; 
   id_prioridad?: number;
   presentacion?: string;
   caducidad?: string;
@@ -127,8 +127,7 @@ function calcularDiferenciaFechas(inicio: string, fin: string): string {
     if (isNaN(fechaInicio.getTime()) || isNaN(fechaFin.getTime())) {
       return "N/A";
     }
-
-    // ✅ CORREGIDO: Asegurar que son números
+    
     const diffMs = fechaFin.getTime() - fechaInicio.getTime();
 
     // Si la diferencia es negativa, podría ser un error
@@ -506,7 +505,7 @@ export default function ProductDetail() {
       setUploading(true);
       console.log("📤 Iniciando subida de documento...");
 
-      // ✅ SOLO PERMITIR PDFs
+      // SOLO PERMITIR PDFs
       const result = await DocumentPicker.getDocumentAsync({
         type: "application/pdf", // SOLO PDF
         copyToCacheDirectory: true,
@@ -777,7 +776,7 @@ export default function ProductDetail() {
 
     const motivo = parseInt(reportForm.id_motivo_baja);
 
-    // ✅ NUEVA VALIDACIÓN: No permitir acciones que requieran stock si no hay disponible
+    //  No permitir acciones que requieran stock si no hay disponible
     if (producto.existencia_actual <= 0 && motivo !== 4) {
       return Alert.alert(
         "Sin stock disponible",
@@ -785,7 +784,7 @@ export default function ProductDetail() {
       );
     }
 
-    // ✅ VALIDACIONES CON LOS IDs CORRECTOS DE LA BD
+    //  VALIDACIONES CON LOS IDs CORRECTOS DE LA BD
     if (motivo === 5 && producto.id_estatus_producto !== 5) {
       return Alert.alert(
         "No se puede finalizar uso",
@@ -819,7 +818,7 @@ export default function ProductDetail() {
         );
       }
 
-      // ✅ NUEVA VALIDACIÓN: No permitir baja si no hay stock
+      // No permitir baja si no hay stock
       if (producto.existencia_actual <= 0) {
         return Alert.alert(
           "No se puede dar de baja",
@@ -842,7 +841,7 @@ export default function ProductDetail() {
       return;
     }
 
-    // ✅ VALIDACIÓN ADICIONAL: No permitir incidencia si no hay stock suficiente
+    //  No permitir incidencia si no hay stock suficiente
     if (
       motivo === 2 &&
       producto.existencia_actual < parseInt(reportForm.cantidad || "1")
@@ -1070,7 +1069,7 @@ export default function ProductDetail() {
       const productData = await productResponse.json();
       const historyData = await historyResponse.json();
 
-      // ✅ DEBUG CRÍTICO: Ver qué datos llegan del backend
+      // DEBUG CRÍTICO: Ver qué datos llegan del backend
       console.log("📥 DATOS RECIBIDOS DEL BACKEND:", {
         id: productData.id_producto,
         nombre: productData.nombre,
@@ -1106,7 +1105,7 @@ export default function ProductDetail() {
             : "",
         };
 
-        // ✅ AGREGAR DATOS ESPECÍFICOS DE EQUIPO
+        // AGREGAR DATOS ESPECÍFICOS DE EQUIPO
         if (productData.id_tipo_producto === 2) {
           editFormData.id_agk = productData.id_agk || "";
           editFormData.modelo = productData.modelo || "";
@@ -1502,7 +1501,7 @@ export default function ProductDetail() {
                       {mov.responsable}
                     </Text>
 
-                    {/* ✅ MEJORADO: Mostrar duración para Finalizar uso con las nuevas fechas del backend */}
+                    {/* Mostrar duración para Finalizar uso con las nuevas fechas del backend */}
                     {mov.motivo_baja === "Finalizar uso" &&
                       mov.fecha_inicio &&
                       mov.fecha_fin && (
@@ -1515,7 +1514,7 @@ export default function ProductDetail() {
                         </Text>
                       )}
 
-                    {/* ✅ Mostrar nota para TODOS los movimientos que tengan descripción */}
+                    {/* Mostrar nota para TODOS los movimientos que tengan descripción */}
                     {mov.descripcion_adicional && (
                       <Text style={styles.historialDescription}>
                         📝 Nota: {mov.descripcion_adicional}
@@ -1547,7 +1546,7 @@ export default function ProductDetail() {
         )}
       </Animated.ScrollView>
 
-      {/* Modal de Documentos - VERSIÓN MEJORADA CON ELIMINACIÓN */}
+      {/* Modal de Documentos */}
       <Modal
         visible={documentModalVisible}
         animationType="slide"
@@ -2120,7 +2119,7 @@ export default function ProductDetail() {
                             return true;
                           })
                           .sort((a, b) => {
-                            // 🔥 NUEVO: 2. Agrega .sort() aquí
+                            
                             const posA = ordenDeseado.indexOf(a.id_motivo_baja);
                             const posB = ordenDeseado.indexOf(b.id_motivo_baja);
 
@@ -2208,10 +2207,9 @@ export default function ProductDetail() {
 }
 
 const styles = StyleSheet.create({
-  // === ESTILOS GENERALES Y DE CONTENEDOR ===
   container: {
     flex: 1,
-    backgroundColor: "#F8FAFC", // Un fondo ligeramente gris claro
+    backgroundColor: "#F8FAFC", 
   },
   center: {
     flex: 1,
@@ -2223,14 +2221,13 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scrollContent: {
-    paddingBottom: 40, // Espacio al final
+    paddingBottom: 40, 
   },
 
-  // === NUEVOS ESTILOS DE HEADER ===
   header: {
     backgroundColor: "#F8FAFC",
     padding: 16,
-    paddingTop: 50, // Espacio para la barra de estado
+    paddingTop: 50,
     borderBottomLeftRadius: 24,
     borderBottomRightRadius: 24,
     alignItems: "center",
@@ -2293,7 +2290,7 @@ const styles = StyleSheet.create({
     fontWeight: "600",
   },
 
-  // === NUEVOS BOTONES DE ACCIÓN PRINCIPALES ===
+ 
   mainActionsContainer: {
     flexDirection: "row",
     gap: 12,
@@ -2327,7 +2324,6 @@ const styles = StyleSheet.create({
     color: "#000000ff",
   },
 
-  // === ESTILOS DE TARJETAS (CARDS) REFINADOS ===
   card: {
     backgroundColor: "white",
     borderRadius: 16,
@@ -2353,7 +2349,6 @@ const styles = StyleSheet.create({
     marginLeft: 8,
   },
 
-  // === NUEVA SECCIÓN DE DOCUMENTOS ===
   documentLink: {
     flexDirection: "row",
     alignItems: "center",
@@ -2370,7 +2365,6 @@ const styles = StyleSheet.create({
     fontWeight: "500",
   },
 
-  // === ESTILOS DE INFORMACIÓN Y DETALLES REFINADOS ===
   infoGrid: {
     flexDirection: "row",
     flexWrap: "wrap",
@@ -2429,7 +2423,6 @@ const styles = StyleSheet.create({
     marginLeft: 8,
   },
 
-  // === TARJETA DE ADVERTENCIA ===
   warningCard: {
     flexDirection: "row",
     alignItems: "center",
@@ -2454,7 +2447,6 @@ const styles = StyleSheet.create({
     color: "#64748B",
   },
 
-  // === SECCIÓN DE HISTORIAL REFINADA ===
   historialScrollContainer: {
     maxHeight: 300,
   },
@@ -2502,7 +2494,6 @@ const styles = StyleSheet.create({
     fontFamily: "Poppins_500Medium",
   },
 
-  // === ESTILOS DE MODALES (GENERAL) ===
   modalOverlay: {
     flex: 1,
     backgroundColor: "rgba(0,0,0,0.5)",
@@ -2550,7 +2541,6 @@ const styles = StyleSheet.create({
     gap: 8,
   },
 
-  // === ESTILOS PARA MODAL DE DOCUMENTOS ===
   emptyState: {
     alignItems: "center",
     paddingVertical: 40,
@@ -2640,7 +2630,6 @@ const styles = StyleSheet.create({
     textAlign: "center",
   },
 
-  // === NUEVOS ESTILOS PARA FORMULARIOS (MODALES) ===
   formSection: {
     marginBottom: 24,
   },
@@ -2793,7 +2782,7 @@ const styles = StyleSheet.create({
     fontFamily: "Poppins_400Regular",
     flex: 1,
   },
-  // === NUEVOS ESTILOS PARA ELIMINACIÓN DE DOCUMENTOS ===
+
   deleteAction: {
     backgroundColor: "#DC2626",
     justifyContent: "center",

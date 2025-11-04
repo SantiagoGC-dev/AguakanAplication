@@ -24,7 +24,7 @@ import { useRouter, useLocalSearchParams } from "expo-router";
 import { useFocusEffect } from "@react-navigation/native";
 
 //Configuración de la API y Tipos
-const API_BASE_URL = "http://172.20.10.11:3000";
+const API_BASE_URL = "http://192.168.0.169:3000";
 
 interface FilterOption {
   label: string;
@@ -452,7 +452,6 @@ const ProductoItem = React.memo<ProductoItemProps>(
 );
 
 // --- InventarioScreen Principal ---
-// --- InventarioScreen Principal ---
 export default function InventarioScreen() {
   const [productos, setProductos] = useState<any[]>([]);
   const [busqueda, setBusqueda] = useState("");
@@ -497,6 +496,9 @@ export default function InventarioScreen() {
 
   //Estado para el refresh
   const [refreshing, setRefreshing] = useState(false);
+
+  // Estado para el boton de guardar producto
+  const [guardandoProducto, setGuardandoProducto] = useState(false);
 
   // --- Opciones estáticas para filtros ---
   const periodoOptions: FilterOption[] = [
@@ -574,15 +576,11 @@ export default function InventarioScreen() {
         params.append("tipo", tipoProductoFiltro);
       if (prioridad !== "todos") params.append("prioridad", prioridad);
 
-      // ✅ --- INICIO DE LA MODIFICACIÓN ---
-      // Esta lógica decide si usar el filtro de estado normal (estatusFiltro)
-      // o el filtro forzado que viene del dashboard (estatusOverride).
       const finalEstatus =
         estatusOverride !== null ? estatusOverride : estatusFiltro;
       if (finalEstatus !== "todos") {
         params.append("estatus", finalEstatus);
       }
-      // ✅ --- FIN DE LA MODIFICACIÓN ---
 
       if (periodo !== "todos") params.append("periodo", periodo);
 
@@ -725,15 +723,11 @@ export default function InventarioScreen() {
 
   useFocusEffect(
     React.useCallback(() => {
-      // ✅ GUARDIA 1: Si el filtro "en-uso" está activo, no hagas nada.
-      // El useEffect[filter] [cite: 124] se encargará de la carga inicial.
+
       if (filter === "en-uso") {
         return;
       }
 
-      // ✅ GUARDIA 2: Si ya hay productos cargados (productos.length > 0),
-      // NO HAGAS NADA. Esto previene el reseteo al volver de "Detalles"
-      // y permite que la paginación funcione sin interrupciones.
       if (productos.length > 0) {
         return;
       }
@@ -741,7 +735,7 @@ export default function InventarioScreen() {
       // Si no hay filtro "en-uso" Y la lista está vacía,
       // carga los productos normalmente (página 1).
       fetchProducts(1, true, null); // null = sin override
-    }, [filter, productos.length]) // ✅ AÑADIR 'productos.length'
+    }, [filter, productos.length]) 
   );
 
   // Debounce para búsqueda
@@ -755,10 +749,9 @@ export default function InventarioScreen() {
 
   // Efecto para aplicar el filtro "en-uso" desde el dashboard
   useEffect(() => {
-    console.log("Filter parameter:", filter); // 🔥 DEBUG
+    console.log("Filter parameter:", filter);
     if (filter === "en-uso") {
-      const statusEnUso = "5"; // El ID de estatus "En Uso" es 5
-
+      const statusEnUso = "5"; 
       // 1. Actualizar el estado para que la UI sea consistente
       setEstatusFiltro(statusEnUso);
       setFiltrosAplicados(true);
@@ -778,17 +771,15 @@ export default function InventarioScreen() {
         id_tipo_producto: tipoInfo.id_tipo_producto,
         id_laboratorio: laboratorios[0]?.id_laboratorio || 1,
         id_estatus_producto: 1,
-        id_prioridad: "2", // 2 = Media por defecto
+        id_prioridad: "2", 
       });
     }
   }, [selectedProductType, tiposDisponibles, laboratorios]);
 
-  // ✅ NUEVO useEffect: Detecta cambios en CUALQUIER filtro y recarga la lista
+  // useEffect: Detecta cambios en CUALQUIER filtro y recarga la lista
   useEffect(() => {
-    // No ejecutar en la carga inicial (cargandoInicial lo previene)
-    // El debounce de busquedaTerm previene recargas en cada tecla
     if (!cargandoInicial) {
-      fetchProducts(1, true); // Es un nuevo filtro, resetea a página 1
+      fetchProducts(1, true); 
     }
   }, [
     busquedaTerm,
@@ -819,6 +810,8 @@ export default function InventarioScreen() {
   };
 
   const handleSaveNewProduct = async () => {
+    if (guardandoProducto) return; // Evita múltiples clics
+    setGuardandoProducto(true);    // Bloquea el botón
     const tipoInfo = tiposDisponibles.find(
       (t) => t.nombre_tipo === selectedProductType
     );
@@ -850,7 +843,7 @@ export default function InventarioScreen() {
         formState.id_laboratorio || laboratorios[0]?.id_laboratorio || 1,
       id_estatus_producto: 1,
       stock_minimo: formState.stock_minimo || 0,
-      id_prioridad: formState.id_prioridad || "2", // 2 = Media por defecto
+      id_prioridad: formState.id_prioridad || "2",
     };
 
     // Validaciones básicas por tipo de producto
@@ -889,34 +882,36 @@ export default function InventarioScreen() {
     }
 
     try {
-      const response = await fetch(`${API_BASE_URL}/api/productos`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(dataToSend),
-      });
+    const response = await fetch(`${API_BASE_URL}/api/productos`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(dataToSend),
+    });
 
-      const result = await response.json();
+    const result = await response.json();
 
-      if (response.ok) {
-        Alert.alert(
-          "Éxito",
-          `Producto "${dataToSend.nombre}" (${tipoInfo.nombre_tipo}) creado con éxito!`
-        );
-        setShowAddModal(false);
-        setFormState({});
-        fetchProducts(); // Recargar la lista
-      } else {
-        Alert.alert(
-          "Error",
-          `Error al guardar: ${result.error || "Verifique los campos."}`
-        );
-      }
-    } catch (error) {
-      Alert.alert("Error", "Hubo un error de conexión al servidor.");
+    if (response.ok) {
+      Alert.alert(
+        "Éxito",
+        `Producto "${dataToSend.nombre}" (${tipoInfo.nombre_tipo}) creado con éxito!`
+      );
+      setShowAddModal(false);
+      setFormState({});
+      fetchProducts(); // Recargar la lista
+    } else {
+      Alert.alert(
+        "Error",
+        `Error al guardar: ${result.error || "Verifique los campos."}`
+      );
     }
-  };
+  } catch (error) {
+    Alert.alert("Error", "Hubo un error de conexión al servidor.");
+  } finally {
+    setGuardandoProducto(false); // Libera el botón
+  }
+};
 
   const renderProductForm = () => {
     if (tiposDisponibles.length === 0) return null;
@@ -1076,18 +1071,14 @@ export default function InventarioScreen() {
     setTipoProductoFiltro("todos");
     setPrioridad("todos");
     setEstatusFiltro("todos");
-    setOrden("antiguos"); // <-- AÑADIDO: Resetea el orden
-    setBusqueda(""); // <-- AÑADIDO: Limpia la barra de búsqueda
+    setOrden("antiguos"); 
+    setBusqueda(""); 
 
     setFiltrosAplicados(false);
 
     // 2. Limpiar el filtro de la URL
     router.setParams({ filter: undefined });
 
-    // 3. ¡ELIMINADO! No llames a fetchProducts aquí.
-    // El useEffect  detectará estos cambios de estado
-    // y llamará a fetchProducts(1, true) automáticamente
-    // con el estado ya actualizado.
   };
 
   const handleLoadMore = () => {
@@ -1095,11 +1086,10 @@ export default function InventarioScreen() {
     if (!loadingMore && hasMore) {
       const nextPage = page + 1;
       setPage(nextPage);
-      fetchProducts(nextPage, false); // Pide la siguiente página, no es refresh
+      fetchProducts(nextPage, false); 
     }
   };
 
-  // ✅ NUEVA FUNCIÓN: Renderizar el spinner al final de la lista
   const renderFooter = () => {
     if (!loadingMore) return null;
     return (
@@ -1169,7 +1159,7 @@ export default function InventarioScreen() {
         </View>
 
         {/* Loading inicial */}
-        {cargandoInicial && productos.length === 0 ? ( // Mostrar solo si la lista está vacía
+        {cargandoInicial && productos.length === 0 ? ( 
           <View style={styles.loadingContainer}>
             <ActivityIndicator size="large" color="#539DF3" />
             <Text style={styles.loadingText}>Cargando productos...</Text>
@@ -1184,7 +1174,7 @@ export default function InventarioScreen() {
             windowSize={7}
             removeClippedSubviews={true}
             updateCellsBatchingPeriod={50}
-            // ✅ AÑADIDO: RefreshControl para pulldown refresh
+            // RefreshControl para pulldown refresh
             refreshControl={
               <RefreshControl
                 refreshing={refreshing}
@@ -1226,7 +1216,7 @@ export default function InventarioScreen() {
                       : "Comienza agregando tu primer producto"}
                   </Text>
 
-                  {/* ✅ AÑADIDO: Botón de refresh en empty state */}
+                  {/* Botón de refresh en empty state */}
                   <TouchableOpacity
                     style={styles.refreshButton}
                     onPress={onRefresh}
@@ -1506,7 +1496,6 @@ export default function InventarioScreen() {
   );
 }
 
-// Estilos mejorados
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: "#f8fafc" },
   container: { flex: 1, padding: 16 },
@@ -1729,11 +1718,11 @@ const styles = StyleSheet.create({
     backgroundColor: "#fff",
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
-    maxHeight: "90%", // Reducido para dejar espacio al teclado
-    minHeight: "60%", // Mínimo para que no sea muy pequeño
+    maxHeight: "90%", 
+    minHeight: "60%", 
   },
   scrollContent: {
-    paddingBottom: 20, // Espacio extra al final
+    paddingBottom: 20, 
   },
   modalHeader: {
     flexDirection: "row",
