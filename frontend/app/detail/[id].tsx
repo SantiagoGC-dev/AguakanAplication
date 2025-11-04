@@ -24,7 +24,7 @@ import TendenciaStockChart from "../../components/TendenciaStockChart";
 import { Swipeable } from "react-native-gesture-handler";
 
 // Constantes
-const API_BASE_URL = "http://192.168.0.169:3000";
+const API_BASE_URL = "http://172.20.10.11:3000";
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get("window");
 

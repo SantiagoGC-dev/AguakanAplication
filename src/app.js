@@ -7,7 +7,8 @@ import dashboardRoutes from "./routes/dashboard.routes.js";
 import reportesRoutes from "./routes/reportes.routes.js";
 import authRoutes from "./routes/auth.routes.js";
 import usuariosRoutes from "./routes/usuarios.routes.js"; 
-import perfilRoutes from "./routes/perfil.routes.js";     
+import perfilRoutes from "./routes/perfil.routes.js";
+import instructivoRoutes from './routes/instructivo.routes.js';
 
 const app = express();
 
@@ -24,6 +25,8 @@ app.use("/api/movimientos", movimientosRoutes);
 app.use("/api/documentos", documentosRoutes);
 app.use("/api/dashboard", dashboardRoutes);
 app.use("/api/reportes", reportesRoutes);
+
+app.use('/api/instructivo', instructivoRoutes);
 
 // Servir archivos estáticos
 app.use("/uploads", express.static("uploads"));

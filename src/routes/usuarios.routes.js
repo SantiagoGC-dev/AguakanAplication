@@ -5,8 +5,8 @@ import {
   actualizarUsuarioController, 
   eliminarUsuarioController 
 } from '../controllers/usuarios/usuarios.controller.js';
-import { listarRoles } from '../controllers/usuarios/roles.controller.js';
 import { verifyToken, requireAdmin } from '../middlewares/auth.js';
+import { listarRoles, listarEstatus } from '../controllers/usuarios/roles.controller.js';
 
 const router = express.Router();
 
@@ -15,6 +15,7 @@ router.use(verifyToken, requireAdmin);
 
 router.get('/', listarUsuarios);
 router.get('/roles', listarRoles); // Nueva ruta para obtener roles
+router.get('/estatus', listarEstatus); // Nueva ruta para obtener estatus
 router.get('/:id', obtenerUsuario);
 router.put('/:id', actualizarUsuarioController);
 router.delete('/:id', eliminarUsuarioController);

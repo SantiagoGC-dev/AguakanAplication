@@ -24,7 +24,7 @@ import { useRouter, useLocalSearchParams } from "expo-router";
 import { useFocusEffect } from "@react-navigation/native";
 
 //Configuración de la API y Tipos
-const API_BASE_URL = "http://192.168.0.169:3000";
+const API_BASE_URL = "http://172.20.10.11:3000";
 
 interface FilterOption {
   label: string;
@@ -1936,6 +1936,7 @@ const styles = StyleSheet.create({
   },
   emptyStateTitle: {
     marginTop: 16,
+    fontFamily: "Poppins_500Medium",
     fontSize: 18,
     color: "#666",
     fontWeight: "600",
@@ -1944,6 +1945,7 @@ const styles = StyleSheet.create({
   },
   emptyStateText: {
     fontSize: 14,
+    fontFamily: "Poppins_400Regular",
     color: "#999",
     textAlign: "center",
     lineHeight: 20,

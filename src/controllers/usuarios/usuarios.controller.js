@@ -10,7 +10,7 @@ import { hashPassword } from '../../utils/passwordUtils.js';
 export const listarUsuarios = async (req, res) => {
   try {
     console.log('🔍 Intentando listar usuarios...'); // ← AGREGAR
-    const usuarios = await obtenerTodosLosUsuarios();
+    const usuarios = await obtenerTodosLosUsuarios(req.user.id);
     console.log('✅ Usuarios obtenidos:', usuarios); // ← AGREGAR
     
     res.json({

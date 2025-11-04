@@ -16,7 +16,7 @@ import { ThemedText } from "@/components/themed-text";
 import { useRouter } from "expo-router";
 
 // Configuración de API
-const API_BASE_URL = "http://192.168.0.169:3000/api";
+const API_BASE_URL = "http://172.20.10.11:3000/api";
 
 interface Usuario {
   id_usuario: string;
@@ -913,12 +913,13 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   emptyStateText: {
+    fontFamily: "Poppins_400Regular",
     fontSize: 14,
     color: "#64748B",
     textAlign: "center",
   },
   resetButton: {
-    backgroundColor: "#4B9CD3",
+    backgroundColor: "#539DF3",
     paddingHorizontal: 20,
     paddingVertical: 10,
     borderRadius: 12,
@@ -927,7 +928,7 @@ const styles = StyleSheet.create({
   resetButtonText: {
     color: "#FFFFFF",
     fontSize: 14,
-    fontFamily: "Poppins_600Bold",
+    fontFamily: "Poppins_500Medium",
   },
   modalOverlay: {
     flex: 1,

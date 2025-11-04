@@ -29,7 +29,7 @@ export const actualizarPerfil = async (req, res) => {
   try {
     const { correo, primer_nombre, apellido_paterno, apellido_materno, password_actual, nueva_password } = req.body;
 
-    const usuarioActual = await obtenerUsuarioPorId(req.user.id);
+    const usuarioActual = await buscarUsuarioPorCorreo(req.user.correo);
     if (!usuarioActual) {
       return res.status(404).json({
         success: false,

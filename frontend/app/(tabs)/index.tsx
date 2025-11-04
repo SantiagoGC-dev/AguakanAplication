@@ -70,7 +70,7 @@ interface Usuario {
 }
 
 // Configuración de API
-const API_BASE_URL = "http://192.168.0.169:3000/api";
+const API_BASE_URL = "http://172.20.10.11:3000/api";
 
 // Darle formato a la fecha
 function formatDate(dateString: string) {
@@ -312,7 +312,7 @@ export default function HomeScreen() {
               <View>
                 <View style={styles.welcomeContainer}>
                   <ThemedText type="title" style={styles.welcomeText}>
-                    Hola,{" "}
+                    ¡Hola!{" "}
                   </ThemedText>
                   <ThemedText type="title" style={styles.userNameText}>
                     {userName}
@@ -921,13 +921,13 @@ const styles = StyleSheet.create({
     fontSize: 23,
     marginBottom: 2,
     color: "#000000ff",
-    fontFamily: "Poppins_400Regular", // Normal weight para "Hola,"
+    fontFamily: "Poppins_700Bold", // Normal weight para "Hola,"
   },
   userNameText: {
     fontSize: 23,
     marginBottom: 2,
     color: "#000000ff",
-    fontFamily: "Poppins_700Bold", // Bold weight solo para el nombre
+    fontFamily: "Poppins_500Medium", // Bold weight solo para el nombre
   },
   subtitleText: {
     fontSize: 14,

@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import {
   View,
   Text,
+  Image,
   TextInput,
   TouchableOpacity,
   ActivityIndicator,
@@ -13,6 +14,8 @@ import {
 } from 'react-native';
 import { useAuth } from '../context/AuthContext';
 import { useColorScheme } from '@/hooks/use-color-scheme';
+
+const miLogo = require('../assets/images/LaboratoryIcon.png'); 
 
 export default function LoginScreen() {
   const [email, setEmail] = useState('');
@@ -53,25 +56,28 @@ export default function LoginScreen() {
       <ScrollView 
         contentContainerStyle={{ flexGrow: 1 }}
         keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
       >
         <View style={[styles.container, isDark && styles.containerDark]}>
           
-          {/* Header con nuevo diseño */}
+          {/* Header mejorado */}
           <View style={styles.header}>
             <View style={styles.logoContainer}>
-              <View style={styles.logoCircle}>
-                <Text style={styles.logoText}>LOGO</Text>
-              </View>
+              <Image 
+                source={miLogo} 
+                style={styles.logoImage}
+                resizeMode="contain"
+              />
             </View>
             <Text style={[styles.title, isDark && styles.titleDark]}>
-              INVKAN
+              laboratory
             </Text>
             <Text style={[styles.subtitle, isDark && styles.subtitleDark]}>
-              Sistema de Gestión de Inventario
+              Gestor de inventario
             </Text>
           </View>
 
-          {/* Formulario con nuevo diseño */}
+          {/* Formulario mejorado */}
           <View style={styles.form}>
             <View style={styles.inputContainer}>
               <Text style={[styles.label, isDark && styles.labelDark]}>
@@ -80,7 +86,7 @@ export default function LoginScreen() {
               <TextInput
                 style={[styles.input, isDark && styles.inputDark]}
                 placeholder="usuario@aguakan.com"
-                placeholderTextColor={isDark ? '#888' : '#999'}
+                placeholderTextColor={isDark ? '#94a3b8' : '#64748b'}
                 value={email}
                 onChangeText={setEmail}
                 autoCapitalize="none"
@@ -97,7 +103,7 @@ export default function LoginScreen() {
               <TextInput
                 style={[styles.input, isDark && styles.inputDark]}
                 placeholder="••••••••"
-                placeholderTextColor={isDark ? '#888' : '#999'}
+                placeholderTextColor={isDark ? '#94a3b8' : '#64748b'}
                 value={password}
                 onChangeText={setPassword}
                 secureTextEntry
@@ -113,32 +119,14 @@ export default function LoginScreen() {
               ]}
               onPress={handleLogin}
               disabled={loading}
+              activeOpacity={0.8}
             >
               {loading ? (
-                <ActivityIndicator color="#fff" />
+                <ActivityIndicator color="#fff" size="small" />
               ) : (
                 <Text style={styles.buttonText}>Iniciar sesión</Text>
               )}
             </TouchableOpacity>
-          </View>
-
-          {/* Información de testing con nuevo diseño */}
-          <View style={[styles.testInfo, isDark && styles.testInfoDark]}>
-            <Text style={[styles.testTitle, isDark && styles.testTitleDark]}>
-              Usuarios de prueba:
-            </Text>
-            <View style={styles.testUserItem}>
-              <Text style={[styles.testRole, isDark && styles.testRoleDark]}>Admin:</Text>
-              <Text style={[styles.testText, isDark && styles.testTextDark]}>
-                santiago@aguakan.com / Nacho123
-              </Text>
-            </View>
-            <View style={styles.testUserItem}>
-              <Text style={[styles.testRole, isDark && styles.testRoleDark]}>Laboratorio:</Text>
-              <Text style={[styles.testText, isDark && styles.testTextDark]}>
-                cignacio@aguakan.com / Password123
-              </Text>
-            </View>
           </View>
         </View>
       </ScrollView>
@@ -150,168 +138,123 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     justifyContent: 'center',
-    padding: 25,
-    backgroundColor: '#f8fbff',
+    padding: 30,
+    backgroundColor: '#f8fafc',
   },
   containerDark: {
-    backgroundColor: '#0a1929',
+    backgroundColor: '#0f172a',
   },
   header: {
     alignItems: 'center',
-    marginBottom: 60,
+    marginBottom: 50,
   },
   logoContainer: {
-    marginBottom: 20,
-  },
-  logoCircle: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    backgroundColor: '#4B9CD3',
-    justifyContent: 'center',
-    alignItems: 'center',
+    marginBottom: -110,
     shadowColor: '#4B9CD3',
     shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.3,
-    shadowRadius: 15,
+    shadowOpacity: 0.15,
+    shadowRadius: 20,
     elevation: 10,
   },
-  logoText: {
-    fontSize: 28,
-    fontWeight: '700',
-    color: '#fff',
-    fontFamily: 'Poppins_700Bold',
+  logoImage: {
+    width: 350, 
+    height: 350,
   },
   title: {
-    fontSize: 36,
-    fontWeight: '700',
-    color: '#4B9CD3',
-    marginBottom: 8,
+    fontSize: 38,
+    fontWeight: '800',
+    color: '#1e293b',
+    marginBottom: 6,
     fontFamily: 'Poppins_700Bold',
-    letterSpacing: 1,
+    letterSpacing: 0.5,
+    textTransform: 'uppercase',
   },
   titleDark: {
     color: '#6BB5E8',
+    textShadowColor: 'rgba(107, 181, 232, 0.3)',
+    textShadowOffset: { width: 0, height: 2 },
+    textShadowRadius: 8,
   },
   subtitle: {
-    fontSize: 18,
-    color: '#4B9CD3',
+    fontSize: 16,
+    color: '#475569',
     fontFamily: 'Poppins_400Regular',
-    opacity: 0.8,
+    letterSpacing: 0.3,
+    opacity: 0.9,
   },
   subtitleDark: {
-    color: '#6BB5E8',
+    color: '#cbd5e1',
   },
   form: {
-    marginBottom: 30,
+    marginBottom: 20,
+    backgroundColor: 'rgba(255, 255, 255, 0.8)',
+    borderRadius: 20,
+    padding: 25,
+    shadowColor: '#4B9CD3',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 15,
+    elevation: 6,
   },
   inputContainer: {
-    marginBottom: 25,
+    marginBottom: 22,
   },
   label: {
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: '600',
-    marginBottom: 10,
-    color: '#2c3e50',
+    marginBottom: 8,
+    color: '#334155',
     fontFamily: 'Poppins_500Medium',
+    letterSpacing: 0.3,
   },
   labelDark: {
-    color: '#e1e8f0',
+    color: '#e2e8f0',
   },
   input: {
-    borderWidth: 2,
-    borderColor: '#e1f0ff',
+    borderWidth: 1.5,
+    borderColor: '#e2e8f0',
     padding: 16,
-    borderRadius: 14,
+    borderRadius: 12,
     fontSize: 16,
     backgroundColor: '#ffffff',
     fontFamily: 'Poppins_400Regular',
-    shadowColor: '#4B9CD3',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 6,
-    elevation: 3,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 3,
+    elevation: 2,
   },
   inputDark: {
-    borderColor: '#1e3a5c',
-    backgroundColor: '#1a3650',
-    color: '#fff',
+    borderColor: '#334155',
+    backgroundColor: '#1e293b',
+    color: '#f1f5f9',
+    shadowColor: '#000',
   },
   button: {
     backgroundColor: '#4B9CD3',
     padding: 18,
-    borderRadius: 14,
+    borderRadius: 12,
     alignItems: 'center',
-    marginTop: 15,
+    marginTop: 10,
     shadowColor: '#4B9CD3',
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.4,
-    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.3,
+    shadowRadius: 15,
     elevation: 8,
     transform: [{ translateY: 0 }],
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.2)',
   },
   buttonDisabled: {
-    backgroundColor: '#a0c4e4',
+    backgroundColor: '#94a3b8',
     shadowOpacity: 0,
     elevation: 0,
-    transform: [{ translateY: 0 }],
   },
   buttonText: {
     color: '#fff',
     fontSize: 17,
-    fontWeight: '600',
+    fontWeight: '700',
     fontFamily: 'Poppins_700Bold',
     letterSpacing: 0.5,
-  },
-  testInfo: {
-    marginTop: 40,
-    padding: 20,
-    backgroundColor: '#e8f4ff',
-    borderRadius: 16,
-    borderLeftWidth: 0,
-    shadowColor: '#4B9CD3',
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 4,
-  },
-  testInfoDark: {
-    backgroundColor: '#1a3650',
-    borderLeftColor: '#4B9CD3',
-  },
-  testTitle: {
-    fontSize: 15,
-    fontWeight: '600',
-    marginBottom: 12,
-    color: '#2c3e50',
-    fontFamily: 'Poppins_500Medium',
-  },
-  testTitleDark: {
-    color: '#e1e8f0',
-  },
-  testUserItem: {
-    flexDirection: 'row',
-    marginBottom: 8,
-    alignItems: 'flex-start',
-  },
-  testRole: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: '#4B9CD3',
-    marginRight: 8,
-    fontFamily: 'Poppins_500Medium',
-    minWidth: 80,
-  },
-  testRoleDark: {
-    color: '#6BB5E8',
-  },
-  testText: {
-    fontSize: 12,
-    color: '#5d7a91',
-    flex: 1,
-    fontFamily: 'Poppins_400Regular',
-  },
-  testTextDark: {
-    color: '#a8c6e0',
   },
 });
