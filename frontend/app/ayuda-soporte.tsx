@@ -185,7 +185,7 @@ export default function AyudaScreen() {
             Recursos
           </Text>
 
-          {/* Instructivo Empresarial - Visible para todos */}
+          {/* Instructivo de Trabajo - Visible para todos */}
           <TouchableOpacity 
             style={[styles.resourceCard, isDark && styles.resourceCardDark]}
             onPress={() => router.push('/admin/instructivo')}
@@ -198,12 +198,12 @@ export default function AyudaScreen() {
               />
               <View style={styles.resourceTextContainer}>
                 <Text style={[styles.resourceTitle, isDark && styles.textDark]}>
-                  Instructivo Empresarial
+                  Instructivo de Trabajo
                 </Text>
                 <Text style={[styles.resourceDescription, isDark && styles.textMutedDark]}>
                   {user?.rol === 1 
-                    ? "Gestionar el instructivo empresarial del sistema" 
-                    : "Consultar el instructivo empresarial"
+                    ? "Gestionar el instructivo de trabajo" 
+                    : "Consultar el instructivo de trabajo"
                   }
                 </Text>
               </View>

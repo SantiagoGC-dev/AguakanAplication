@@ -48,7 +48,7 @@ export const getHistorialProducto = async (req, res) => {
   }
 };
 
-// 🔹 FUNCIÓN PARA RANGOS DE FECHAS - CORREGIDA
+// 🔹 FUNCIÓN PARA RANGOS DE FECHAS
 const getRangoFechasBackend = (periodo) => {
   const ahora = new Date();
   
@@ -75,7 +75,6 @@ const getRangoFechasBackend = (periodo) => {
       return { fechaInicio: inicioEsteMes, fechaFin: finEsteMes };
       
     case "mes_pasado":
-      // CORRECCIÓN: Todo el mes pasado (1 de sep a 30 de sep)
       const inicioMesPasado = new Date(ahora.getFullYear(), ahora.getMonth() - 1, 1);
       const finMesPasado = new Date(ahora.getFullYear(), ahora.getMonth(), 0);
       finMesPasado.setHours(23, 59, 59, 999);
@@ -139,7 +138,7 @@ export const getMovimientos = async (req, res) => {
       params.push(`%${search.trim()}%`);
     }
 
-    // Filtro por periodo - CORREGIDO
+    // Filtro por periodo
     if (periodo !== 'todos') {
       const { fechaInicio, fechaFin } = getRangoFechasBackend(periodo);
       
@@ -209,15 +208,17 @@ export const registrarSalida = async (req, res) => {
   try {
     await connection.beginTransaction();
 
+    // ✅ CORREGIDO: ID de usuario obtenido del token (middleware)
+    const id_usuario_autenticado = req.user.id;
     const {
       id_producto,
-      id_usuario,
       cantidad,
       id_motivo_baja,
       descripcion_adicional,
     } = req.body;
 
-    if (!id_producto || !id_usuario || !id_motivo_baja) {
+    // ✅ CORREGIDO: Validación usa el ID autenticado
+    if (!id_producto || !id_usuario_autenticado || !id_motivo_baja) {
       await connection.rollback();
       return res.status(400).json({
         error:
@@ -228,7 +229,7 @@ export const registrarSalida = async (req, res) => {
     const motivo = parseInt(id_motivo_baja);
     const cant = parseInt(cantidad) || 1;
 
-    // Obtener el producto y bloquear la fila para evitar condiciones de carrera
+    // ... (Validaciones de producto y estatus) ...
     const [productoRows] = await connection.query(
       `SELECT p.*, ep.nombre_estatus as estatus_nombre 
        FROM Producto p 
@@ -244,9 +245,9 @@ export const registrarSalida = async (req, res) => {
     const producto = productoRows[0];
     const estatusActual = producto.id_estatus_producto;
 
-    // --- LÓGICA DE VALIDACIÓN ACTUALIZADA ---
+    // --- LÓGICA DE VALIDACIÓN ---
     switch (motivo) {
-      case 1: // INICIAR USO (CORRECTO)
+      case 1: // INICIAR USO
         if (![1, 3, 8].includes(estatusActual)) {
           await connection.rollback();
           return res.status(400).json({
@@ -261,7 +262,7 @@ export const registrarSalida = async (req, res) => {
         }
         break;
 
-      case 5: // FINALIZAR USO (CAMBIADO de 2 a 5)
+      case 5: // FINALIZAR USO
         if (estatusActual !== 5) {
           await connection.rollback();
           return res.status(400).json({
@@ -270,7 +271,7 @@ export const registrarSalida = async (req, res) => {
         }
         break;
 
-      case 2: // INCIDENCIA (CAMBIADO de 3 a 2)
+      case 2: // INCIDENCIA
         if (!descripcion_adicional?.trim()) {
           await connection.rollback();
           return res.status(400).json({
@@ -284,16 +285,13 @@ export const registrarSalida = async (req, res) => {
           });
         }
         break;
-
-      case 4: // BAJA (CORRECTO)
-        // Validaciones para baja
+      case 4: // BAJA
         break;
     }
 
     // --- Actualización de Stock ---
     let stockRestante = producto.existencia_actual;
-    if ([5, 2].includes(motivo)) {
-      // Finalizar Uso (5) e Incidencia (2) restan stock
+    if ([5, 2].includes(motivo)) { // Finalizar Uso (5) e Incidencia (2)
       stockRestante -= cant;
       if (stockRestante < 0) {
         await connection.rollback();
@@ -308,22 +306,24 @@ export const registrarSalida = async (req, res) => {
     }
 
     // --- Registro del Movimiento ---
+    // ✅ CORREGIDO: Se usa id_usuario_autenticado
     const [movimientoResult] = await connection.query(
       `INSERT INTO Movimiento (id_producto, id_usuario, id_tipo_movimiento, cantidad, fecha, id_motivo_baja, descripcion_adicional)
        VALUES (?, ?, 2, ?, NOW(), ?, ?)`,
-      [id_producto, id_usuario, cant, motivo, descripcion_adicional || null]
+      [id_producto, id_usuario_autenticado, cant, motivo, descripcion_adicional || null]
     );
     const nuevoMovimientoId = movimientoResult.insertId;
 
     // --- Manejo de Ciclo de Uso ---
     if (motivo === 1) {
       // INICIAR USO
+      // ✅ CORREGIDO: Se usa id_usuario_autenticado
       await connection.query(
         `INSERT INTO UsoProducto (id_producto, id_usuario, id_movimiento, fecha_inicio) VALUES (?, ?, ?, NOW())`,
-        [id_producto, id_usuario, nuevoMovimientoId]
+        [id_producto, id_usuario_autenticado, nuevoMovimientoId]
       );
     } else if (motivo === 5) {
-      // FINALIZAR USO (CAMBIADO de 2 a 5)
+      // FINALIZAR USO
       const [usoResult] = await connection.query(
         `UPDATE UsoProducto SET fecha_fin = NOW(), id_movimiento = ? WHERE id_producto = ? AND fecha_fin IS NULL ORDER BY fecha_inicio DESC LIMIT 1`,
         [nuevoMovimientoId, id_producto]
@@ -381,10 +381,16 @@ export const registrarEntrada = async (req, res) => {
   const connection = await db.getConnection();
   try {
     await connection.beginTransaction();
-    const { id_producto, id_usuario, cantidad, descripcion_adicional } =
+
+    // ✅ CORREGIDO: ID de usuario obtenido del token (middleware)
+    const id_usuario_autenticado = req.user.id;
+
+    // OBTÉN DATOS DEL BODY (IGNORANDO CUALQUIER id_usuario)
+    const { id_producto, cantidad, descripcion_adicional } =
       req.body;
 
-    if (!id_producto || !id_usuario || !cantidad) {
+    // VALIDACIONES
+    if (!id_producto || !id_usuario_autenticado || !cantidad) {
       return res
         .status(400)
         .json({ error: "id_producto, id_usuario y cantidad son requeridos" });
@@ -398,10 +404,11 @@ export const registrarEntrada = async (req, res) => {
       [cantidad, id_producto]
     );
 
+    // ✅ CORREGIDO: Se usa id_usuario_autenticado
     const [result] = await connection.query(
       `INSERT INTO Movimiento (id_producto, id_usuario, id_tipo_movimiento, cantidad, fecha, descripcion_adicional)
-             VALUES (?, ?, 1, ?, NOW(), ?)`,
-      [id_producto, id_usuario, cantidad, descripcion_adicional || null]
+               VALUES (?, ?, 1, ?, NOW(), ?)`,
+      [id_producto, id_usuario_autenticado, cantidad, descripcion_adicional || null]
     );
 
     await connection.commit();
@@ -425,10 +432,16 @@ export const registrarBaja = async (req, res) => {
   const connection = await db.getConnection();
   try {
     await connection.beginTransaction();
-    const { id_producto, id_usuario, descripcion_adicional } = req.body;
+
+    // ✅ CORREGIDO: ID de usuario obtenido del token (middleware)
+    const id_usuario_autenticado = req.user.id;
+    
+    // OBTÉN DATOS DEL BODY
+    const { id_producto, descripcion_adicional } = req.body;
     const id_motivo_baja = 4; // El motivo 'Baja' es fijo para este endpoint
 
-    if (!id_producto || !id_usuario || !descripcion_adicional?.trim()) {
+    // ✅ CORREGIDO: Validación usa el ID autenticado
+    if (!id_producto || !id_usuario_autenticado || !descripcion_adicional?.trim()) {
       await connection.rollback();
       return res.status(400).json({
         error:
@@ -449,7 +462,7 @@ export const registrarBaja = async (req, res) => {
     const producto = productoRows[0];
     const existenciaActual = producto.existencia_actual;
 
-    // ✅ NUEVA VALIDACIÓN: No permitir baja si no hay stock
+    // VALIDACIÓN: No permitir baja si no hay stock
     if (existenciaActual <= 0) {
       await connection.rollback();
       return res.status(400).json({ 
@@ -457,7 +470,7 @@ export const registrarBaja = async (req, res) => {
       });
     }
 
-    // ✅ VALIDACIÓN ADICIONAL: No permitir si ya está de baja
+    // VALIDACIÓN: No permitir si ya está de baja
     if (producto.id_estatus_producto === 6) {
       await connection.rollback();
       return res.status(400).json({ 
@@ -465,19 +478,19 @@ export const registrarBaja = async (req, res) => {
       });
     }
 
-    // --- LÓGICA ACTUALIZADA: Pone el stock a 0 y el estatus a 'Baja' (6) ---
+    // LÓGICA: Pone el stock a 0 y el estatus a 'Baja' (6)
     await connection.query(
       "UPDATE Producto SET existencia_actual = 0, id_estatus_producto = 6 WHERE id_producto = ?",
       [id_producto]
     );
 
-    // Registra el movimiento con la cantidad que había antes de la baja
+    // ✅ CORREGIDO: Se usa id_usuario_autenticado
     const [result] = await connection.query(
       `INSERT INTO Movimiento (id_producto, id_usuario, id_tipo_movimiento, cantidad, fecha, id_motivo_baja, descripcion_adicional)
        VALUES (?, ?, 2, ?, NOW(), ?, ?)`,
       [
         id_producto,
-        id_usuario,
+        id_usuario_autenticado,
         existenciaActual,
         id_motivo_baja,
         descripcion_adicional,
@@ -504,12 +517,12 @@ export const getUsuarios = async (req, res) => {
   try {
     const [rows] = await db.query(
       `SELECT 
-        u.id_usuario,
-        CONCAT(u.primer_nombre, ' ', u.apellido_paterno, ' ', u.apellido_materno) as nombre_completo,
-        u.primer_nombre,
-        u.apellido_paterno, 
-        u.apellido_materno,
-        r.nombre_rol as rol
+         u.id_usuario,
+         CONCAT(u.primer_nombre, ' ', u.apellido_paterno, ' ', u.apellido_materno) as nombre_completo,
+         u.primer_nombre,
+         u.apellido_paterno, 
+         u.apellido_materno,
+         r.nombre_rol as rol
        FROM Usuario u
        JOIN Rol r ON u.id_rol = r.id_rol
        WHERE u.id_estatus_usuario = 1 -- Solo usuarios activos

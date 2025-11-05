@@ -133,7 +133,7 @@ export default function InstructivoScreen() {
           </Text>
         </TouchableOpacity>
         <Text style={[styles.headerTitle, isDark && styles.textDark]}>
-          Instructivo Empresarial
+          Instructivo de Trabajo
         </Text>
         <View style={styles.headerPlaceholder} />
       </View>
@@ -148,13 +148,13 @@ export default function InstructivoScreen() {
               color="#539DF3"
             />
             <Text style={[styles.cardTitle, isDark && styles.textDark]}>
-              {isAdmin ? "Gestión de Instructivo" : "Instructivo Empresarial"}
+              {isAdmin ? "Gestión del Instructivo" : "Instructivo de Trabajo"}
             </Text>
           </View>
           <Text style={[styles.cardDescription, isDark && styles.textMutedDark]}>
             {isAdmin 
-              ? "Aquí puedes gestionar el instructivo de la empresa. El archivo debe estar en formato PDF."
-              : "Consulta el instructivo empresarial de la compañía. Solo disponible para lectura."
+              ? "Aquí puedes gestionar el instructivo de trabajo. El archivo debe estar en formato PDF."
+              : "Consulta el instructivo de trabajo. Solo disponible para lectura."
             }
           </Text>
           

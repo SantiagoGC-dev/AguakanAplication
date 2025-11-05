@@ -4,7 +4,7 @@ import fs from 'fs';
 import path from 'path';
 
 const uploadDir = './uploads';
-const pdfFileName = 'instructivo_empresarial.pdf'; // Nombre de archivo fijo
+const pdfFileName = 'instructivo_trabajo.pdf'; // Nombre de archivo fijo
 const pdfFilePath = path.join(uploadDir, pdfFileName);
 
 // --- Configuración de Multer (para subir) ---

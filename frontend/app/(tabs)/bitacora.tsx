@@ -14,34 +14,29 @@ import {
 import { Ionicons } from "@expo/vector-icons";
 import { ThemedText } from "@/components/themed-text";
 import { useRouter } from "expo-router";
+import api from "@/utils/api";
 
-// Configuración de API
-const API_BASE_URL = "http://172.20.10.11:3000/api";
-
+// --- Interfaces (Sin cambios) ---
 interface Usuario {
   id_usuario: string;
   nombre_completo: string;
   rol: string;
 }
-
 interface Filtros {
   periodo: string;
   tipoAccion: string;
   usuario: string;
 }
-
 interface PaginationInfo {
   currentPage: number;
   totalPages: number;
   totalItems: number;
   itemsPerPage: number;
 }
-
 interface ApiResponse {
   movimientos: Movimiento[];
   pagination: PaginationInfo;
 }
-
 interface Movimiento {
   id_movimiento: string;
   producto: string;
@@ -77,126 +72,79 @@ export default function BitacoraScreen() {
     usuario: "todos",
   });
 
-  // 🔹 Función para fetch de datos optimizada
-  const fetchData = useCallback(async (endpoint: string) => {
+  // --- Funciones de Carga (Corregidas con 'api') ---
+  const fetchUsuarios = useCallback(async () => {
     try {
-      const response = await fetch(`${API_BASE_URL}${endpoint}`);
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}`);
-      }
-      return await response.json();
-    } catch (error) {
-      console.error(`❌ Error en ${endpoint}:`, error);
-      throw error;
+      const response = await api.get<Usuario[]>("/movimientos/usuarios");
+      const usuariosData = response.data;
+      console.log("✅ Usuarios cargados:", usuariosData.length);
+      setUsuarios(usuariosData);
+    } catch (error: any) {
+      console.error("❌ Error cargando usuarios:", error.response?.data || error.message);
+      const usuariosRespaldo: Usuario[] = [
+         { id_usuario: "1", nombre_completo: "Santiago Gutierrez Calderón", rol: "Administrador" },
+         { id_usuario: "2", nombre_completo: "Pedro Ramirez Lopez", rol: "Laboratorista" },
+         { id_usuario: "3", nombre_completo: "Miriam Lopez Garcia", rol: "Laboratorista" },
+         { id_usuario: "4", nombre_completo: "David Garcia Martinez", rol: "Administrador" },
+       ];
+      setUsuarios(usuariosRespaldo);
     }
   }, []);
 
-  const fetchUsuarios = useCallback(async () => {
-    try {
-      const usuariosData = await fetchData("/movimientos/usuarios");
-      console.log("✅ Usuarios cargados:", usuariosData.length);
-      setUsuarios(usuariosData);
-    } catch (error) {
-      console.error("❌ Error cargando usuarios:", error);
-      const usuariosRespaldo: Usuario[] = [
-        {
-          id_usuario: "1",
-          nombre_completo: "Santiago Gutierrez Calderón",
-          rol: "Administrador",
-        },
-        {
-          id_usuario: "2",
-          nombre_completo: "Pedro Ramirez Lopez",
-          rol: "Laboratorista",
-        },
-        {
-          id_usuario: "3",
-          nombre_completo: "Miriam Lopez Garcia",
-          rol: "Laboratorista",
-        },
-        {
-          id_usuario: "4",
-          nombre_completo: "David Garcia Martinez",
-          rol: "Administrador",
-        },
-      ];
-      setUsuarios(usuariosRespaldo);
-    }
-  }, [fetchData]);
-
-  // 🔹 Cargar movimientos desde el backend optimizado
   const fetchMovimientos = useCallback(
     async (page: number = 1, isAppend: boolean = false) => {
       try {
-        if (page === 1) {
+        if (page === 1 && !isAppend) { // Solo mostrar loading en la carga inicial
           setLoading(true);
         }
-
         console.log(`🔄 Cargando página ${page}...`);
 
-        // Construir URL con parámetros
-        const params = new URLSearchParams({
-          page: page.toString(),
-          limit: "50",
-          search: busqueda,
-          periodo: filtros.periodo,
-          tipoAccion: filtros.tipoAccion,
-          usuario: filtros.usuario,
+        const response = await api.get<ApiResponse>("/movimientos", {
+          params: {
+            page: page,
+            limit: "50",
+            search: busqueda,
+            periodo: filtros.periodo,
+            tipoAccion: filtros.tipoAccion,
+            usuario: filtros.usuario,
+          },
         });
 
-        const response: ApiResponse = await fetchData(`/movimientos?${params}`);
+        const responseData = response.data;
 
         if (isAppend) {
-          setAllMovimientos((prev) => [...prev, ...response.movimientos]);
+          setAllMovimientos((prev) => [...prev, ...responseData.movimientos]);
         } else {
-          setAllMovimientos(response.movimientos);
+          setAllMovimientos(responseData.movimientos);
         }
 
-        setPagination(response.pagination);
-        setHasMore(page < response.pagination.totalPages);
+        setPagination(responseData.pagination);
+        setHasMore(page < responseData.pagination.totalPages);
 
         console.log(
           `✅ Página ${page} cargada:`,
-          response.movimientos.length,
+          responseData.movimientos.length,
           "movimientos"
         );
-      } catch (error) {
-        console.error("❌ Error cargando movimientos:", error);
+      } catch (error: any) {
+        console.error("❌ Error cargando movimientos:", error.response?.data || error.message);
         Alert.alert("Error", "No se pudieron cargar las actividades");
-
-        if (!isAppend) {
-          const datosEjemplo: Movimiento[] = [
-            {
-              id_movimiento: "1",
-              id_producto: "1",
-              producto: "Guantes de látex estéril talla M",
-              usuario: "Santiago Gutierrez",
-              nombre_tipo: "Entrada",
-              cantidad: 115,
-              fecha: "2024-01-15T16:29:00Z",
-            },
-            {
-              id_movimiento: "2",
-              id_producto: "2",
-              producto: "Agua destilada",
-              usuario: "Pedro Ramirez",
-              nombre_tipo: "Salida",
-              nombre_motivo: "Baja",
-              descripcion_adicional: "Producto agotado",
-              cantidad: 0,
-              fecha: "2024-01-15T16:29:00Z",
-            },
-          ];
-          setAllMovimientos(datosEjemplo);
-        }
+         if (!isAppend) {
+           const datosEjemplo: Movimiento[] = [
+             { id_movimiento: "1", id_producto: "1", producto: "Guantes de látex estéril talla M", usuario: "Santiago Gutierrez", nombre_tipo: "Entrada", cantidad: 115, fecha: "2024-01-15T16:29:00Z" },
+             { id_movimiento: "2", id_producto: "2", producto: "Agua destilada", usuario: "Pedro Ramirez", nombre_tipo: "Salida", nombre_motivo: "Baja", descripcion_adicional: "Producto agotado", cantidad: 0, fecha: "2024-01-15T16:29:00Z" },
+           ];
+           setAllMovimientos(datosEjemplo);
+         }
       } finally {
         setLoading(false);
         setRefreshing(false);
       }
     },
-    [fetchData, busqueda, filtros]
+    [busqueda, filtros]
   );
-
+  
+  // --- Funciones de Lógica y Helpers (Sin cambios) ---
   const loadMoreData = useCallback(() => {
     if (!loading && hasMore && allMovimientos.length > 0) {
       console.log(`📥 Cargando página ${pagination.currentPage + 1}...`);
@@ -210,23 +158,19 @@ export default function BitacoraScreen() {
     allMovimientos.length,
   ]);
 
-  // 🔹 Aplicar filtros OPTIMIZADO con useMemo
   const movimientosFiltrados = useMemo(() => {
     return allMovimientos;
   }, [allMovimientos]);
 
-  // 🔹 Actualizar estado de filtros aplicados
   useEffect(() => {
     const hayFiltrosActivos =
       filtros.periodo !== "todos" ||
       filtros.tipoAccion !== "" ||
       filtros.usuario !== "todos" ||
       busqueda.trim() !== "";
-
     setFiltrosAplicados(hayFiltrosActivos);
   }, [filtros, busqueda]);
 
-  // 🔹 Resetear filtros
   const resetearFiltros = useCallback(() => {
     setFiltros({
       periodo: "todos",
@@ -237,15 +181,13 @@ export default function BitacoraScreen() {
     setFiltrosAplicados(false);
   }, []);
 
-  // 🔹 Aplicar filtros desde modal
   const aplicarFiltrosDesdeModal = useCallback(() => {
     setFiltrosVisible(false);
-  }, []);
+    fetchMovimientos(1, false); // Recargar con los nuevos filtros
+  }, [fetchMovimientos]);
 
-  // 🔹 Generar descripción legible
   const obtenerAccion = useCallback((mov: Movimiento): string => {
     const { nombre_motivo, nombre_tipo, cantidad } = mov;
-
     if (nombre_motivo === "Iniciar uso") {
       return "inició uso de";
     } else if (nombre_motivo === "Finalizar uso") {
@@ -261,7 +203,6 @@ export default function BitacoraScreen() {
     }
   }, []);
 
-  // 🔹 Formatear fecha
   const formatFecha = useCallback((fechaString: string) => {
     try {
       const fecha = new Date(fechaString);
@@ -283,10 +224,8 @@ export default function BitacoraScreen() {
     }
   }, []);
 
-  // 🔹 Obtener icono y color
   const getIcono = useCallback((mov: Movimiento) => {
     const { nombre_tipo, nombre_motivo } = mov;
-
     if (nombre_motivo === "Iniciar uso") {
       return { icon: "play-outline", color: "#3B82F6" };
     } else if (nombre_motivo === "Finalizar uso") {
@@ -302,19 +241,30 @@ export default function BitacoraScreen() {
     }
   }, []);
 
-  // 🔹 Cargar datos al montar
+  // --- Efectos ---
   useEffect(() => {
+    // Carga inicial
     fetchMovimientos(1, false);
     fetchUsuarios();
-  }, [fetchMovimientos, fetchUsuarios]);
+  }, [fetchUsuarios]); // Solo depende de fetchUsuarios
 
-  // 🔹 Pull to refresh
+   // Recargar datos cuando los filtros o búsqueda cambian
+   useEffect(() => {
+    const handler = setTimeout(() => {
+      fetchMovimientos(1, false);
+    }, 300); // 300ms de espera después de teclear
+    return () => {
+      clearTimeout(handler);
+    };
+  }, [busqueda, filtros, fetchMovimientos]); // Depende de fetchMovimientos ahora
+
   const onRefresh = useCallback(() => {
     setRefreshing(true);
     setAllMovimientos([]);
     fetchMovimientos(1, false);
   }, [fetchMovimientos]);
 
+  // --- Renderizado ---
   if (loading && allMovimientos.length === 0) {
     return (
       <View style={styles.loadingContainer}>
@@ -416,8 +366,11 @@ export default function BitacoraScreen() {
                 <ThemedText style={styles.descripcionCompleta}>
                   <ThemedText type="defaultSemiBold" style={styles.usuario}>
                     {item.usuario}
-                  </ThemedText>{" "}
-                  <ThemedText style={styles.accion}>{accion}</ThemedText>{" "}
+                  </ThemedText>
+                  
+                  {/* ✅ CORRECCIÓN JSX: Espacios movidos DENTRO del componente */}
+                  <ThemedText style={styles.accion}> {accion} </ThemedText>
+                  
                   <ThemedText
                     type="defaultSemiBold"
                     style={styles.productoNombre}
@@ -608,7 +561,7 @@ export default function BitacoraScreen() {
                 </View>
               </View>
 
-              {/* Filtro: Usuario - NUEVA VERSIÓN CON DROPDOWN */}
+              {/* Filtro: Usuario */}
               <View style={styles.filterCard}>
                 <ThemedText
                   type="defaultSemiBold"
@@ -616,8 +569,6 @@ export default function BitacoraScreen() {
                 >
                   Usuario
                 </ThemedText>
-
-                {/* Dropdown Trigger */}
                 <TouchableOpacity
                   style={styles.dropdownTrigger}
                   onPress={() =>
@@ -639,7 +590,6 @@ export default function BitacoraScreen() {
                   />
                 </TouchableOpacity>
 
-                {/* Dropdown Content */}
                 {dropdownUsuarioVisible && (
                   <View style={styles.dropdownContent}>
                     <ScrollView
@@ -647,7 +597,6 @@ export default function BitacoraScreen() {
                       nestedScrollEnabled={true}
                       showsVerticalScrollIndicator={true}
                     >
-                      {/* Opción "Todos" */}
                       <TouchableOpacity
                         style={[
                           styles.dropdownOption,
@@ -680,7 +629,6 @@ export default function BitacoraScreen() {
                         )}
                       </TouchableOpacity>
 
-                      {/* Lista de usuarios */}
                       {usuarios.map((usuario) => (
                         <TouchableOpacity
                           key={usuario.id_usuario}
@@ -755,360 +703,359 @@ export default function BitacoraScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#F8FAFC", paddingHorizontal: 20 },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    backgroundColor: "#F8FAFC",
-  },
-  loadingContent: {
-    alignItems: "center",
-    gap: 16,
-  },
-  loadingText: {
-    fontSize: 18,
-    fontFamily: "Poppins_500Medium",
-    color: "#4B9CD3",
-    textAlign: "center",
-  },
-  header: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingTop: 60,
-    paddingBottom: 10,
-  },
-  headerTitle: {
-    fontSize: 25,
-    color: "#000000ff",
-    fontFamily: "Poppins_700Bold",
-  },
-  badgeContainer: {
-    flexDirection: "row",
-    justifyContent: "flex-start",
-    marginBottom: 12,
-    paddingHorizontal: 0,
-  },
-  filtrosActivosBadge: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: "#539DF3",
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 20,
-  },
-  filtrosActivosText: {
-    color: "#fff",
-    fontSize: 12,
-    fontFamily: "Poppins_500Medium",
-    marginRight: 6,
-  },
-  searchContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 10,
-    marginBottom: 16,
-  },
-  searchBox: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: "#FFFFFF",
-    flex: 1,
-    borderRadius: 12,
-    paddingHorizontal: 12,
-    height: 44,
-    shadowColor: "#000",
-    shadowOpacity: 0.06,
-    shadowRadius: 4,
-    elevation: 2,
-  },
-  searchInput: {
-    flex: 1,
-    fontSize: 14,
-    marginLeft: 6,
-    fontFamily: "Poppins_400Regular",
-  },
-  filterButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: "#FFFFFF",
-    borderRadius: 12,
-    paddingHorizontal: 10,
-    height: 44,
-    gap: 4,
-    shadowColor: "#000",
-    shadowOpacity: 0.06,
-    shadowRadius: 4,
-    elevation: 2,
-  },
-  filterButtonActive: {
-    backgroundColor: "#539DF3",
-  },
-  filterText: {
-    fontSize: 14,
-    color: "#1E293B",
-    fontFamily: "Poppins_500Medium",
-  },
-  filterTextActive: {
-    color: "#FFFFFF",
-  },
-  scrollContent: { paddingBottom: 100, gap: 12 },
-  item: {
-    flexDirection: "row",
-    alignItems: "flex-start",
-    backgroundColor: "#FFFFFF",
-    borderRadius: 12,
-    padding: 16,
-    shadowColor: "#000",
-    shadowOpacity: 0.06,
-    shadowRadius: 4,
-    elevation: 2,
-  },
-  iconContainer: {
-    width: 34,
-    height: 34,
-    borderRadius: 10,
-    justifyContent: "center",
-    alignItems: "center",
-    marginRight: 10,
-  },
-  itemInfo: {
-    flex: 1,
-  },
-  descripcionCompleta: {
-    fontSize: 14,
-    color: "#475569",
-    lineHeight: 20,
-    fontFamily: "Poppins_400Regular",
-  },
-  usuario: {
-    color: "#000000ff",
-    fontFamily: "Poppins_500Medium",
-  },
-  accion: {
-    color: "#475569",
-    fontFamily: "Poppins_400Regular",
-  },
-  productoNombre: {
-    color: "#000000ff",
-    fontFamily: "Poppins_500Medium",
-  },
-  detalleAdicional: {
-    fontSize: 12,
-    color: "#64748B",
-    fontStyle: "italic",
-    marginTop: 2,
-    fontFamily: "Poppins_400Regular",
-  },
-  fecha: {
-    fontSize: 12,
-    color: "#64748B",
-    marginTop: 4,
-    fontFamily: "Poppins_400Regular",
-  },
-  emptyState: {
-    alignItems: "center",
-    padding: 40,
-    gap: 12,
-  },
-  emptyStateText: {
-    fontFamily: "Poppins_400Regular",
-    fontSize: 14,
-    color: "#64748B",
-    textAlign: "center",
-  },
-  resetButton: {
-    backgroundColor: "#539DF3",
-    paddingHorizontal: 20,
-    paddingVertical: 10,
-    borderRadius: 12,
-    marginTop: 8,
-  },
-  resetButtonText: {
-    color: "#FFFFFF",
-    fontSize: 14,
-    fontFamily: "Poppins_500Medium",
-  },
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: "rgba(0, 0, 0, 0.5)",
-    justifyContent: "flex-end",
-  },
-  modalContent: {
-    backgroundColor: "#FFFFFF",
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    maxHeight: "85%",
-  },
-  modalHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    padding: 20,
-    borderBottomWidth: 1,
-    borderBottomColor: "#E5E7EB",
-  },
-  modalTitle: {
-    fontSize: 20,
-    fontFamily: "Poppins_700Bold",
-    color: "#1F2937",
-  },
-  closeButton: {
-    padding: 4,
-  },
-  filtersScroll: {
-    maxHeight: 400,
-    paddingVertical: 8,
-  },
-  filterCard: {
-    backgroundColor: "#fff",
-    borderRadius: 16,
-    padding: 20,
-    marginHorizontal: 20,
-    marginBottom: 16,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    elevation: 2,
-    borderWidth: 1,
-    borderColor: "#f1f5f9",
-  },
-  filterCardTitle: {
-    fontFamily: "Poppins_500Medium",
-    fontSize: 16,
-    color: "#374151",
-    marginBottom: 12,
-  },
-  filterOptions: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 8,
-  },
-  filterOption: {
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    borderRadius: 20,
-    backgroundColor: "#f8fafc",
-    borderWidth: 1,
-    borderColor: "#e1e5e9",
-  },
-  filterOptionActive: {
-    backgroundColor: "#3B82F6",
-    borderColor: "#3B82F6",
-  },
-  filterOptionText: {
-    fontFamily: "Poppins_400Regular",
-    fontSize: 14,
-    color: "#666",
-    fontWeight: "500",
-  },
-  filterOptionTextActive: {
-    color: "#fff",
-    fontWeight: "600",
-  },
-  filterActions: {
-    flexDirection: "row",
-    padding: 20,
-    borderTopWidth: 1,
-    borderTopColor: "#E5E7EB",
-    gap: 12,
-  },
-  resetBtn: {
-    flex: 1,
-    backgroundColor: "#f8fafc",
-    padding: 16,
-    alignItems: "center",
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: "#e1e5e9",
-  },
-  applyBtn: {
-    flex: 1,
-    backgroundColor: "#539DF3",
-    padding: 16,
-    alignItems: "center",
-    borderRadius: 12,
-    shadowColor: "#539DF3",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 4,
-  },
-  resetBtnText: {
-    fontWeight: "600",
-    color: "#666",
-    fontSize: 16,
-    fontFamily: "Poppins_500Medium",
-  },
-  applyBtnText: {
-    color: "#fff",
-    fontWeight: "600",
-    fontSize: 15,
-    fontFamily: "Poppins_700Bold",
-  },
-  loadingFooter: {
-    padding: 20,
-    alignItems: "center",
-    flexDirection: "row",
-    justifyContent: "center",
-    gap: 10,
-  },
-  loadingFooterText: {
-    fontSize: 14,
-    color: "#64748B",
-    fontFamily: "Poppins_400Regular",
-  },
-  // Agrega al final de tus estilos
-  dropdownTrigger: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    borderWidth: 1,
-    borderColor: "#D1D5DB",
-    borderRadius: 18,
-    padding: 12,
-    backgroundColor: "white",
-    marginBottom: 8,
-  },
-  dropdownTriggerText: {
-    fontFamily: "Poppins_400Regular",
-    fontSize: 14,
-    color: "#374151",
-    flex: 1,
-  },
-  dropdownContent: {
-    borderWidth: 1,
-    borderColor: "#D1D5DB",
-    borderRadius: 8,
-    backgroundColor: "white",
-    maxHeight: 200, // Altura máxima para el scroll
-    marginBottom: 8,
-  },
-  dropdownScroll: {
-    maxHeight: 198, // Un poco menos que el contenedor
-  },
-  dropdownOption: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: "#F3F4F6",
-  },
-  dropdownOptionActive: {
-    backgroundColor: "#EEF2FF",
-  },
-  dropdownOptionText: {
-    fontFamily: "Poppins_400Regular",
-    fontSize: 14,
-    color: "#374151",
-    flex: 1,
-  },
-  dropdownOptionTextActive: {
-    color: "#539DF3",
-    fontWeight: "500",
-  },
+  container: { flex: 1, backgroundColor: "#F8FAFC", paddingHorizontal: 20 },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "#F8FAFC",
+  },
+  loadingContent: {
+    alignItems: "center",
+    gap: 16,
+  },
+  loadingText: {
+    fontSize: 18,
+    fontFamily: "Poppins_500Medium",
+    color: "#4B9CD3",
+    textAlign: "center",
+  },
+  header: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingTop: 60,
+    paddingBottom: 10,
+  },
+  headerTitle: {
+    fontSize: 25,
+    color: "#000000ff",
+    fontFamily: "Poppins_700Bold",
+  },
+  badgeContainer: {
+    flexDirection: "row",
+    justifyContent: "flex-start",
+    marginBottom: 12,
+    paddingHorizontal: 0,
+  },
+  filtrosActivosBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#539DF3",
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 20,
+  },
+  filtrosActivosText: {
+    color: "#fff",
+    fontSize: 12,
+    fontFamily: "Poppins_500Medium",
+    marginRight: 6,
+  },
+  searchContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    marginBottom: 16,
+  },
+  searchBox: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#FFFFFF",
+    flex: 1,
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    height: 44,
+    shadowColor: "#000",
+    shadowOpacity: 0.06,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  searchInput: {
+    flex: 1,
+    fontSize: 14,
+    marginLeft: 6,
+    fontFamily: "Poppins_400Regular",
+  },
+  filterButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#FFFFFF",
+    borderRadius: 12,
+    paddingHorizontal: 10,
+    height: 44,
+    gap: 4,
+    shadowColor: "#000",
+    shadowOpacity: 0.06,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  filterButtonActive: {
+    backgroundColor: "#539DF3",
+  },
+  filterText: {
+    fontSize: 14,
+    color: "#1E293B",
+    fontFamily: "Poppins_500Medium",
+  },
+  filterTextActive: {
+    color: "#FFFFFF",
+  },
+  scrollContent: { paddingBottom: 100, gap: 12 },
+  item: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    backgroundColor: "#FFFFFF",
+    borderRadius: 12,
+    padding: 16,
+    shadowColor: "#000",
+    shadowOpacity: 0.06,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  iconContainer: {
+    width: 34,
+    height: 34,
+    borderRadius: 10,
+    justifyContent: "center",
+    alignItems: "center",
+    marginRight: 10,
+  },
+  itemInfo: {
+    flex: 1,
+  },
+  descripcionCompleta: {
+    fontSize: 14,
+    color: "#475569",
+    lineHeight: 20,
+    fontFamily: "Poppins_400Regular",
+  },
+  usuario: {
+    color: "#000000ff",
+    fontFamily: "Poppins_500Medium",
+  },
+  accion: {
+    color: "#475569",
+    fontFamily: "Poppins_400Regular",
+  },
+  productoNombre: {
+    color: "#000000ff",
+    fontFamily: "Poppins_500Medium",
+  },
+  detalleAdicional: {
+    fontSize: 12,
+    color: "#64748B",
+    fontStyle: "italic",
+    marginTop: 2,
+    fontFamily: "Poppins_400Regular",
+  },
+  fecha: {
+    fontSize: 12,
+    color: "#64748B",
+    marginTop: 4,
+    fontFamily: "Poppins_400Regular",
+  },
+  emptyState: {
+    alignItems: "center",
+    padding: 40,
+    gap: 12,
+  },
+  emptyStateText: {
+    fontFamily: "Poppins_400Regular",
+    fontSize: 14,
+    color: "#64748B",
+    textAlign: "center",
+  },
+  resetButton: {
+    backgroundColor: "#539DF3",
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    borderRadius: 12,
+    marginTop: 8,
+  },
+  resetButtonText: {
+    color: "#FFFFFF",
+    fontSize: 14,
+    fontFamily: "Poppins_500Medium",
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
+    justifyContent: "flex-end",
+  },
+  modalContent: {
+    backgroundColor: "#FFFFFF",
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    maxHeight: "85%",
+  },
+  modalHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    padding: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: "#E5E7EB",
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontFamily: "Poppins_700Bold",
+    color: "#1F2937",
+  },
+  closeButton: {
+    padding: 4,
+  },
+  filtersScroll: {
+    maxHeight: 400, // Ajustado para dar más espacio
+    paddingVertical: 8,
+  },
+  filterCard: {
+    backgroundColor: "#fff",
+    borderRadius: 16,
+    padding: 20,
+    marginHorizontal: 20,
+    marginBottom: 16,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 2,
+    borderWidth: 1,
+    borderColor: "#f1f5f9",
+  },
+  filterCardTitle: {
+    fontFamily: "Poppins_500Medium",
+    fontSize: 16,
+    color: "#374151",
+    marginBottom: 12,
+  },
+  filterOptions: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 8,
+  },
+  filterOption: {
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 20,
+    backgroundColor: "#f8fafc",
+    borderWidth: 1,
+    borderColor: "#e1e5e9",
+  },
+  filterOptionActive: {
+    backgroundColor: "#3B82F6",
+    borderColor: "#3B82F6",
+  },
+  filterOptionText: {
+    fontFamily: "Poppins_400Regular",
+    fontSize: 14,
+    color: "#666",
+    fontWeight: "500",
+  },
+  filterOptionTextActive: {
+    color: "#fff",
+    fontWeight: "600",
+  },
+  filterActions: {
+    flexDirection: "row",
+    padding: 20,
+    borderTopWidth: 1,
+    borderTopColor: "#E5E7EB",
+    gap: 12,
+  },
+  resetBtn: {
+    flex: 1,
+    backgroundColor: "#f8fafc",
+    padding: 16,
+    alignItems: "center",
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: "#e1e5e9",
+  },
+  applyBtn: {
+    flex: 1,
+    backgroundColor: "#539DF3",
+    padding: 16,
+    alignItems: "center",
+    borderRadius: 12,
+    shadowColor: "#539DF3",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  resetBtnText: {
+    fontWeight: "600",
+    color: "#666",
+    fontSize: 16,
+    fontFamily: "Poppins_500Medium",
+  },
+  applyBtnText: {
+    color: "#fff",
+    fontWeight: "600",
+    fontSize: 15,
+    fontFamily: "Poppins_700Bold",
+  },
+  loadingFooter: {
+    padding: 20,
+    alignItems: "center",
+    flexDirection: "row",
+    justifyContent: "center",
+    gap: 10,
+  },
+  loadingFooterText: {
+    fontSize: 14,
+    color: "#64748B",
+    fontFamily: "Poppins_400Regular",
+  },
+  dropdownTrigger: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    borderWidth: 1,
+    borderColor: "#D1D5DB",
+    borderRadius: 18,
+    padding: 12,
+    backgroundColor: "white",
+    marginBottom: 8,
+  },
+  dropdownTriggerText: {
+    fontFamily: "Poppins_400Regular",
+    fontSize: 14,
+    color: "#374151",
+    flex: 1,
+  },
+  dropdownContent: {
+    borderWidth: 1,
+    borderColor: "#D1D5DB",
+    borderRadius: 8,
+    backgroundColor: "white",
+    maxHeight: 200, 
+    marginBottom: 8,
+  },
+  dropdownScroll: {
+    maxHeight: 198, 
+  },
+  dropdownOption: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: "#F3F4F6",
+  },
+  dropdownOptionActive: {
+    backgroundColor: "#EEF2FF",
+  },
+  dropdownOptionText: {
+    fontFamily: "Poppins_400Regular",
+    fontSize: 14,
+    color: "#374151",
+    flex: 1,
+  },
+  dropdownOptionTextActive: {
+    color: "#539DF3",
+    fontWeight: "500",
+  },
 });

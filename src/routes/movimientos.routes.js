@@ -8,8 +8,10 @@ import {
   registrarSalida, 
   getUsuarios
 } from "../controllers/movimientos.controller.js";
+import { verifyToken } from "../middlewares/auth.js";
 
 const router = express.Router();
+router.use(verifyToken);
 
 // Obtener todos los motivos de baja
 router.get("/motivos-baja", getMotivosBaja);

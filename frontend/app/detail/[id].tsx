@@ -22,9 +22,10 @@ import { LinearGradient } from "expo-linear-gradient";
 import * as ImagePicker from "expo-image-picker";
 import TendenciaStockChart from "../../components/TendenciaStockChart";
 import { Swipeable } from "react-native-gesture-handler";
+import { useAuth } from "@/context/AuthContext";
+import api from "@/utils/api"; // ✅ Importado
 
-// Constantes
-const API_BASE_URL = "http://172.20.10.11:3000";
+const API_ROOT_URL = "http://172.20.10.11:3000";
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get("window");
 
@@ -38,8 +39,6 @@ interface ProductoEdicion {
   id_prioridad: number;
   id_tipo_producto: number;
   imagen: string;
-
-  // Propiedades opcionales para diferentes tipos
   presentacion?: string | null;
   caducidad?: string | null;
   cantidad_ingresada_reactivo?: number;
@@ -51,8 +50,6 @@ interface ProductoEdicion {
   intervalo_trabajo?: string | null;
   id_laboratorio?: number | null;
 }
-
-// ACTUALIZAR la interfaz Producto (al inicio del archivo)
 interface Producto {
   id_producto: number;
   nombre: string;
@@ -66,7 +63,7 @@ interface Producto {
   prioridad: string;
   tipo: string;
   estatus: string;
-  id_estatus_producto?: number; 
+  id_estatus_producto?: number;
   id_prioridad?: number;
   presentacion?: string;
   caducidad?: string;
@@ -81,7 +78,6 @@ interface Producto {
   id_laboratorio?: number;
   cantidad_material?: number;
 }
-
 interface Documento {
   id_documento?: number;
   nombre: string;
@@ -92,17 +88,14 @@ interface Documento {
   tipo_archivo?: string;
   nombre_archivo?: string;
 }
-
 interface MotivoBaja {
   id_motivo_baja: number;
   nombre_motivo: string;
 }
-
 interface OpcionSelect {
   value: string;
   label: string;
 }
-
 interface Movimiento {
   id_movimiento: number;
   fecha: string;
@@ -114,59 +107,41 @@ interface Movimiento {
   fecha_inicio: string | null;
   fecha_fin: string | null;
 }
-
-// Función de ayuda para calcular la autonomía de un producto
+// ... (Todas tus funciones helper: calcularDiferenciaFechas, calcularDiasHastaCaducidad, etc. no cambian) ...
 function calcularDiferenciaFechas(inicio: string, fin: string): string {
   if (!inicio || !fin) return "N/A";
-
   try {
     const fechaInicio = new Date(inicio);
     const fechaFin = new Date(fin);
-
-    // Validar que las fechas sean válidas
     if (isNaN(fechaInicio.getTime()) || isNaN(fechaFin.getTime())) {
       return "N/A";
     }
-    
     const diffMs = fechaFin.getTime() - fechaInicio.getTime();
-
-    // Si la diferencia es negativa, podría ser un error
     if (diffMs < 0) {
-      console.warn("⚠️ Diferencia de fechas negativa:", {
-        inicio,
-        fin,
-        diffMs,
-      });
+      console.warn("⚠️ Diferencia de fechas negativa:", { inicio, fin, diffMs });
       return "N/A";
     }
-
     const dias = Math.floor(diffMs / (1000 * 60 * 60 * 24));
     const diffMsRestante = diffMs - dias * (1000 * 60 * 60 * 24);
     const horas = Math.floor(diffMsRestante / (1000 * 60 * 60));
     const diffMsFinal = diffMsRestante - horas * (1000 * 60 * 60);
     const minutos = Math.floor(diffMsFinal / (1000 * 60));
-
     let resultado = "";
     if (dias > 0) resultado += `${dias} día(s) `;
     if (horas > 0) resultado += `${horas} hora(s) `;
     if (minutos > 0) resultado += `${minutos} min.`;
-
     return resultado.trim() || "Menos de un minuto";
   } catch (error) {
     console.error("❌ Error calculando diferencia de fechas:", error);
     return "N/A";
   }
 }
-
-// --- Funciones auxiliares para estatus ---
 const calcularDiasHastaCaducidad = (caducidad: string): number | null => {
   if (!caducidad) return null;
   try {
     const hoy = new Date();
     const fechaCaducidad = new Date(caducidad);
-    // Validar que la fecha sea válida
     if (isNaN(fechaCaducidad.getTime())) return null;
-
     const diffTime = fechaCaducidad.getTime() - hoy.getTime();
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
     return diffDays;
@@ -175,35 +150,24 @@ const calcularDiasHastaCaducidad = (caducidad: string): number | null => {
     return null;
   }
 };
-
-// Función para obtener color de estatus
 const getEstatusColor = (producto: Producto): string => {
   switch (producto.id_estatus_producto) {
-    case 1:
-      return "#28a745"; // Disponible
-    case 2:
-      return "#6c757d"; // Sin stock
-    case 3:
-      return "#ffc107"; // Bajo stock
-    case 5:
-      return "#007bff"; // En uso
-    case 6:
-      return "#dc3545"; // Baja
-    case 7:
-      return "#6f42c1"; // Caducado
-    case 8:
-      return "#fd7e14"; // Próximo a caducar
-    default:
-      return "#6c757d";
+    case 1: return "#28a745"; // Disponible
+    case 2: return "#6c757d"; // Sin stock
+    case 3: return "#ffc107"; // Bajo stock
+    case 5: return "#007bff"; // En uso
+    case 6: return "#dc3545"; // Baja
+    case 7: return "#6f42c1"; // Caducado
+    case 8: return "#fd7e14"; // Próximo a caducar
+    default: return "#6c757d";
   }
 };
-
-// Función para obtener texto de estatus mejorado
 const getEstatusText = (producto: Producto): string => {
   return producto.estatus || "Indefinido";
 };
 
 export default function ProductDetail() {
+  const { user } = useAuth();
   const { id } = useLocalSearchParams();
   const [producto, setProducto] = useState<Producto | null>(null);
   const [loading, setLoading] = useState(true);
@@ -217,20 +181,13 @@ export default function ProductDetail() {
   );
   const [documentos, setDocumentos] = useState<Documento[]>([]);
   const [uploading, setUploading] = useState(false);
-
   const [historial, setHistorial] = useState<Movimiento[]>([]);
   const [cargandoHistorial, setCargandoHistorial] = useState(true);
-
-  // Datos para la gráfica de tendencia de stock
   const [datosGrafica, setDatosGrafica] = useState<{ x: string; y: number }[]>(
     []
   );
-
-  // Animaciones
   const fadeAnim = useState(new Animated.Value(0))[0];
   const slideAnim = useState(new Animated.Value(50))[0];
-
-  // Opciones para selects
   const [opcionesPrioridad, setOpcionesPrioridad] = useState<OpcionSelect[]>(
     []
   );
@@ -238,8 +195,6 @@ export default function ProductDetail() {
   const [opcionesLaboratorios, setOpcionesLaboratorios] = useState<
     OpcionSelect[]
   >([]);
-
-  // Estados para el formulario de edición
   const [editForm, setEditForm] = useState({
     nombre: "",
     marca: "",
@@ -260,37 +215,27 @@ export default function ProductDetail() {
     intervalo_trabajo: "",
     id_laboratorio: "",
   });
-
-  // Estados para el formulario de reporte de salida
   const [reportForm, setReportForm] = useState({
     id_motivo_baja: "",
     cantidad: "1",
     descripcion_adicional: "",
   });
 
-  // Función para procesar el historial y crear datos para la gráfica
+  // ... (procesarDatosParaGrafica, useEffect de animación, formatFecha no cambian) ...
   const procesarDatosParaGrafica = (movimientos: Movimiento[]) => {
     if (!movimientos || movimientos.length === 0) return [];
-
     const datos: { x: string; y: number }[] = [];
     let stockAcumulado = producto?.existencia_actual || 0;
-
-    // Ordenar movimientos por fecha (más antiguo primero)
     const movimientosOrdenados = [...movimientos].sort(
       (a, b) => new Date(a.fecha).getTime() - new Date(b.fecha).getTime()
     );
-
-    // Reconstruir stock histórico (empezando desde el final)
     for (let i = movimientosOrdenados.length - 1; i >= 0; i--) {
       const mov = movimientosOrdenados[i];
-
       if (mov.tipo_movimiento === "Entrada") {
         stockAcumulado -= mov.cantidad;
       } else {
         stockAcumulado += mov.cantidad;
       }
-
-      // Solo agregar puntos significativos (cambios de stock)
       if (
         i === movimientosOrdenados.length - 1 ||
         datos[datos.length - 1]?.y !== stockAcumulado
@@ -301,11 +246,8 @@ export default function ProductDetail() {
         });
       }
     }
-
     return datos;
   };
-
-  // Efecto de animación al cargar
   useEffect(() => {
     if (!loading && producto) {
       Animated.parallel([
@@ -322,256 +264,190 @@ export default function ProductDetail() {
       ]).start();
     }
   }, [loading, producto]);
-
-  // Función para formatear fecha
   const formatFecha = (fecha: string) => {
     if (!fecha) return "N/A";
     return fecha.split("T")[0];
   };
 
-  // Cargar opciones para selects
+  // ✅ CORREGIDO: fetchOpcionesSelect usa api.get y manejo de errores de Axios
   const fetchOpcionesSelect = async () => {
+    // Cargar Prioridades
     try {
-      // Cargar Prioridades
-      try {
-        const prioridadesRes = await fetch(
-          `${API_BASE_URL}/api/productos/prioridades/list`
-        );
-        if (prioridadesRes.ok) {
-          const prioridadesData = await prioridadesRes.json();
-          if (Array.isArray(prioridadesData) && prioridadesData.length > 0) {
-            const opciones = prioridadesData.map((p: any) => ({
-              value: p.id_prioridad?.toString(),
-              label: p.nombre_prioridad || p.prioridad || "Sin nombre",
-            }));
-            setOpcionesPrioridad(opciones);
-          } else {
-            setOpcionesPrioridad([
-              { value: "1", label: "Alta" },
-              { value: "2", label: "Media" },
-              { value: "3", label: "Baja" },
-            ]);
-          }
-        } else {
-          throw new Error(`HTTP ${prioridadesRes.status}`);
-        }
-      } catch (error) {
-        console.error("❌ Error cargando prioridades:", error);
-        setOpcionesPrioridad([
-          { value: "1", label: "Alta" },
-          { value: "2", label: "Media" },
-          { value: "3", label: "Baja" },
-        ]);
-      }
-
-      // Cargar Estatus
-      try {
-        const estatusRes = await fetch(
-          `${API_BASE_URL}/api/productos/estatus/list`
-        );
-        if (estatusRes.ok) {
-          const estatusData = await estatusRes.json();
-          if (Array.isArray(estatusData) && estatusData.length > 0) {
-            const opciones = estatusData.map((e: any) => ({
-              value: e.id_estatus_producto?.toString(),
-              label: e.nombre_estatus || e.estatus || "Sin nombre",
-            }));
-            setOpcionesEstatus(opciones);
-          } else {
-            setOpcionesEstatus([
-              { value: "1", label: "Activo" },
-              { value: "2", label: "Inactivo" },
-            ]);
-          }
-        } else {
-          throw new Error(`HTTP ${estatusRes.status}`);
-        }
-      } catch (error) {
-        console.error("❌ Error cargando estatus:", error);
-        setOpcionesEstatus([
-          { value: "1", label: "Activo" },
-          { value: "2", label: "Inactivo" },
-        ]);
-      }
-
-      // Cargar Laboratorios
-      try {
-        const laboratoriosRes = await fetch(
-          `${API_BASE_URL}/api/productos/laboratorios/list`
-        );
-        if (laboratoriosRes.ok) {
-          const laboratoriosData = await laboratoriosRes.json();
-          if (Array.isArray(laboratoriosData) && laboratoriosData.length > 0) {
-            const opciones = laboratoriosData.map((l: any) => ({
-              value: l.id_laboratorio?.toString(),
-              label: `${l.nombre || "Lab"} - ${l.ubicacion || "Ubicación"}`,
-            }));
-            setOpcionesLaboratorios(opciones);
-          } else {
-            setOpcionesLaboratorios([
-              { value: "1", label: "Laboratorio Central - Planta Principal" },
-            ]);
-          }
-        } else {
-          throw new Error(`HTTP ${laboratoriosRes.status}`);
-        }
-      } catch (error) {
-        console.error("❌ Error cargando laboratorios:", error);
-        setOpcionesLaboratorios([
-          { value: "1", label: "Laboratorio Central - Planta Principal" },
-        ]);
+      const prioridadesRes = await api.get("/productos/prioridades/list");
+      const prioridadesData = prioridadesRes.data;
+      if (Array.isArray(prioridadesData) && prioridadesData.length > 0) {
+        const opciones = prioridadesData.map((p: any) => ({
+          value: p.id_prioridad?.toString(),
+          label: p.nombre_prioridad || p.prioridad || "Sin nombre",
+        }));
+        setOpcionesPrioridad(opciones);
+      } else {
+        throw new Error("No hay prioridades");
       }
     } catch (error) {
-      console.error("❌ Error general cargando opciones:", error);
+      console.error("❌ Error cargando prioridades:", error);
+      setOpcionesPrioridad([
+        { value: "1", label: "Alta" },
+        { value: "2", label: "Media" },
+        { value: "3", label: "Baja" },
+      ]);
+    }
+
+    // Cargar Estatus
+    try {
+      const estatusRes = await api.get("/productos/estatus/list");
+      const estatusData = estatusRes.data;
+      if (Array.isArray(estatusData) && estatusData.length > 0) {
+        const opciones = estatusData.map((e: any) => ({
+          value: e.id_estatus_producto?.toString(),
+          label: e.nombre_estatus || e.estatus || "Sin nombre",
+        }));
+        setOpcionesEstatus(opciones);
+      } else {
+        throw new Error("No hay estatus");
+      }
+    } catch (error) {
+      console.error("❌ Error cargando estatus:", error);
+      setOpcionesEstatus([
+        { value: "1", label: "Activo" },
+        { value: "2", label: "Inactivo" },
+      ]);
+    }
+
+    // Cargar Laboratorios
+    try {
+      const laboratoriosRes = await api.get("/productos/laboratorios/list");
+      const laboratoriosData = laboratoriosRes.data;
+      if (Array.isArray(laboratoriosData) && laboratoriosData.length > 0) {
+        const opciones = laboratoriosData.map((l: any) => ({
+          value: l.id_laboratorio?.toString(),
+          label: `${l.nombre || "Lab"} - ${l.ubicacion || "Ubicación"}`,
+        }));
+        setOpcionesLaboratorios(opciones);
+      } else {
+        throw new Error("No hay laboratorios");
+      }
+    } catch (error) {
+      console.error("❌ Error cargando laboratorios:", error);
+      setOpcionesLaboratorios([
+        { value: "1", label: "Laboratorio Central - Planta Principal" },
+      ]);
     }
   };
 
-  // Cargar motivos de salida para el reporte
+  // ✅ CORREGIDO: fetchMotivosBaja usa api.get y manejo de errores de Axios
   const fetchMotivosBaja = async () => {
     try {
       setLoadingMovimientos(true);
-      const res = await fetch(`${API_BASE_URL}/api/movimientos/motivos-baja`);
-      const data = await res.json();
-
-      // ✅ DEBUG: VER QUÉ MOTIVOS TRAE EL BACKEND
+      const res = await api.get("/movimientos/motivos-baja");
+      const data = res.data;
       console.log("📋 Motivos de baja cargados:", data);
-
       setMotivosBaja(data);
-    } catch (error) {
-      console.error("❌ Error cargando motivos de salida:", error);
+    } catch (error: any) {
+      console.error(
+        "❌ Error cargando motivos de salida:",
+        error.response?.data || error.message
+      );
       Alert.alert("Error", "No se pudo cargar los motivos de salida");
     } finally {
       setLoadingMovimientos(false);
     }
   };
 
-  // Abrir modal de reporte de salida
   const handleOpenReportModal = () => {
     fetchMotivosBaja();
     setReportModalVisible(true);
   };
 
-  // Cargar documentos - VERSIÓN COMPATIBLE CON TU BACKEND
+  // ✅ CORREGIDO: fetchDocumentos usa api.get y la URL raíz
   const fetchDocumentos = async () => {
     if (!producto) return;
-
     try {
       console.log(
         "📂 Cargando documentos para producto:",
         producto.id_producto
       );
-
-      const res = await fetch(
-        `${API_BASE_URL}/api/documentos/producto/${producto.id_producto}`
+      const res = await api.get(
+        `/documentos/producto/${producto.id_producto}`
       );
+      const data = res.data;
+      console.log("📄 Documentos cargados:", data);
 
-      if (res.ok) {
-        const data = await res.json();
-        console.log("📄 Documentos cargados:", data);
-
-        // Transformar los datos del backend
-        const documentosTransformados: Documento[] = data.map((doc: any) => ({
-          id_documento: doc.id_documento,
-          nombre: doc.nombre_archivo,
-          tipo: doc.id_tipo_documento === 1 ? "certificado" : "hds",
-          url: `${API_BASE_URL}/uploads/${doc.nombre_archivo}`,
-          fecha_subida: doc.fecha_subida,
-          id_tipo_documento: doc.id_tipo_documento,
-          nombre_archivo: doc.nombre_archivo,
-        }));
-
-        setDocumentos(documentosTransformados);
-      } else {
-        console.warn(
-          "⚠️ No se pudieron cargar documentos, status:",
-          res.status
-        );
-        setDocumentos([]);
-      }
-    } catch (error) {
-      console.error("❌ Error cargando documentos:", error);
+      const documentosTransformados: Documento[] = data.map((doc: any) => ({
+        id_documento: doc.id_documento,
+        nombre: doc.nombre_archivo,
+        tipo: doc.id_tipo_documento === 1 ? "certificado" : "hds",
+        url: `${API_ROOT_URL}/uploads/${doc.nombre_archivo}`, // ✅ Usa la URL raíz
+        fecha_subida: doc.fecha_subida,
+        id_tipo_documento: doc.id_tipo_documento,
+        nombre_archivo: doc.nombre_archivo,
+      }));
+      setDocumentos(documentosTransformados);
+    } catch (error: any) {
+      console.error(
+        "❌ Error cargando documentos:",
+        error.response?.data || error.message
+      );
       setDocumentos([]);
     }
   };
 
-  // SUBIR DOCUMENTO - VERSIÓN MEJORADA (SOLO PDFs)
+  // ✅ CORREGIDO: handleUploadDocument usa api.post
   const handleUploadDocument = async (tipo: "certificado" | "hds") => {
     if (!producto) {
       Alert.alert("Error", "No hay producto seleccionado");
       return;
     }
-
     try {
       setUploading(true);
-      console.log("📤 Iniciando subida de documento...");
-
-      // SOLO PERMITIR PDFs
       const result = await DocumentPicker.getDocumentAsync({
-        type: "application/pdf", // SOLO PDF
+        type: "application/pdf",
         copyToCacheDirectory: true,
         multiple: false,
       });
 
-      console.log("📄 Resultado de DocumentPicker:", result);
-
       if (result.canceled) {
-        console.log("👤 Usuario canceló la selección");
+        setUploading(false);
         return;
       }
-
+      
       const file = result.assets[0];
-      console.log("📎 Archivo seleccionado:", file);
-
-      // Validar que sea PDF
       if (file.mimeType !== "application/pdf") {
         Alert.alert("Error", "Solo se permiten archivos PDF");
+        setUploading(false);
         return;
       }
-
-      // Validar tamaño (10MB máximo)
       if (file.size && file.size > 10 * 1024 * 1024) {
         Alert.alert("Error", "El archivo es demasiado grande. Máximo 10MB.");
+        setUploading(false);
         return;
       }
 
-      // Crear FormData
       const formData = new FormData();
       const fileObject = {
         uri: file.uri,
         name: file.name || `documento_${Date.now()}.pdf`,
-        type: "application/pdf", // Forzar tipo PDF
+        type: "application/pdf",
       };
-
       formData.append("archivo", fileObject as any);
-
-      // Mapear tipo a id_tipo_documento
       const idTipoDocumento = tipo === "certificado" ? 1 : 2;
-
-      // URL de subida
-      const uploadUrl = `${API_BASE_URL}/api/documentos/upload/${producto.id_producto}/${idTipoDocumento}`;
+      const uploadUrl = `/documentos/upload/${producto.id_producto}/${idTipoDocumento}`;
 
       console.log("📡 Enviando documento al servidor...", uploadUrl);
-
-      const response = await fetch(uploadUrl, {
-        method: "POST",
-        body: formData,
+      
+      // ✅ Usa api.post con headers para multipart
+      const response = await api.post(uploadUrl, formData, {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
       });
 
-      console.log("📡 Respuesta del servidor:", response.status);
-
-      if (response.ok) {
-        const responseData = await response.json();
-        console.log("✅ Documento subido exitosamente:", responseData);
-        Alert.alert("Éxito", "Documento PDF subido correctamente");
-        await fetchDocumentos(); // Recargar lista
-        setDocumentModalVisible(false);
-      } else {
-        const errorText = await response.text();
-        console.error("❌ Error del servidor:", response.status, errorText);
-        Alert.alert("Error", `Error al subir documento: ${response.status}`);
-      }
+      console.log("✅ Documento subido exitosamente:", response.data);
+      Alert.alert("Éxito", "Documento PDF subido correctamente");
+      await fetchDocumentos(); // Recargar lista
+      setDocumentModalVisible(false);
     } catch (error: any) {
-      console.error("❌ Error subiendo documento:", error);
+      console.error("❌ Error subiendo documento:", error.response?.data || error.message);
       Alert.alert(
         "Error",
         "No se pudo subir el documento. Verifica tu conexión."
@@ -581,61 +457,47 @@ export default function ProductDetail() {
     }
   };
 
-  // ELIMINAR DOCUMENTO - NUEVA FUNCIÓN
+  // ✅ CORREGIDO: handleDeleteDocument usa api.delete
   const handleDeleteDocument = async (documento: Documento) => {
     if (!documento.id_documento) {
       Alert.alert("Error", "No se puede eliminar este documento");
       return;
     }
-
-    try {
-      Alert.alert(
-        "Confirmar Eliminación",
-        `¿Estás seguro de que quieres eliminar "${documento.nombre}"?`,
-        [
-          { text: "Cancelar", style: "cancel" },
-          {
-            text: "Eliminar",
-            style: "destructive",
-            onPress: async () => {
+    Alert.alert(
+      "Confirmar Eliminación",
+      `¿Estás seguro de que quieres eliminar "${documento.nombre}"?`,
+      [
+        { text: "Cancelar", style: "cancel" },
+        {
+          text: "Eliminar",
+          style: "destructive",
+          onPress: async () => {
+            try {
               console.log("🗑️ Eliminando documento:", documento.id_documento);
-
-              const response = await fetch(
-                `${API_BASE_URL}/api/documentos/${documento.id_documento}`,
-                {
-                  method: "DELETE",
-                }
+              await api.delete(`/documentos/${documento.id_documento}`);
+              Alert.alert("Éxito", "Documento eliminado correctamente");
+              await fetchDocumentos(); // Recargar lista
+            } catch (error: any) {
+              console.error(
+                "❌ Error eliminando documento:",
+                error.response?.data || error.message
               );
-
-              if (response.ok) {
-                Alert.alert("Éxito", "Documento eliminado correctamente");
-                await fetchDocumentos(); // Recargar lista
-              } else {
-                const errorText = await response.text();
-                console.error("❌ Error eliminando documento:", errorText);
-                Alert.alert("Error", "No se pudo eliminar el documento");
-              }
-            },
+              Alert.alert("Error", "No se pudo eliminar el documento");
+            }
           },
-        ]
-      );
-    } catch (error) {
-      console.error("❌ Error eliminando documento:", error);
-      Alert.alert("Error", "No se pudo eliminar el documento");
-    }
+        },
+      ]
+    );
   };
 
-  // VER DOCUMENTO - VERSIÓN MEJORADA
+  // ❗ SIN CAMBIOS: handleViewDocument usa fetch a una URL externa (está bien)
   const handleViewDocument = async (documento: Documento) => {
     try {
-      console.log("👀 Abriendo documento:", documento);
-
       if (!documento.url) {
         Alert.alert("Error", "El documento no tiene URL válida");
         return;
       }
-
-      // Verificar que la URL sea accesible
+      // Esta prueba HEAD con fetch está bien, es una URL pública de 'uploads'
       const testResponse = await fetch(documento.url, { method: "HEAD" });
       if (!testResponse.ok) {
         Alert.alert(
@@ -644,8 +506,6 @@ export default function ProductDetail() {
         );
         return;
       }
-
-      console.log("🌐 Abriendo URL:", documento.url);
       await WebBrowser.openBrowserAsync(documento.url, {
         toolbarColor: "#000000ff",
         secondaryToolbarColor: "#ffffff",
@@ -661,7 +521,6 @@ export default function ProductDetail() {
     }
   };
 
-  // ABRIR MODAL DE GESTIÓN DE DOCUMENTOS - CON CARGA AUTOMÁTICA
   const handleOpenDocumentModal = async (tipo: "certificado" | "hds") => {
     setSelectedDocType(tipo);
     setDocumentModalVisible(true);
@@ -670,12 +529,11 @@ export default function ProductDetail() {
     }
   };
 
-  // Guardar cambios del producto - VERSIÓN CORREGIDA
+  // ✅ CORREGIDO: handleSaveEdit usa api.put y manejo de errores de Axios
   const handleSaveEdit = async () => {
     if (!producto) return;
-
     try {
-      // PREPARAR DATOS BÁSICOS CON CONVERSIÓN EXPLÍCITA
+      // ... (Toda tu lógica para preparar 'datosCompletos' sigue igual)
       const datosBasicos: ProductoEdicion = {
         nombre: editForm.nombre,
         marca: editForm.marca,
@@ -687,11 +545,8 @@ export default function ProductDetail() {
         id_tipo_producto: producto.id_tipo_producto,
         imagen: producto.imagen,
       };
-
       let datosCompletos: ProductoEdicion = { ...datosBasicos };
-
       if (producto.id_tipo_producto === 1) {
-        // REACTIVO
         let caducidadParaEnviar = editForm.caducidad;
         if (caducidadParaEnviar) {
           if (caducidadParaEnviar.includes("T")) {
@@ -703,7 +558,6 @@ export default function ProductDetail() {
             return;
           }
         }
-
         datosCompletos = {
           ...datosCompletos,
           presentacion: editForm.presentacion || null,
@@ -724,74 +578,44 @@ export default function ProductDetail() {
             ? parseInt(editForm.id_laboratorio)
             : null,
         };
-
-        console.log("🔍 DEBUG FRONTEND - Datos de equipo a enviar:", {
-          id_agk: editForm.id_agk,
-          modelo: editForm.modelo,
-          numero_serie: editForm.numero_serie,
-          rango_medicion: editForm.rango_medicion,
-          resolucion: editForm.resolucion,
-          intervalo_trabajo: editForm.intervalo_trabajo,
-          id_laboratorio: editForm.id_laboratorio,
-        });
       }
-
+      
       console.log("🔄 ENVIANDO DATOS COMPLETOS AL BACKEND:", datosCompletos);
-
-      const response = await fetch(
-        `${API_BASE_URL}/api/productos/${producto.id_producto}`,
-        {
-          method: "PUT",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify(datosCompletos),
-        }
+      
+      // ✅ CORREGIDO: Usa api.put y ruta relativa
+      await api.put(
+        `/productos/${producto.id_producto}`,
+        datosCompletos // El body es el segundo argumento
       );
 
-      if (response.ok) {
-        Alert.alert("Éxito", "Producto actualizado correctamente");
-        setEditModalVisible(false);
-        await refreshProductData();
-      } else {
-        const errorData = await response.json();
-        console.error("❌ Error del backend:", errorData);
-        Alert.alert("Error", errorData.error || "No se pudo actualizar");
-      }
-    } catch (error) {
-      console.error("❌ Error:", error);
-      const errorMessage =
-        error instanceof Error
-          ? error.message
-          : "No se pudo actualizar el producto";
-      Alert.alert("Error", errorMessage);
+      Alert.alert("Éxito", "Producto actualizado correctamente");
+      setEditModalVisible(false);
+      await refreshProductData();
+    } catch (error: any) {
+      // ✅ CORREGIDO: Manejo de errores de Axios
+      console.error("❌ Error del backend:", error.response?.data || error.message);
+      Alert.alert("Error", error.response?.data?.error || "No se pudo actualizar");
     }
   };
 
-  // Reportar salida - VERSIÓN ACTUALIZADA CON NUEVAS VALIDACIONES DEL BACKEND
   const handleReportBaja = async () => {
+    // ... (Toda tu lógica de validación interna no cambia) ...
     if (!producto || !reportForm.id_motivo_baja) {
       return Alert.alert("Error", "Debes seleccionar un motivo.");
     }
-
     const motivo = parseInt(reportForm.id_motivo_baja);
-
-    //  No permitir acciones que requieran stock si no hay disponible
     if (producto.existencia_actual <= 0 && motivo !== 4) {
       return Alert.alert(
         "Sin stock disponible",
         "No se puede realizar esta acción porque el producto no tiene stock disponible."
       );
     }
-
-    //  VALIDACIONES CON LOS IDs CORRECTOS DE LA BD
     if (motivo === 5 && producto.id_estatus_producto !== 5) {
       return Alert.alert(
         "No se puede finalizar uso",
         `Solo puedes finalizar uso después de haber INICIADO USO.`
       );
     }
-
     if (
       motivo === 1 &&
       producto.id_estatus_producto &&
@@ -802,14 +626,12 @@ export default function ProductDetail() {
         `Solo puedes iniciar uso cuando el producto está Disponible, Bajo stock o Próximo a caducar.`
       );
     }
-
     if (motivo === 2 && !reportForm.descripcion_adicional?.trim()) {
       return Alert.alert(
         "Descripción Requerida",
         "La descripción es obligatoria para reportar una incidencia."
       );
     }
-
     if (motivo === 4) {
       if (!reportForm.descripcion_adicional?.trim()) {
         return Alert.alert(
@@ -817,15 +639,12 @@ export default function ProductDetail() {
           "Para dar de baja, la descripción es obligatoria."
         );
       }
-
-      // No permitir baja si no hay stock
       if (producto.existencia_actual <= 0) {
         return Alert.alert(
           "No se puede dar de baja",
           "No hay stock disponible."
         );
       }
-
       Alert.alert(
         "⚠️ Confirmar Baja Completa",
         `Se eliminarán las (${producto.existencia_actual} unidades). Esta acción es irreversible.`,
@@ -840,8 +659,6 @@ export default function ProductDetail() {
       );
       return;
     }
-
-    //  No permitir incidencia si no hay stock suficiente
     if (
       motivo === 2 &&
       producto.existencia_actual < parseInt(reportForm.cantidad || "1")
@@ -851,12 +668,9 @@ export default function ProductDetail() {
         `No hay stock suficiente. Stock actual: ${producto.existencia_actual} unidades.`
       );
     }
-
-    // Confirmación para otros motivos
     const motivoText = motivosBaja.find(
       (m) => m.id_motivo_baja === motivo
     )?.nombre_motivo;
-
     Alert.alert(
       "Confirmar Reporte",
       `¿Estás seguro de reportar "${motivoText}"?\n\n` +
@@ -870,103 +684,74 @@ export default function ProductDetail() {
     );
   };
 
-  // Nueva función para manejar el endpoint /bajas
+  // ✅ CORREGIDO: executeBaja usa api.post y manejo de errores de Axios
   const executeBaja = async () => {
     if (!producto) return;
-
     try {
       setLoadingMovimientos(true);
-
-      const response = await fetch(`${API_BASE_URL}/api/movimientos/bajas`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          id_producto: producto.id_producto,
-          id_usuario: 1,
-          descripcion_adicional: reportForm.descripcion_adicional,
-        }),
+      
+      // El 'id_usuario' se obtiene del token en el backend.
+      const response = await api.post('/movimientos/bajas', {
+        id_producto: producto.id_producto,
+        descripcion_adicional: reportForm.descripcion_adicional,
       });
 
-      if (response.ok) {
-        const result = await response.json();
-        Alert.alert("Éxito", "Baja registrada correctamente");
-
-        // ✅ ACTUALIZAR INMEDIATAMENTE
-        setReportModalVisible(false);
-        setReportForm({
-          id_motivo_baja: "",
-          cantidad: "1",
-          descripcion_adicional: "",
-        });
-
-        // Recargar todos los datos
-        await refreshProductData();
-      } else {
-        const errorData = await response.json();
-        Alert.alert("Error", errorData.error || "No se pudo registrar la baja");
-      }
-    } catch (error) {
-      console.error("Error reportando baja:", error);
-      Alert.alert("Error", "No se pudo conectar con el servidor");
+      Alert.alert("Éxito", "Baja registrada correctamente");
+      setReportModalVisible(false);
+      setReportForm({
+        id_motivo_baja: "",
+        cantidad: "1",
+        descripcion_adicional: "",
+      });
+      await refreshProductData();
+    } catch (error: any) {
+      console.error("Error reportando baja:", error.response?.data || error.message);
+      Alert.alert("Error", error.response?.data?.error || "No se pudo registrar la baja");
     } finally {
       setLoadingMovimientos(false);
     }
   };
 
-  // Nueva función para manejar el endpoint /salidas
+  // ✅ CORREGIDO: executeSalida usa api.post y manejo de errores de Axios
   const executeSalida = async () => {
     if (!producto) return;
-
     try {
       setLoadingMovimientos(true);
-
       console.log(
         "🔄 Enviando al backend - ID Motivo:",
         reportForm.id_motivo_baja
       );
 
-      const response = await fetch(`${API_BASE_URL}/api/movimientos/salidas`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          id_producto: producto.id_producto,
-          id_usuario: 1,
-          cantidad: parseInt(reportForm.cantidad) || 1,
-          id_motivo_baja: parseInt(reportForm.id_motivo_baja), // ✅ ENVIAR DIRECTAMENTE
-          descripcion_adicional: reportForm.descripcion_adicional || null,
-        }),
+      // El 'id_usuario' se obtiene del token en el backend.
+      const response = await api.post('/movimientos/salidas', {
+        id_producto: producto.id_producto,
+        cantidad: parseInt(reportForm.cantidad) || 1,
+        id_motivo_baja: parseInt(reportForm.id_motivo_baja), 
+        descripcion_adicional: reportForm.descripcion_adicional || null,
       });
 
-      if (response.ok) {
-        const result = await response.json();
-        Alert.alert("Éxito", "Movimiento reportado correctamente");
-
-        setReportModalVisible(false);
-        setReportForm({
-          id_motivo_baja: "",
-          cantidad: "1",
-          descripcion_adicional: "",
-        });
-        await refreshProductData();
-      } else {
-        const errorData = await response.json();
-        Alert.alert(
-          "Error",
-          errorData.error || "No se pudo reportar la salida"
-        );
-      }
-    } catch (error) {
-      console.error("❌ Error reportando salida:", error);
-      Alert.alert("Error", "No se pudo conectar con el servidor");
+      Alert.alert("Éxito", "Movimiento reportado correctamente");
+      setReportModalVisible(false);
+      setReportForm({
+        id_motivo_baja: "",
+        cantidad: "1",
+        descripcion_adicional: "",
+      });
+      await refreshProductData();
+    } catch (error: any) {
+      console.error("❌ Error reportando salida:", error.response?.data || error.message);
+      Alert.alert(
+        "Error",
+        error.response?.data?.error || "No se pudo reportar la salida"
+      );
     } finally {
       setLoadingMovimientos(false);
     }
   };
 
-  // Editar imagen del producto - NUEVO MÉTODO
+  // ✅ CORREGIDO: handleEditImage usa api.post
   const handleEditImage = async () => {
     if (!producto) return;
-
     try {
       const permissionResult =
         await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -986,9 +771,7 @@ export default function ProductDetail() {
       });
 
       if (pickerResult.canceled) return;
-
       const imageAsset = pickerResult.assets[0];
-
       const formData = new FormData();
       formData.append("imagen", {
         uri: imageAsset.uri,
@@ -998,78 +781,49 @@ export default function ProductDetail() {
 
       console.log("🔄 Subiendo imagen...");
 
-      const response = await fetch(
-        `${API_BASE_URL}/api/productos/${producto.id_producto}/imagen`,
+      // ✅ Usa api.post con headers para multipart
+      const response = await api.post(
+        `/productos/${producto.id_producto}/imagen`, 
+        formData, 
         {
-          method: "POST", // ← CAMBIADO A POST
-          body: formData,
+          headers: {
+            'Content-Type': 'multipart/form-data',
+          },
         }
       );
 
       console.log("📡 Status:", response.status);
-
-      if (response.ok) {
-        const result = await response.json();
-        Alert.alert("Éxito", "Imagen actualizada correctamente");
-        await refreshProductData();
-      } else {
-        const errorText = await response.text();
-        console.error("❌ Error response:", errorText);
-
-        if (errorText.includes("<!DOCTYPE") || errorText.includes("<html")) {
-          throw new Error(
-            "Endpoint no encontrado. Verifica la ruta en el servidor."
-          );
-        } else {
-          throw new Error(
-            `Error ${response.status}: No se pudo actualizar la imagen`
-          );
-        }
-      }
+      Alert.alert("Éxito", "Imagen actualizada correctamente");
+      await refreshProductData();
+      
     } catch (error: any) {
-      console.error("❌ Error:", error);
-      Alert.alert("Error", error.message || "No se pudo subir la imagen");
+      console.error("❌ Error:", error.response?.data || error.message);
+      Alert.alert("Error", error.response?.data?.error || "No se pudo subir la imagen");
     } finally {
-      setLoading(false);
+      setLoading(false); // Asegúrate de que esto esté aquí
     }
   };
 
+  // ✅ CORREGIDO: refreshProductData usa api.get y manejo de errores de Axios
   const refreshProductData = async () => {
     if (!id) return;
 
     setLoading(true);
     setCargandoHistorial(true);
-
     try {
       console.log("🔄🔄🔄 RECARGANDO DATOS - INICIO");
 
-      // Hacer peticiones en paralelo
+      // Hacer peticiones en paralelo con api.get
       const [productResponse, historyResponse] = await Promise.all([
-        fetch(`${API_BASE_URL}/api/productos/${id}?t=${Date.now()}`, {
-          // ✅ Agregar timestamp
-          headers: {
-            "Cache-Control": "no-cache",
-            Pragma: "no-cache",
-          },
-        }),
-        fetch(
-          `${API_BASE_URL}/api/movimientos/historial/${id}?t=${Date.now()}`,
-          {
-            headers: {
-              "Cache-Control": "no-cache",
-              Pragma: "no-cache",
-            },
-          }
-        ),
+        api.get(`/productos/${id}?t=${Date.now()}`),
+        api.get(`/movimientos/historial/${id}?t=${Date.now()}`),
       ]);
 
-      if (!productResponse.ok) throw new Error("Error al cargar producto");
-      if (!historyResponse.ok) throw new Error("Error al cargar historial");
+      // Con Axios, la respuesta está en .data
+      const productData = productResponse.data;
+      const historyData = historyResponse.data;
 
-      const productData = await productResponse.json();
-      const historyData = await historyResponse.json();
-
-      // DEBUG CRÍTICO: Ver qué datos llegan del backend
+      // DEBUG CRÍTICO
       console.log("📥 DATOS RECIBIDOS DEL BACKEND:", {
         id: productData.id_producto,
         nombre: productData.nombre,
@@ -1078,15 +832,11 @@ export default function ProductDetail() {
         id_estatus: productData.id_estatus_producto,
       });
 
-      // Actualizar estados
       setProducto(productData);
       setHistorial(historyData);
-
-      // Actualizar datos para gráfica
       const datosGraficaNuevos = procesarDatosParaGrafica(historyData);
       setDatosGrafica(datosGraficaNuevos);
 
-      // Actualizar formulario de edición
       if (productData) {
         const editFormData: any = {
           nombre: productData.nombre || "",
@@ -1104,8 +854,6 @@ export default function ProductDetail() {
             ? productData.caducidad.split("T")[0]
             : "",
         };
-
-        // AGREGAR DATOS ESPECÍFICOS DE EQUIPO
         if (productData.id_tipo_producto === 2) {
           editFormData.id_agk = productData.id_agk || "";
           editFormData.modelo = productData.modelo || "";
@@ -1116,14 +864,13 @@ export default function ProductDetail() {
           editFormData.id_laboratorio =
             productData.id_laboratorio?.toString() || "";
         }
-
         console.log("📝 FORMULARIO ACTUALIZADO:", editFormData);
         setEditForm(editFormData);
       }
-
       console.log("✅✅✅ RECARGANDO DATOS - COMPLETADO");
-    } catch (error) {
-      console.error("❌ Error recargando datos:", error);
+    } catch (error: any) {
+      // ✅ Manejo de errores de Axios
+      console.error("❌ Error recargando datos:", error.response?.data || error.message);
       Alert.alert("Error", "No se pudo actualizar la información.");
     } finally {
       setLoading(false);
@@ -1145,6 +892,8 @@ export default function ProductDetail() {
     }
   }, [historial, producto]);
 
+  // ... (El resto de tu JSX y Modales no necesita cambios lógicos) ...
+  // ... (El StyleSheet tampoco necesita cambios) ...
   // Render loading
   if (loading) {
     return (
@@ -1154,7 +903,6 @@ export default function ProductDetail() {
       </View>
     );
   }
-
   // Render si no hay producto
   if (!producto) {
     return (
@@ -1163,7 +911,6 @@ export default function ProductDetail() {
       </View>
     );
   }
-
   const statusColor = getEstatusColor(producto);
   const statusText = getEstatusText(producto);
 
@@ -1214,15 +961,18 @@ export default function ProductDetail() {
 
         {/* === NUEVOS BOTONES DE ACCIÓN INTEGRADOS === */}
         <View style={styles.mainActionsContainer}>
-          <TouchableOpacity
-            style={[styles.mainButton, styles.secondaryButton]}
-            onPress={() => setEditModalVisible(true)}
-          >
-            <Ionicons name="create-outline" size={20} color="#000000ff" />
-            <Text style={[styles.mainButtonText, styles.secondaryButtonText]}>
-              Editar
-            </Text>
-          </TouchableOpacity>
+          {/* Mostrar botón de editar SOLO si el usuario es administrador (rol === 1) */}
+          {user?.rol === 1 && (
+            <TouchableOpacity
+              style={[styles.mainButton, styles.secondaryButton]}
+              onPress={() => setEditModalVisible(true)}
+            >
+              <Ionicons name="create-outline" size={20} color="#000000ff" />
+              <Text style={[styles.mainButtonText, styles.secondaryButtonText]}>
+                Editar
+              </Text>
+            </TouchableOpacity>
+          )}
           <TouchableOpacity
             style={[styles.mainButton, styles.primaryButton]}
             onPress={handleOpenReportModal}

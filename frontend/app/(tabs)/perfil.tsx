@@ -206,7 +206,7 @@ export default function PerfilScreen() {
                 color={isDark ? "#0A84FF" : "#539DF3"}
               />
               <Text style={[styles.menuItemText, isDark && styles.textDark]}>
-                Instructivo Empresarial
+                Instructivo de Trabajo
               </Text>
               <Ionicons
                 name="chevron-forward"
