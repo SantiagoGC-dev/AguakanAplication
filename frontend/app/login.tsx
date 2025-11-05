@@ -208,7 +208,7 @@ const styles = StyleSheet.create({
     letterSpacing: 0.3,
   },
   labelDark: {
-    color: '#e2e8f0',
+    color: '#000000ff',
   },
   input: {
     borderWidth: 1.5,

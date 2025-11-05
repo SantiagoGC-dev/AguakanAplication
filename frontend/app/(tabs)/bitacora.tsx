@@ -780,7 +780,7 @@ const styles = StyleSheet.create({
     paddingBottom: 10,
   },
   headerTitle: {
-    fontSize: 23,
+    fontSize: 25,
     color: "#000000ff",
     fontFamily: "Poppins_700Bold",
   },

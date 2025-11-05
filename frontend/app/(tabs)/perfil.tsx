@@ -13,7 +13,7 @@ import {
 } from "react-native";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { useAuth } from "@/context/AuthContext";
-import { Link } from "expo-router";
+import { Link, useRouter } from "expo-router";
 import api from "@/utils/api";
 import { Ionicons } from "@expo/vector-icons";
 
@@ -21,6 +21,7 @@ export default function PerfilScreen() {
   const { user, logout } = useAuth();
   const colorScheme = useColorScheme();
   const isDark = colorScheme === "dark";
+  const router = useRouter();
 
   // --- Estados para el Modal "Mi Cuenta" ---
   const [modalVisible, setModalVisible] = useState(false);
@@ -154,7 +155,7 @@ export default function PerfilScreen() {
             <Ionicons
               name="person"
               size={22}
-              color={isDark ? "#0A84FF" : "#007AFF"}
+              color={isDark ? "#0A84FF" : "#539DF3"}
             />
             <Text style={[styles.menuItemText, isDark && styles.textDark]}>
               Mi cuenta
@@ -174,45 +175,45 @@ export default function PerfilScreen() {
               Administración
             </Text>
 
-            <Link href="/admin/gestion-usuarios" asChild>
-              <TouchableOpacity
-                style={[styles.menuItem, isDark && styles.menuItemDark]}
-              >
-                <Ionicons
-                  name="people"
-                  size={22}
-                  color={isDark ? "#0A84FF" : "#007AFF"}
-                />
-                <Text style={[styles.menuItemText, isDark && styles.textDark]}>
-                  Gestión de Usuarios
-                </Text>
-                <Ionicons
-                  name="chevron-forward"
-                  size={20}
-                  color={isDark ? "#666" : "#999"}
-                />
-              </TouchableOpacity>
-            </Link>
+            {/* --- CORREGIDO 1 --- */}
+            <TouchableOpacity
+              style={[styles.menuItem, isDark && styles.menuItemDark]}
+              onPress={() => router.push("/admin/gestion-usuarios")}
+            >
+              <Ionicons
+                name="people"
+                size={22}
+                color={isDark ? "#0A84FF" : "#539DF3"}
+              />
+              <Text style={[styles.menuItemText, isDark && styles.textDark]}>
+                Gestión de Usuarios
+              </Text>
+              <Ionicons
+                name="chevron-forward"
+                size={20}
+                color={isDark ? "#666" : "#999"}
+              />
+            </TouchableOpacity>
 
-            <Link href="/admin/instructivo" asChild>
-              <TouchableOpacity
-                style={[styles.menuItem, isDark && styles.menuItemDark]}
-              >
-                <Ionicons
-                  name="document-text"
-                  size={22}
-                  color={isDark ? "#0A84FF" : "#007AFF"}
-                />
-                <Text style={[styles.menuItemText, isDark && styles.textDark]}>
-                  Instructivo Empresarial
-                </Text>
-                <Ionicons
-                  name="chevron-forward"
-                  size={20}
-                  color={isDark ? "#666" : "#999"}
-                />
-              </TouchableOpacity>
-            </Link>
+            {/* --- CORREGIDO 2 --- */}
+            <TouchableOpacity
+              style={[styles.menuItem, isDark && styles.menuItemDark]}
+              onPress={() => router.push("/admin/instructivo")}
+            >
+              <Ionicons
+                name="document-text"
+                size={22}
+                color={isDark ? "#0A84FF" : "#539DF3"}
+              />
+              <Text style={[styles.menuItemText, isDark && styles.textDark]}>
+                Instructivo Empresarial
+              </Text>
+              <Ionicons
+                name="chevron-forward"
+                size={20}
+                color={isDark ? "#666" : "#999"}
+              />
+            </TouchableOpacity>
           </View>
         )}
 
@@ -222,217 +223,278 @@ export default function PerfilScreen() {
             Más
           </Text>
 
-          <Link href="/ayuda-soporte" asChild>
-            <TouchableOpacity
-              style={[styles.menuItem, isDark && styles.menuItemDark]}
-            >
-              <Ionicons
-                name="help-circle"
-                size={22}
-                color={isDark ? "#0A84FF" : "#007AFF"}
-              />
-              <Text style={[styles.menuItemText, isDark && styles.textDark]}>
-                Ayuda y soporte
-              </Text>
-              <Ionicons
-                name="chevron-forward"
-                size={20}
-                color={isDark ? "#666" : "#999"}
-              />
-            </TouchableOpacity>
-          </Link>
+          {/* --- CORREGIDO 3 --- */}
+          <TouchableOpacity
+            style={[styles.menuItem, isDark && styles.menuItemDark]}
+            onPress={() => router.push("/ayuda-soporte")}
+          >
+            <Ionicons
+              name="help-circle"
+              size={22}
+              color={isDark ? "#0A84FF" : "#539DF3"}
+            />
+            <Text style={[styles.menuItemText, isDark && styles.textDark]}>
+              Ayuda y soporte
+            </Text>
+            <Ionicons
+              name="chevron-forward"
+              size={20}
+              color={isDark ? "#666" : "#999"}
+            />
+          </TouchableOpacity>
 
-          <Link href="/acerca-de" asChild>
-            <TouchableOpacity
-              style={[styles.menuItem, isDark && styles.menuItemDark]}
-            >
-              <Ionicons
-                name="information-circle"
-                size={22}
-                color={isDark ? "#0A84FF" : "#007AFF"}
-              />
-              <Text style={[styles.menuItemText, isDark && styles.textDark]}>
-                Acerca de
-              </Text>
-              <Ionicons
-                name="chevron-forward"
-                size={20}
-                color={isDark ? "#666" : "#999"}
-              />
-            </TouchableOpacity>
-          </Link>
+          {/* --- CORREGIDO 4 --- */}
+          <TouchableOpacity
+            style={[styles.menuItem, isDark && styles.menuItemDark]}
+            onPress={() => router.push("/acerca-de")}
+          >
+            <Ionicons
+              name="information-circle"
+              size={22}
+              color={isDark ? "#0A84FF" : "#539DF3"}
+            />
+            <Text style={[styles.menuItemText, isDark && styles.textDark]}>
+              Acerca de
+            </Text>
+            <Ionicons
+              name="chevron-forward"
+              size={20}
+              color={isDark ? "#666" : "#999"}
+            />
+          </TouchableOpacity>
+        </View>
+
+        {/* 5. Botón de Cerrar Sesión - DENTRO DEL SCROLL Y REDISEÑADO */}
+        <View style={styles.logoutSection}>
+          <TouchableOpacity
+            style={[styles.logoutButton, isDark && styles.logoutButtonDark]}
+            onPress={handleLogout}
+          >
+            <Ionicons name="log-out" size={18} color="#FF3B30" />
+            <Text style={styles.logoutButtonText}>Cerrar Sesión</Text>
+          </TouchableOpacity>
         </View>
       </ScrollView>
 
-      {/* 5. Botón de Cerrar Sesión - REDISEÑADO */}
-      <View style={styles.footer}>
-        <TouchableOpacity
-          style={[styles.logoutButton, isDark && styles.logoutButtonDark]}
-          onPress={handleLogout}
-        >
-          <Ionicons name="log-out" size={20} color="#FF3B30" />
-          <Text style={styles.logoutButtonText}>Cerrar Sesión</Text>
-        </TouchableOpacity>
-      </View>
-
       {/* --- Modal para "Mi Cuenta" - REDISEÑADO --- */}
-      <Modal
-        animationType="slide"
-        transparent={false}
-        visible={modalVisible}
-        onRequestClose={() => setModalVisible(false)}
+<Modal
+  animationType="slide"
+  transparent={false}
+  visible={modalVisible}
+  onRequestClose={() => setModalVisible(false)}
+>
+  <KeyboardAvoidingView
+    behavior={Platform.OS === "ios" ? "padding" : "height"}
+    style={{ flex: 1 }}
+  >
+    {/* Header Mejorado */}
+    <View style={[styles.modalHeader, isDark && styles.modalHeaderDark]}>
+      <TouchableOpacity
+        onPress={() => setModalVisible(false)}
+        style={styles.modalBackButton}
       >
-        <KeyboardAvoidingView
-          behavior={Platform.OS === "ios" ? "padding" : "height"}
-          style={{ flex: 1 }}
-        >
-          <View style={[styles.modalHeader, isDark && styles.headerDark]}>
-            <TouchableOpacity
-              onPress={() => setModalVisible(false)}
-              style={styles.backButton}
-            >
-              <Ionicons
-                name="arrow-back"
-                size={24}
-                color={isDark ? "#fff" : "#000"}
-              />
-            </TouchableOpacity>
-            <Text style={[styles.modalTitle, isDark && styles.textDark]}>
-              Mi Cuenta
+        <Ionicons
+          name="chevron-back"
+          size={24}
+          color={isDark ? "#fff" : "#000"}
+        />
+        <Text style={[styles.modalBackText, isDark && styles.textDark]}>
+          Atrás
+        </Text>
+      </TouchableOpacity>
+      <Text style={[styles.modalTitle, isDark && styles.textDark]}>
+        Mi Cuenta
+      </Text>
+      <View style={styles.modalHeaderPlaceholder} />
+    </View>
+
+    <ScrollView
+      style={[styles.modalContent, isDark && styles.modalContentDark]}
+      showsVerticalScrollIndicator={false}
+      contentContainerStyle={styles.modalScrollContent}
+    >
+      {/* Tarjeta de Información Personal */}
+      <View style={[styles.modalCard, isDark && styles.modalCardDark]}>
+        <View style={styles.cardHeader}>
+          <Ionicons
+            name="person-circle"
+            size={22}
+            color={isDark ? "#0A84FF" : "#539DF3"}
+          />
+          <Text style={[styles.cardTitle, isDark && styles.textDark]}>
+            Información Personal
+          </Text>
+        </View>
+        
+        <View style={styles.formRow}>
+          <View style={styles.inputGroupHalf}>
+            <Text style={[styles.label, isDark && styles.labelDark]}>
+              Nombre *
             </Text>
-            <View style={styles.backButtonPlaceholder} />
+            <TextInput
+              style={[styles.input, isDark && styles.inputDark]}
+              value={nombre}
+              onChangeText={setNombre}
+              placeholder="Tu nombre"
+              placeholderTextColor={isDark ? "#666" : "#999"}
+            />
           </View>
 
-          <ScrollView
-            style={[styles.modalContent, isDark && styles.containerDark]}
-          >
-            <View style={styles.formSection}>
-              <Text style={[styles.sectionTitle, isDark && styles.textDark]}>
-                Información Personal
-              </Text>
+          <View style={styles.inputGroupHalf}>
+            <Text style={[styles.label, isDark && styles.labelDark]}>
+              Apellido Paterno *
+            </Text>
+            <TextInput
+              style={[styles.input, isDark && styles.inputDark]}
+              value={apPaterno}
+              onChangeText={setApPaterno}
+              placeholder="Apellido paterno"
+              placeholderTextColor={isDark ? "#666" : "#999"}
+            />
+          </View>
+        </View>
 
-              <View style={styles.inputGroup}>
-                <Text style={[styles.label, isDark && styles.labelDark]}>
-                  Nombre
-                </Text>
-                <TextInput
-                  style={[styles.input, isDark && styles.inputDark]}
-                  value={nombre}
-                  onChangeText={setNombre}
-                  placeholder="Ingresa tu nombre"
-                  placeholderTextColor={isDark ? "#666" : "#999"}
-                />
-              </View>
+        <View style={styles.inputGroup}>
+          <Text style={[styles.label, isDark && styles.labelDark]}>
+            Apellido Materno
+          </Text>
+          <TextInput
+            style={[styles.input, isDark && styles.inputDark]}
+            value={apMaterno}
+            onChangeText={setApMaterno}
+            placeholder="Apellido materno (opcional)"
+            placeholderTextColor={isDark ? "#666" : "#999"}
+          />
+        </View>
 
-              <View style={styles.inputGroup}>
-                <Text style={[styles.label, isDark && styles.labelDark]}>
-                  Apellido Paterno
-                </Text>
-                <TextInput
-                  style={[styles.input, isDark && styles.inputDark]}
-                  value={apPaterno}
-                  onChangeText={setApPaterno}
-                  placeholder="Ingresa tu apellido paterno"
-                  placeholderTextColor={isDark ? "#666" : "#999"}
-                />
-              </View>
+        <View style={styles.inputGroup}>
+          <Text style={[styles.label, isDark && styles.labelDark]}>
+            Correo Electrónico *
+          </Text>
+          <View style={[styles.inputWithIcon, isDark && styles.inputDark]}>
+            <Ionicons
+              name="mail"
+              size={18}
+              color={isDark ? "#888" : "#666"}
+              style={styles.inputIcon}
+            />
+            <TextInput
+              style={[styles.input, styles.inputWithIconField, isDark && styles.inputDark]}
+              value={correo}
+              onChangeText={setCorreo}
+              keyboardType="email-address"
+              autoCapitalize="none"
+              placeholder="tu@correo.com"
+              placeholderTextColor={isDark ? "#666" : "#999"}
+            />
+          </View>
+        </View>
+      </View>
 
-              <View style={styles.inputGroup}>
-                <Text style={[styles.label, isDark && styles.labelDark]}>
-                  Apellido Materno
-                </Text>
-                <TextInput
-                  style={[styles.input, isDark && styles.inputDark]}
-                  value={apMaterno}
-                  onChangeText={setApMaterno}
-                  placeholder="Ingresa tu apellido materno"
-                  placeholderTextColor={isDark ? "#666" : "#999"}
-                />
-              </View>
+      {/* Tarjeta de Cambio de Contraseña */}
+      <View style={[styles.modalCard, isDark && styles.modalCardDark]}>
+        <View style={styles.cardHeader}>
+          <Ionicons
+            name="lock-closed"
+            size={22}
+            color={isDark ? "#0A84FF" : "#539DF3"}
+          />
+          <Text style={[styles.cardTitle, isDark && styles.textDark]}>
+            Cambiar Contraseña
+          </Text>
+        </View>
+        
+        <Text style={[styles.cardSubtitle, isDark && styles.textMutedDark]}>
+          Deja estos campos vacíos si no deseas cambiar la contraseña
+        </Text>
 
-              <View style={styles.inputGroup}>
-                <Text style={[styles.label, isDark && styles.labelDark]}>
-                  Correo Electrónico
-                </Text>
-                <TextInput
-                  style={[styles.input, isDark && styles.inputDark]}
-                  value={correo}
-                  onChangeText={setCorreo}
-                  keyboardType="email-address"
-                  autoCapitalize="none"
-                  placeholder="tu@correo.com"
-                  placeholderTextColor={isDark ? "#666" : "#999"}
-                />
-              </View>
+        <View style={styles.inputGroup}>
+          <Text style={[styles.label, isDark && styles.labelDark]}>
+            Contraseña Actual
+          </Text>
+          <View style={[styles.inputWithIcon, isDark && styles.inputDark]}>
+            <Ionicons
+              name="key"
+              size={18}
+              color={isDark ? "#888" : "#666"}
+              style={styles.inputIcon}
+            />
+            <TextInput
+              style={[styles.input, styles.inputWithIconField, isDark && styles.inputDark]}
+              value={passActual}
+              onChangeText={setPassActual}
+              secureTextEntry
+              placeholder="Ingresa tu contraseña actual"
+              placeholderTextColor={isDark ? "#666" : "#999"}
+            />
+          </View>
+        </View>
+
+        <View style={styles.inputGroup}>
+          <Text style={[styles.label, isDark && styles.labelDark]}>
+            Nueva Contraseña
+          </Text>
+          <View style={[styles.inputWithIcon, isDark && styles.inputDark]}>
+            <Ionicons
+              name="lock-closed"
+              size={18}
+              color={isDark ? "#888" : "#666"}
+              style={styles.inputIcon}
+            />
+            <TextInput
+              style={[styles.input, styles.inputWithIconField, isDark && styles.inputDark]}
+              value={passNueva}
+              onChangeText={setPassNueva}
+              secureTextEntry
+              placeholder="Crea una nueva contraseña"
+              placeholderTextColor={isDark ? "#666" : "#999"}
+            />
+          </View>
+        </View>
+      </View>
+
+      {/* Acciones del Modal */}
+      <View style={styles.modalActions}>
+        <TouchableOpacity
+          style={[
+            styles.saveButton,
+            loading && styles.saveButtonDisabled,
+            isDark && styles.saveButtonDark,
+          ]}
+          onPress={handleUpdateProfile}
+          disabled={loading}
+        >
+          {loading ? (
+            <View style={styles.loadingContainer}>
+              <Ionicons name="refresh" size={20} color="#fff" />
+              <Text style={styles.saveButtonText}>Guardando...</Text>
             </View>
-
-            <View style={styles.formSection}>
-              <Text style={[styles.sectionTitle, isDark && styles.textDark]}>
-                Cambiar Contraseña
-              </Text>
-
-              <View style={styles.inputGroup}>
-                <Text style={[styles.label, isDark && styles.labelDark]}>
-                  Contraseña Actual
-                </Text>
-                <TextInput
-                  style={[styles.input, isDark && styles.inputDark]}
-                  value={passActual}
-                  onChangeText={setPassActual}
-                  secureTextEntry
-                  placeholder="Ingresa tu contraseña actual"
-                  placeholderTextColor={isDark ? "#666" : "#999"}
-                />
-              </View>
-
-              <View style={styles.inputGroup}>
-                <Text style={[styles.label, isDark && styles.labelDark]}>
-                  Nueva Contraseña
-                </Text>
-                <TextInput
-                  style={[styles.input, isDark && styles.inputDark]}
-                  value={passNueva}
-                  onChangeText={setPassNueva}
-                  secureTextEntry
-                  placeholder="Ingresa tu nueva contraseña"
-                  placeholderTextColor={isDark ? "#666" : "#999"}
-                />
-              </View>
+          ) : (
+            <View style={styles.loadingContainer}>
+              <Ionicons name="save" size={20} color="#fff" />
+              <Text style={styles.saveButtonText}>Guardar Cambios</Text>
             </View>
+          )}
+        </TouchableOpacity>
 
-            <View style={styles.modalActions}>
-              <TouchableOpacity
-                style={[
-                  styles.saveButton,
-                  loading && styles.saveButtonDisabled,
-                ]}
-                onPress={handleUpdateProfile}
-                disabled={loading}
-              >
-                <Text style={styles.saveButtonText}>
-                  {loading ? "Guardando..." : "Guardar Cambios"}
-                </Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={[styles.cancelButton, isDark && styles.cancelButtonDark]}
-                onPress={() => setModalVisible(false)}
-              >
-                <Text
-                  style={[styles.cancelButtonText, isDark && styles.textDark]}
-                >
-                  Cancelar
-                </Text>
-              </TouchableOpacity>
-            </View>
-          </ScrollView>
-        </KeyboardAvoidingView>
-      </Modal>
+        <TouchableOpacity
+          style={[styles.cancelButton, isDark && styles.cancelButtonDark]}
+          onPress={() => setModalVisible(false)}
+        >
+          <Text style={[styles.cancelButtonText, isDark && styles.textDark]}>
+            Cancelar
+          </Text>
+        </TouchableOpacity>
+      </View>
+    </ScrollView>
+  </KeyboardAvoidingView>
+</Modal>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
+  // Container & Layout
   container: {
     flex: 1,
     backgroundColor: "#F8FAFC",
@@ -440,6 +502,12 @@ const styles = StyleSheet.create({
   containerDark: {
     backgroundColor: "#000",
   },
+  content: {
+    flex: 1,
+    padding: 20,
+  },
+
+  // Header
   header: {
     padding: 20,
     paddingTop: 60,
@@ -455,12 +523,8 @@ const styles = StyleSheet.create({
     color: "#111",
     textAlign: "left",
   },
-  content: {
-    flex: 1,
-    padding: 20,
-  },
 
-  // Profile Card Styles
+  // Profile Card
   profileCard: {
     backgroundColor: "#fff",
     padding: 20,
@@ -518,7 +582,7 @@ const styles = StyleSheet.create({
     color: "gray",
   },
 
-  // Menu Section Styles
+  // Menu Sections
   menuSection: {
     marginBottom: 24,
   },
@@ -551,23 +615,22 @@ const styles = StyleSheet.create({
     marginLeft: 12,
   },
 
-  // Footer Styles
-  footer: {
-    padding: 20,
-    paddingBottom: 30,
-    borderTopWidth: 1,
-    borderTopColor: "#eee",
+  // Logout Section
+  logoutSection: {
+    marginTop: 1,
+    marginBottom: 30,
   },
   logoutButton: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
     backgroundColor: "#fff",
-    padding: 16,
+    padding: 14,
     borderRadius: 12,
     borderWidth: 1,
     borderColor: "#FF3B30",
     gap: 8,
+    marginTop: 16,
   },
   logoutButtonDark: {
     backgroundColor: "#1c1c1e",
@@ -575,20 +638,44 @@ const styles = StyleSheet.create({
   },
   logoutButtonText: {
     color: "#FF3B30",
-    fontSize: 16,
+    fontSize: 15,
     fontFamily: "Poppins_500Medium",
   },
 
-  // Modal Styles
+  // Modal Header
   modalHeader: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    padding: 20,
+    padding: 16,
     paddingTop: 60,
     backgroundColor: "#fff",
     borderBottomWidth: 1,
-    borderBottomColor: "#eee",
+    borderBottomColor: "#f0f0f0",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 3,
+  },
+  modalHeaderDark: {
+    backgroundColor: "#1c1c1e",
+    borderBottomColor: "#333",
+  },
+  modalBackButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    padding: 8,
+    marginLeft: -8,
+  },
+  modalBackText: {
+    fontSize: 16,
+    fontFamily: "Poppins_500Medium",
+    color: "#539DF3",
+    marginLeft: 4,
+  },
+  modalHeaderPlaceholder: {
+    width: 80,
   },
   backButton: {
     padding: 4,
@@ -601,29 +688,87 @@ const styles = StyleSheet.create({
     fontFamily: "Poppins_700Bold",
     color: "#111",
   },
+
+  // Modal Content
   modalContent: {
     flex: 1,
-    padding: 20,
-    backgroundColor: "#f4f4f8",
+    backgroundColor: "#f8f9fa",
+    padding: 16,
   },
+  modalContentDark: {
+    backgroundColor: "#000",
+  },
+  modalScrollContent: {
+    paddingBottom: 30,
+  },
+
+  // Modal Cards
+  modalCard: {
+    backgroundColor: "#fff",
+    padding: 20,
+    borderRadius: 16,
+    marginBottom: 20,
+    borderWidth: 1,
+    borderColor: "#eee",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  modalCardDark: {
+    backgroundColor: "#1c1c1e",
+    borderColor: "#333",
+  },
+  cardHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 20,
+  },
+  cardTitle: {
+    fontSize: 18,
+    fontFamily: "Poppins_700Bold",
+    color: "#111",
+    marginLeft: 12,
+  },
+  cardSubtitle: {
+    fontSize: 14,
+    fontFamily: "Poppins_400Regular",
+    color: "#666",
+    marginBottom: 16,
+    lineHeight: 20,
+  },
+
+  // Form Layout
   formSection: {
     marginBottom: 30,
   },
-  inputGroup: {
-    marginBottom: 16,
+  formRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    gap: 12,
   },
+  inputGroupHalf: {
+    flex: 1,
+  },
+  inputGroup: {
+    marginBottom: 20,
+  },
+
+  // Inputs
   label: {
     fontSize: 14,
     fontFamily: "Poppins_500Medium",
     color: "#333",
     marginBottom: 8,
+    marginTop: 4,
   },
   labelDark: {
     color: "#fff",
   },
   input: {
     borderWidth: 1,
-    borderColor: "#ddd",
+    borderColor: "#e1e5e9",
     padding: 16,
     borderRadius: 12,
     fontSize: 16,
@@ -632,48 +777,88 @@ const styles = StyleSheet.create({
   },
   inputDark: {
     borderColor: "#333",
-    backgroundColor: "#1c1c1e",
+    backgroundColor: "#2c2c2e",
     color: "#fff",
   },
+  inputWithIcon: {
+    flexDirection: "row",
+    alignItems: "center",
+    borderWidth: 1,
+    borderColor: "#e1e5e9",
+    borderRadius: 12,
+    backgroundColor: "#fff",
+    overflow: "hidden",
+  },
+  inputWithIconField: {
+    flex: 1,
+    borderWidth: 0,
+    paddingLeft: 8,
+  },
+  inputIcon: {
+    marginLeft: 16,
+  },
+
+  // Modal Actions
   modalActions: {
-    marginTop: 20,
+    marginTop: 10,
   },
   saveButton: {
-    backgroundColor: "#007AFF",
+    backgroundColor: "#539DF3",
     padding: 18,
-    borderRadius: 12,
+    borderRadius: 14,
     alignItems: "center",
     marginBottom: 12,
+    shadowColor: "#539DF3",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  saveButtonDark: {
+    backgroundColor: "#539DF3",
   },
   saveButtonDisabled: {
     backgroundColor: "#ccc",
+    shadowOpacity: 0,
   },
   saveButtonText: {
     color: "#fff",
     fontSize: 16,
+    marginLeft: 8,
     fontFamily: "Poppins_700Bold",
+  },
+  loadingContainer: {
+    flexDirection: "row",
+    alignItems: "center",
   },
   cancelButton: {
     backgroundColor: "transparent",
-    padding: 18,
-    borderRadius: 12,
+    padding: 16,
+    borderRadius: 14,
     alignItems: "center",
-    borderWidth: 1,
-    borderColor: "#ddd",
+    borderWidth: 0.5,
+    borderColor: "#000000ff",
   },
   cancelButtonDark: {
     borderColor: "#333",
+    borderWidth: 1,
   },
   cancelButtonText: {
     color: "#666",
     fontSize: 16,
-    fontFamily: "Poppins_700Bold",
+    fontFamily: "Poppins_500Medium",
   },
 
+  // Text Colors
   textDark: {
     color: "#fff",
   },
   textMutedDark: {
     color: "#888",
+  },
+
+  // Footer (commented)
+  footer: {
+    // Se eliminó el footer ya que el botón está dentro del scroll
   },
 });

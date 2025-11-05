@@ -1,65 +1,541 @@
 // app/ayuda-soporte.tsx
 import React from 'react';
-import { View, Text, StyleSheet, ScrollView } from 'react-native';
-import { Stack } from 'expo-router';
+import { 
+  View, 
+  Text, 
+  StyleSheet, 
+  ScrollView, 
+  TouchableOpacity 
+} from 'react-native';
+import { Stack, useRouter } from 'expo-router';
+import { useColorScheme } from '@/hooks/use-color-scheme';
+import { Ionicons } from '@expo/vector-icons';
+import { useAuth } from '@/context/AuthContext';
 
 export default function AyudaScreen() {
+  const colorScheme = useColorScheme();
+  const isDark = colorScheme === "dark";
+  const router = useRouter();
+  const { user } = useAuth();
+
+  const contactItems = [
+    {
+      icon: "help-circle",
+      title: "Dudas de Inventario o Procesos",
+      description: "Si tienes dudas sobre el inventario, un producto no aparece o necesitas corregir un movimiento, contacta al Administrador de Calidad.",
+      contact: null
+    },
+    {
+      icon: "construct",
+      title: "Soporte Técnico (TI)",
+      description: "Para problemas técnicos (errores de servidor, la app no conecta, etc.), contacta al Departamento de TI de AGUAKAN.",
+      contact: [
+        { type: "Email", value: "soporte.ti@aguakan.com" },
+        { type: "Extensión", value: "123" }
+      ]
+    }
+  ];
+
+  const faqItems = [
+    {
+      question: "¿Qué hago si olvidé mi contraseña?",
+      answer: "Debes contactar a tu Administrador de Calidad para que la reestablezca desde la pantalla 'Gestión de Usuarios'."
+    },
+    {
+      question: "¿Cómo doy de baja un producto?",
+      answer: "Ve a 'Inventario', selecciona el producto y usa la opción 'Baja de Producto'. Consulta el Manual de Usuario en 'Acerca de' para más detalles."
+    },
+    {
+      question: "¿Puedo usar la app sin conexión a internet?",
+      answer: "No, la aplicación requiere conexión a internet para sincronizar los datos en tiempo real con el servidor."
+    },
+    {
+      question: "¿Qué hago si encuentro un error en la aplicación?",
+      answer: "Reporta inmediatamente al Departamento de TI con una descripción detallada del problema y los pasos para reproducirlo."
+    }
+  ];
+
   return (
-    <ScrollView style={styles.container}>
-      <Stack.Screen options={{ title: 'Ayuda y Soporte' }} />
-      <Text style={styles.title}>Ayuda y Soporte</Text>
+    <View style={[styles.container, isDark && styles.containerDark]}>
+      {/* Header con flecha */}
+      <View style={[styles.header, isDark && styles.headerDark]}>
+        <TouchableOpacity
+          onPress={() => router.back()}
+          style={styles.backButton}
+        >
+          <Ionicons
+            name="chevron-back"
+            size={24}
+            color={isDark ? "#fff" : "#000"}
+          />
+          <Text style={[styles.backText, isDark && styles.textDark]}>
+            Atrás
+          </Text>
+        </TouchableOpacity>
+        <Text style={[styles.headerTitle, isDark && styles.textDark]}>
+          Ayuda y Soporte
+        </Text>
+        <View style={styles.headerPlaceholder} />
+      </View>
 
-      <Text style={styles.subtitle}>Contacto de Soporte</Text>
-      <View style={styles.card}>
-        <Text style={styles.cardTitle}>Dudas de Inventario o Procesos</Text>
-        <Text style={styles.cardText}>
-          Si tienes dudas sobre el inventario, un producto no aparece o necesitas 
-          corregir un movimiento, contacta al Administrador de Calidad.
-        </Text>
-      </View>
-      <View style={styles.card}>
-        <Text style={styles.cardTitle}>Soporte Técnico (TI)</Text>
-        <Text style={styles.cardText}>
-          Para problemas técnicos (errores de servidor, la app no conecta, etc.), 
-          contacta al Departamento de TI de AGUAKAN.
-        </Text>
-        <Text style={styles.cardContact}>Email: soporte.ti@aguakan.com</Text>
-        <Text style={styles.cardContact}>Extensión: 123</Text>
-      </View>
+      <ScrollView 
+        style={styles.content}
+        showsVerticalScrollIndicator={false}
+      >
+        {/* Tarjeta de Bienvenida */}
+        <View style={[styles.welcomeCard, isDark && styles.welcomeCardDark]}>
+          <View style={styles.welcomeHeader}>
+            <Ionicons
+              name="help-buoy"
+              size={28}
+              color="#539DF3"
+            />
+            <Text style={[styles.welcomeTitle, isDark && styles.textDark]}>
+              Centro de Ayuda
+            </Text>
+          </View>
+          <Text style={[styles.welcomeText, isDark && styles.textMutedDark]}>
+            Estamos aquí para ayudarte. Encuentra información de contacto, 
+            preguntas frecuentes y recursos para resolver tus dudas rápidamente.
+          </Text>
+        </View>
 
-      <Text style={styles.subtitle}>Preguntas Frecuentes (FAQ)</Text>
-      <View style={styles.card}>
-        <Text style={styles.faqQuestion}>P: ¿Qué hago si olvidé mi contraseña?</Text>
-        <Text style={styles.faqAnswer}>
-          R: Debes contactar a tu Administrador de Calidad para que la reestablezca 
-          desde la pantalla "Gestión de Usuarios".
-        </Text>
-        <Text style={styles.faqQuestion}>P: ¿Cómo doy de baja un producto?</Text>
-        <Text style={styles.faqAnswer}>
-          R: Ve a "Inventario", selecciona el producto y usa la opción "Baja de Producto". 
-          Consulta el Manual de Usuario en "Acerca de" para más detalles.
-        </Text>
-      </View>
-    </ScrollView>
+        {/* Sección de Contacto */}
+        <View style={styles.section}>
+          <Text style={[styles.sectionTitle, isDark && styles.textDark]}>
+            Contacto de Soporte
+          </Text>
+
+          {contactItems.map((item, index) => (
+            <View key={index} style={[styles.contactCard, isDark && styles.contactCardDark]}>
+              <View style={styles.contactHeader}>
+                <Ionicons
+                  name={item.icon as any}
+                  size={22}
+                  color="#539DF3"
+                />
+                <Text style={[styles.contactTitle, isDark && styles.textDark]}>
+                  {item.title}
+                </Text>
+              </View>
+              <Text style={[styles.contactDescription, isDark && styles.textMutedDark]}>
+                {item.description}
+              </Text>
+              {item.contact && (
+                <View style={styles.contactInfo}>
+                  {item.contact.map((contact, contactIndex) => (
+                    <View key={contactIndex} style={styles.contactItem}>
+                      <Ionicons
+                        name={contact.type === "Email" ? "mail" : "call"}
+                        size={16}
+                        color="#539DF3"
+                      />
+                      <Text style={[styles.contactText, isDark && styles.textDark]}>
+                        <Text style={styles.contactType}>{contact.type}: </Text>
+                        {contact.value}
+                      </Text>
+                    </View>
+                  ))}
+                </View>
+              )}
+            </View>
+          ))}
+        </View>
+
+        {/* Sección de Preguntas Frecuentes */}
+        <View style={styles.section}>
+          <Text style={[styles.sectionTitle, isDark && styles.textDark]}>
+            Preguntas Frecuentes
+          </Text>
+
+          <View style={[styles.faqCard, isDark && styles.faqCardDark]}>
+            {faqItems.map((item, index) => (
+              <View key={index} style={styles.faqItem}>
+                <View style={styles.faqQuestionContainer}>
+                  <Ionicons
+                    name="help"
+                    size={18}
+                    color="#539DF3"
+                  />
+                  <Text style={[styles.faqQuestion, isDark && styles.textDark]}>
+                    {item.question}
+                  </Text>
+                </View>
+                <View style={styles.faqAnswerContainer}>
+                  <Ionicons
+                    name="checkmark-circle"
+                    size={16}
+                    color="#4CAF50"
+                  />
+                  <Text style={[styles.faqAnswer, isDark && styles.textMutedDark]}>
+                    {item.answer}
+                  </Text>
+                </View>
+                {index < faqItems.length - 1 && (
+                  <View style={[styles.separator, isDark && styles.separatorDark]} />
+                )}
+              </View>
+            ))}
+          </View>
+        </View>
+
+        {/* Sección de Recursos - PARA TODOS LOS USUARIOS */}
+        <View style={styles.section}>
+          <Text style={[styles.sectionTitle, isDark && styles.textDark]}>
+            Recursos
+          </Text>
+
+          {/* Instructivo Empresarial - Visible para todos */}
+          <TouchableOpacity 
+            style={[styles.resourceCard, isDark && styles.resourceCardDark]}
+            onPress={() => router.push('/admin/instructivo')}
+          >
+            <View style={styles.resourceContent}>
+              <Ionicons
+                name="document-text"
+                size={22}
+                color="#539DF3"
+              />
+              <View style={styles.resourceTextContainer}>
+                <Text style={[styles.resourceTitle, isDark && styles.textDark]}>
+                  Instructivo Empresarial
+                </Text>
+                <Text style={[styles.resourceDescription, isDark && styles.textMutedDark]}>
+                  {user?.rol === 1 
+                    ? "Gestionar el instructivo empresarial del sistema" 
+                    : "Consultar el instructivo empresarial"
+                  }
+                </Text>
+              </View>
+            </View>
+            <Ionicons
+              name="chevron-forward"
+              size={20}
+              color={isDark ? "#666" : "#999"}
+            />
+          </TouchableOpacity>
+
+          {/* Acerca de la Aplicación - Visible para todos */}
+          <TouchableOpacity 
+            style={[styles.resourceCard, isDark && styles.resourceCardDark]}
+            onPress={() => router.push('/acerca-de')}
+          >
+            <View style={styles.resourceContent}>
+              <Ionicons
+                name="information-circle"
+                size={22}
+                color="#539DF3"
+              />
+              <View style={styles.resourceTextContainer}>
+                <Text style={[styles.resourceTitle, isDark && styles.textDark]}>
+                  Acerca de la Aplicación
+                </Text>
+                <Text style={[styles.resourceDescription, isDark && styles.textMutedDark]}>
+                  Información sobre versiones y características
+                </Text>
+              </View>
+            </View>
+            <Ionicons
+              name="chevron-forward"
+              size={20}
+              color={isDark ? "#666" : "#999"}
+            />
+          </TouchableOpacity>
+        </View>
+
+        {/* Sección de Administración - SOLO PARA ADMINISTRADORES */}
+        {user?.rol === 1 && (
+          <View style={styles.section}>
+            <Text style={[styles.sectionTitle, isDark && styles.textDark]}>
+              Administración
+            </Text>
+
+            <TouchableOpacity 
+              style={[styles.resourceCard, isDark && styles.resourceCardDark]}
+              onPress={() => router.push('/admin/gestion-usuarios')}
+            >
+              <View style={styles.resourceContent}>
+                <Ionicons
+                  name="people"
+                  size={22}
+                  color="#539DF3"
+                />
+                <View style={styles.resourceTextContainer}>
+                  <Text style={[styles.resourceTitle, isDark && styles.textDark]}>
+                    Gestión de Usuarios
+                  </Text>
+                  <Text style={[styles.resourceDescription, isDark && styles.textMutedDark]}>
+                    Administrar usuarios del sistema
+                  </Text>
+                </View>
+              </View>
+              <Ionicons
+                name="chevron-forward"
+                size={20}
+                color={isDark ? "#666" : "#999"}
+              />
+            </TouchableOpacity>
+          </View>
+        )}
+      </ScrollView>
+    </View>
   );
 }
 
-// (Estilos)
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 20, backgroundColor: '#f9f9f9' },
-  title: { fontSize: 28, fontWeight: 'bold', marginBottom: 20 },
-  subtitle: { fontSize: 22, fontWeight: '600', marginTop: 20, marginBottom: 10 },
-  card: { 
-    backgroundColor: 'white', 
-    padding: 20, 
-    borderRadius: 12, 
-    marginBottom: 15, 
-    borderWidth: 1,
-    borderColor: '#eee'
+  // Container & Layout
+  container: {
+    flex: 1,
+    backgroundColor: "#F8FAFC",
   },
-  cardTitle: { fontSize: 18, fontWeight: 'bold', marginBottom: 10 },
-  cardText: { fontSize: 16, lineHeight: 24, marginBottom: 10 },
-  cardContact: { fontSize: 16, fontWeight: '500', color: '#007AFF' },
-  faqQuestion: { fontSize: 16, fontWeight: 'bold', marginBottom: 5 },
-  faqAnswer: { fontSize: 16, lineHeight: 24, marginBottom: 15, opacity: 0.8 },
+  containerDark: {
+    backgroundColor: "#000",
+  },
+  content: {
+    flex: 1,
+    padding: 20,
+  },
+
+  // Header
+  header: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    padding: 16,
+    paddingTop: 60,
+    backgroundColor: "#F8FAFC",
+    borderBottomWidth: 1,
+    borderBottomColor: "#f0f0f0",
+  },
+  headerDark: {
+    backgroundColor: "#1c1c1e",
+    borderBottomColor: "#333",
+  },
+  backButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    padding: 8,
+    marginLeft: -8,
+  },
+  backText: {
+    fontSize: 16,
+    fontFamily: "Poppins_500Medium",
+    color: "#539DF3",
+    marginLeft: 4,
+  },
+  headerPlaceholder: {
+    width: 80,
+  },
+  headerTitle: {
+    fontSize: 20,
+    fontFamily: "Poppins_700Bold",
+    color: "#111",
+    textAlign: "center",
+    flex: 1,
+    marginHorizontal: 10,
+  },
+
+  // Welcome Card
+  welcomeCard: {
+    backgroundColor: "#fff",
+    padding: 20,
+    borderRadius: 16,
+    marginBottom: 24,
+    borderWidth: 1,
+    borderColor: "#eee",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  welcomeCardDark: {
+    backgroundColor: "#1c1c1e",
+    borderColor: "#333",
+  },
+  welcomeHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 12,
+  },
+  welcomeTitle: {
+    fontSize: 20,
+    fontFamily: "Poppins_700Bold",
+    color: "#111",
+    marginLeft: 12,
+  },
+  welcomeText: {
+    fontSize: 14,
+    fontFamily: "Poppins_400Regular",
+    color: "#666",
+    lineHeight: 20,
+  },
+
+  // Sections
+  section: {
+    marginBottom: 24,
+  },
+  sectionTitle: {
+    fontSize: 16,
+    fontFamily: "Poppins_400Regular",
+    color: "#666",
+    marginBottom: 16,
+    marginLeft: 4,
+  },
+
+  // Contact Cards
+  contactCard: {
+    backgroundColor: "#fff",
+    padding: 20,
+    borderRadius: 16,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: "#eee",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  contactCardDark: {
+    backgroundColor: "#1c1c1e",
+    borderColor: "#333",
+  },
+  contactHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 12,
+  },
+  contactTitle: {
+    fontSize: 16,
+    fontFamily: "Poppins_600SemiBold",
+    color: "#111",
+    marginLeft: 12,
+    flex: 1,
+  },
+  contactDescription: {
+    fontSize: 14,
+    fontFamily: "Poppins_400Regular",
+    color: "#666",
+    lineHeight: 20,
+    marginBottom: 12,
+  },
+  contactInfo: {
+    marginTop: 8,
+  },
+  contactItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 8,
+  },
+  contactText: {
+    fontSize: 14,
+    fontFamily: "Poppins_400Regular",
+    color: "#111",
+    marginLeft: 8,
+  },
+  contactType: {
+    fontFamily: "Poppins_500Medium",
+    color: "#539DF3",
+  },
+
+  // FAQ Cards
+  faqCard: {
+    backgroundColor: "#fff",
+    padding: 20,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: "#eee",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  faqCardDark: {
+    backgroundColor: "#1c1c1e",
+    borderColor: "#333",
+  },
+  faqItem: {
+    marginBottom: 16,
+  },
+  faqQuestionContainer: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    marginBottom: 8,
+  },
+  faqQuestion: {
+    fontSize: 14,
+    fontFamily: "Poppins_600SemiBold",
+    color: "#111",
+    marginLeft: 8,
+    flex: 1,
+    lineHeight: 20,
+  },
+  faqAnswerContainer: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    marginLeft: 26,
+  },
+  faqAnswer: {
+    fontSize: 14,
+    fontFamily: "Poppins_400Regular",
+    color: "#666",
+    marginLeft: 8,
+    flex: 1,
+    lineHeight: 20,
+  },
+  separator: {
+    height: 1,
+    backgroundColor: "#eee",
+    marginTop: 16,
+  },
+  separatorDark: {
+    backgroundColor: "#333",
+  },
+
+  // Resource Cards
+  resourceCard: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    backgroundColor: "#fff",
+    padding: 16,
+    borderRadius: 12,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: "#eee",
+  },
+  resourceCardDark: {
+    backgroundColor: "#1c1c1e",
+    borderColor: "#333",
+  },
+  resourceContent: {
+    flexDirection: "row",
+    alignItems: "center",
+    flex: 1,
+  },
+  resourceTextContainer: {
+    marginLeft: 12,
+    flex: 1,
+  },
+  resourceTitle: {
+    fontSize: 16,
+    fontFamily: "Poppins_500Medium",
+    color: "#111",
+    marginBottom: 2,
+  },
+  resourceDescription: {
+    fontSize: 13,
+    fontFamily: "Poppins_400Regular",
+    color: "#666",
+  },
+
+  // Text Colors
+  textDark: {
+    color: "#fff",
+  },
+  textMutedDark: {
+    color: "#888",
+  },
 });

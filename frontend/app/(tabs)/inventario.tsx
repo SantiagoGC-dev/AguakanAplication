@@ -1497,8 +1497,8 @@ export default function InventarioScreen() {
 }
 
 const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: "#f8fafc" },
-  container: { flex: 1, padding: 16 },
+  safe: { flex: 1, backgroundColor: "#f8fafc", paddingBottom: -90 },
+  container: { flex: 1, paddingVertical: 1, paddingHorizontal: 16, },
 
   // Header
   header: {
@@ -1509,7 +1509,7 @@ const styles = StyleSheet.create({
     paddingTop: 1,
   },
   title: {
-    fontSize: 30,
+    fontSize: 28,
     fontFamily: "Poppins_700Bold",
     fontWeight: "700",
     color: "#000000ff",
@@ -1518,7 +1518,7 @@ const styles = StyleSheet.create({
   subtitle: {
     fontSize: 15,
     fontFamily: "Poppins_400Regular",
-    color: "#666",
+    color: "#454545ff",
     fontWeight: "400",
   },
   filtrosActivosBadge: {
