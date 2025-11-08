@@ -2,16 +2,17 @@ import {
   obtenerTodosLosUsuarios, 
   obtenerUsuarioPorId, 
   actualizarUsuario, 
-  eliminarUsuario,
+  desactivarUsuario,
+  reactivarUsuario,
   buscarUsuarioPorCorreo 
 } from '../../models/usuario.model.js';
 import { hashPassword } from '../../utils/passwordUtils.js';
 
 export const listarUsuarios = async (req, res) => {
   try {
-    console.log('🔍 Intentando listar usuarios...'); // ← AGREGAR
+    console.log('🔍 Intentando listar usuarios...'); 
     const usuarios = await obtenerTodosLosUsuarios(req.user.id);
-    console.log('✅ Usuarios obtenidos:', usuarios); // ← AGREGAR
+    console.log('✅ Usuarios obtenidos:', usuarios);
     
     res.json({
       success: true,
@@ -116,33 +117,61 @@ export const actualizarUsuarioController = async (req, res) => {
   }
 };
 
-export const eliminarUsuarioController = async (req, res) => {
+export const desactivarUsuarioController = async (req, res) => {
   try {
     const { id } = req.params;
+    const userId = parseInt(id);
 
-    // Evitar que un usuario se elimine a sí mismo
-    if (parseInt(id) === req.user.id) {
+    // Evitar que un usuario se desactive a sí mismo
+    if (userId === req.user.id) {
       return res.status(400).json({
         success: false,
-        error: 'No puedes eliminar tu propio usuario'
+        error: 'No puedes desactivar tu propio usuario'
       });
     }
 
-    const eliminado = await eliminarUsuario(id);
+    const desactivado = await desactivarUsuario(userId);
     
-    if (!eliminado) {
-      return res.status(404).json({
+    if (!desactivado) {
+      return res.status(500).json({
         success: false,
-        error: 'Usuario no encontrado'
+        error: 'No se pudo desactivar el usuario'
       });
     }
 
     res.json({
       success: true,
-      message: 'Usuario eliminado exitosamente'
+      message: 'Usuario desactivado exitosamente'
     });
   } catch (error) {
-    console.error('Error al eliminar usuario:', error);
+    console.error('Error al desactivar usuario:', error);
+    res.status(500).json({ 
+      success: false,
+      error: 'Error interno del servidor' 
+    });
+  }
+};
+
+export const reactivarUsuarioController = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const userId = parseInt(id);
+
+    const reactivado = await reactivarUsuario(userId);
+    
+    if (!reactivado) {
+      return res.status(500).json({
+        success: false,
+        error: 'No se pudo reactivar el usuario'
+      });
+    }
+
+    res.json({
+      success: true,
+      message: 'Usuario reactivado exitosamente'
+    });
+  } catch (error) {
+    console.error('Error al reactivar usuario:', error);
     res.status(500).json({ 
       success: false,
       error: 'Error interno del servidor' 

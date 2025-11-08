@@ -20,9 +20,9 @@ export default function AyudaScreen() {
 
   const contactItems = [
     {
-      icon: "help-circle",
+      icon: "man-outline",
       title: "Dudas de Inventario o Procesos",
-      description: "Si tienes dudas sobre el inventario, un producto no aparece o necesitas corregir un movimiento, contacta al Administrador de Calidad.",
+      description: "Si tienes dudas sobre el inventario, un producto no aparece o necesitas corregirlo, contacta al Administrador de Calidad.",
       contact: null
     },
     {
@@ -31,7 +31,7 @@ export default function AyudaScreen() {
       description: "Para problemas técnicos (errores de servidor, la app no conecta, etc.), contacta al Departamento de TI de AGUAKAN.",
       contact: [
         { type: "Email", value: "soporte.ti@aguakan.com" },
-        { type: "Extensión", value: "123" }
+        { type: "Teléfono", value: "984-123-4567" }
       ]
     }
   ];
@@ -43,15 +43,19 @@ export default function AyudaScreen() {
     },
     {
       question: "¿Cómo doy de baja un producto?",
-      answer: "Ve a 'Inventario', selecciona el producto y usa la opción 'Baja de Producto'. Consulta el Manual de Usuario en 'Acerca de' para más detalles."
+      answer: "Ve a 'Inventario', selecciona el producto y usa la opción 'Baja' en 'Reportar'. Consulta el Manual de Usuario en 'Acerca de' para más detalles."
     },
     {
       question: "¿Puedo usar la app sin conexión a internet?",
       answer: "No, la aplicación requiere conexión a internet para sincronizar los datos en tiempo real con el servidor."
     },
     {
-      question: "¿Qué hago si encuentro un error en la aplicación?",
-      answer: "Reporta inmediatamente al Departamento de TI con una descripción detallada del problema y los pasos para reproducirlo."
+      question: "¿como agrego un nuevo producto al inventario?",
+      answer: "Ve a 'Inventario', selecciona la opción 'Añadir' y completa la información requerida en la sección correspondiente al tipo de producto."
+    },
+    {
+      question: "¿Donde reviso la duración de uso de un producto?",
+      answer: "Ve a detalles del producto en 'Inventario' busca la sección 'Control de Movimientos' ahi encontrarás la información sobre la duración de uso del producto."
     }
   ];
 
@@ -86,7 +90,7 @@ export default function AyudaScreen() {
         <View style={[styles.welcomeCard, isDark && styles.welcomeCardDark]}>
           <View style={styles.welcomeHeader}>
             <Ionicons
-              name="help-buoy"
+              name="help-circle-outline"
               size={28}
               color="#539DF3"
             />
@@ -153,7 +157,7 @@ export default function AyudaScreen() {
               <View key={index} style={styles.faqItem}>
                 <View style={styles.faqQuestionContainer}>
                   <Ionicons
-                    name="help"
+                    name="chevron-down"
                     size={18}
                     color="#539DF3"
                   />

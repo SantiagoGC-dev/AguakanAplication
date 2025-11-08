@@ -32,9 +32,9 @@ export const obtenerTodosLosUsuarios = async (idUsuarioExcluir) => {
       u.id_estatus_usuario
     FROM usuario u
     LEFT JOIN rol r ON u.id_rol = r.id_rol
-    WHERE u.id_usuario != ? -- 🔥 AÑADE ESTE FILTRO
+    WHERE u.id_usuario != ? 
     ORDER BY u.id_usuario
-  `, [idUsuarioExcluir]); // <-- 🔥 PASA EL ID AL QUERY
+  `, [idUsuarioExcluir]); 
   return rows;
 };
 export const obtenerUsuarioPorId = async (id) => {
@@ -97,12 +97,16 @@ export const actualizarUsuario = async (id, datos) => {
   return result.affectedRows > 0;
 };
 
-export const eliminarUsuario = async (id) => {
-  const [result] = await pool.execute(
-    'DELETE FROM usuario WHERE id_usuario = ?',
-    [id]
-  );
-  return result.affectedRows > 0;
+export const desactivarUsuario = async (id) => {
+  try {
+    // Cambiar estatus a 2 (Inactivo)
+    const query = `UPDATE usuario SET id_estatus_usuario = 2 WHERE id_usuario = ?`;
+    const [result] = await pool.execute(query, [id]);
+    return result.affectedRows > 0;
+  } catch (error) {
+    console.error('Error al desactivar usuario:', error);
+    throw error;
+  }
 };
 
 // Nueva función para obtener roles disponibles
@@ -115,4 +119,16 @@ export const obtenerRoles = async () => {
 export const obtenerEstatus = async () => {
   const [rows] = await pool.execute('SELECT id_estatus_usuario, nombre_estatus FROM estatususuario ORDER BY id_estatus_usuario');
   return rows;
+};
+
+export const reactivarUsuario = async (id) => {
+  try {
+    // Cambiar estatus a 1 (Activo)
+    const query = `UPDATE usuario SET id_estatus_usuario = 1 WHERE id_usuario = ?`;
+    const [result] = await pool.execute(query, [id]);
+    return result.affectedRows > 0;
+  } catch (error) {
+    console.error('Error al reactivar usuario:', error);
+    throw error;
+  }
 };

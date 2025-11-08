@@ -62,13 +62,13 @@ export default function AcercaDeScreen() {
     {
       icon: "calendar",
       title: "Fecha de Lanzamiento",
-      value: "Enero 2025",
+      value: "Diciembre 2025",
       description: "Versión inicial"
     },
     {
       icon: "build",
       title: "Última Actualización",
-      value: "Marzo 2025",
+      value: "Diciembre 2025",
       description: "Mejoras de estabilidad"
     }
   ];
@@ -78,25 +78,25 @@ export default function AcercaDeScreen() {
       icon: "business",
       title: "Propietario del Sistema",
       value: "AGUAKAN",
-      description: "Empresa concesionaria de agua potable"
+      description: "Empresa que opera servicios de agua potable, alcantarillado y saneamiento"
     },
     {
       icon: "school",
       title: "Institución Educativa",
-      value: "Universidad Tecnológica de Cancún",
+      value: "Universidad Tecnológica de la Riviera Maya",
       description: "Formación de profesionales técnicos"
     },
     {
       icon: "person",
-      title: "Desarrollador Principal",
-      value: "Juan Carlos Pérez Martínez",
+      title: "Desarrollador",
+      value: "David Santiago Gutiérrez Calderón",
       description: "Estudiante de Ingeniería en Desarrollo de Software"
     },
     {
       icon: "people",
       title: "Asesor Empresarial",
-      value: "Ing. María González López",
-      description: "Administradora de Calidad - AGUAKAN"
+      value: "Ing. Pedro Hernández Torres",
+      description: "Administrador del área de Calidad - AGUAKAN"
     }
   ];
 
@@ -108,13 +108,13 @@ export default function AcercaDeScreen() {
       description: "Desarrollo móvil multiplataforma"
     },
     {
-      icon: "server",
+      icon: "cog-outline",
       title: "Backend",
       value: "Node.js + Express",
       description: "API RESTful con autenticación JWT"
     },
     {
-      icon: "database",
+      icon: "server",
       title: "Base de Datos",
       value: "MySQL",
       description: "Almacenamiento relacional"
@@ -158,10 +158,10 @@ export default function AcercaDeScreen() {
             />
           </View>
           <Text style={[styles.heroTitle, isDark && styles.textDark]}>
-            Sistema de Gestión de Inventarios
+            Sistema de Gestión de Inventario
           </Text>
           <Text style={[styles.heroSubtitle, isDark && styles.textMutedDark]}>
-            AGUAKAN - Control y Administración de Recursos
+            AGUAKAN - Control y Administración del Laboratorio de Calidad
           </Text>
           <Text style={[styles.heroDescription, isDark && styles.textMutedDark]}>
             Plataforma desarrollada para optimizar el control de inventario, 
@@ -335,7 +335,7 @@ export default function AcercaDeScreen() {
             color="#4CAF50"
           />
           <Text style={[styles.footerText, isDark && styles.textMutedDark]}>
-            © 2025 AGUAKAN. Todos los derechos reservados.{'\n'}
+            © 2025 David Santiago Gutiérrez Calderón. Todos los derechos reservados.{'\n'}
             Sistema desarrollado con fines educativos y operativos.
           </Text>
         </View>

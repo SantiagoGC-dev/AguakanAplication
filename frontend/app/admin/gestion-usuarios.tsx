@@ -1,5 +1,4 @@
-// app/admin/gestion-usuarios.tsx
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   View,
   Text,
@@ -12,7 +11,9 @@ import {
   ScrollView,
   KeyboardAvoidingView,
   Platform,
+  Animated,
 } from "react-native";
+import { Swipeable } from "react-native-gesture-handler";
 import api from "@/utils/api";
 import { router, Stack } from "expo-router";
 import { useColorScheme } from "@/hooks/use-color-scheme";
@@ -25,6 +26,7 @@ export default function GestionUsuariosScreen() {
   const [users, setUsers] = useState<any[]>([]);
   const [roles, setRoles] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [deletingId, setDeletingId] = useState<number | null>(null);
 
   // Estados del Modal
   const [modalVisible, setModalVisible] = useState(false);
@@ -42,6 +44,9 @@ export default function GestionUsuariosScreen() {
 
   // Estados de los estatus
   const [estatuses, setEstatuses] = useState<any[]>([]);
+
+  // Referencias para los Swipeables
+  const swipeableRefs = useRef(new Map());
 
   useEffect(() => {
     fetchData();
@@ -78,6 +83,144 @@ export default function GestionUsuariosScreen() {
     }
   };
 
+const handleCambiarEstadoUsuario = async (userId: number, userName: string, esActivo: boolean) => {
+  swipeableRefs.current.get(userId)?.close();
+  
+  const accion = esActivo ? "Desactivar" : "Activar";
+  const mensaje = esActivo 
+    ? `¿Estás seguro de que quieres desactivar a ${userName}? El usuario perderá acceso a la aplicación.`
+    : `¿Estás seguro de que quieres activar a ${userName}? El usuario recuperará acceso a la aplicación.`;
+
+  Alert.alert(
+    `${accion} Usuario`,
+    mensaje,
+    [
+      {
+        text: "Cancelar",
+        style: "cancel"
+      },
+      {
+        text: accion,
+        style: esActivo ? "destructive" : "default",
+        onPress: async () => {
+          try {
+            setDeletingId(userId);
+            
+            if (esActivo) {
+              // Desactivar usuario
+              await api.delete(`/usuarios/${userId}`);
+              Alert.alert("Éxito", "Usuario desactivado correctamente");
+            } else {
+              // Reactivar usuario  
+              await api.put(`/usuarios/${userId}/reactivar`);
+              Alert.alert("Éxito", "Usuario reactivado correctamente");
+            }
+            
+            // Recargar la lista completa para ver el cambio de estatus
+            await fetchData();
+            
+          } catch (error: any) {
+            const errorMsg = error.response?.data?.error || `No se pudo ${accion.toLowerCase()} el usuario`;
+            Alert.alert("Error", errorMsg);
+          } finally {
+            setDeletingId(null);
+          }
+        }
+      }
+    ]
+  );
+};
+
+  // Render del swipeable para eliminar
+const renderRightActions = (progress: any, dragX: any, item: any) => {
+  const esActivo = item.id_estatus_usuario === 1;
+  const accion = esActivo ? "Desactivar" : "Activar";
+  const color = esActivo ? "#DC2626" : "#16A34A"; // Rojo para desactivar, Verde para activar
+  const icono = esActivo ? "person-remove" : "person-add";
+
+  const scale = dragX.interpolate({
+    inputRange: [-100, 0],
+    outputRange: [1, 0],
+    extrapolate: 'clamp',
+  });
+
+  return (
+    <TouchableOpacity
+      style={[styles.deleteAction, deletingId === item.id_usuario && styles.deleteActionDisabled, { backgroundColor: color }]}
+      onPress={() => handleCambiarEstadoUsuario(item.id_usuario, `${item.primer_nombre} ${item.apellido_paterno}`, esActivo)}
+      disabled={deletingId === item.id_usuario}
+    >
+      <Animated.View style={{ transform: [{ scale }] }}>
+        {deletingId === item.id_usuario ? (
+          <View style={styles.deletingContainer}>
+            <Ionicons name="refresh" size={20} color="white" />
+          </View>
+        ) : (
+          <View style={styles.deleteContainer}>
+            <Ionicons name={icono} size={24} color="white" />
+            <Text style={styles.deleteActionText}>{accion}</Text>
+          </View>
+        )}
+      </Animated.View>
+    </TouchableOpacity>
+  );
+};
+
+const renderItem = ({ item }: { item: any }) => (
+  <Swipeable
+    ref={(ref) => {
+      if (ref) {
+        swipeableRefs.current.set(item.id_usuario, ref);
+      } else {
+        swipeableRefs.current.delete(item.id_usuario);
+      }
+    }}
+    renderRightActions={(progress, dragX) => renderRightActions(progress, dragX, item)}
+    rightThreshold={40}
+    overshootRight={false}
+  >
+    <View style={[styles.itemContainer, isDark && styles.itemContainerDark]}>
+      <View style={styles.itemContent}>
+        <Text style={[styles.itemTitle, isDark && styles.textDark]}>
+          {item.primer_nombre} {item.apellido_paterno}
+          {/* 🔥 ELIMINADO: El texto "(Inactivo)" */}
+        </Text>
+        <Text style={[styles.itemText, isDark && styles.textMutedDark]}>
+          {item.correo}
+        </Text>
+        <View style={styles.itemBadges}>
+          <View style={[
+            styles.badge, 
+            item.id_rol === 1 ? styles.badgeAdmin : styles.badgeUser
+          ]}>
+            <Text style={styles.badgeText}>
+              {item.nombre_rol}
+            </Text>
+          </View>
+          <View style={[
+            styles.badge, 
+            // 🔥 MEJORAR colores para estatus
+            item.id_estatus_usuario === 1 ? styles.badgeActive : styles.badgeInactive
+          ]}>
+            <Text style={[
+              styles.badgeText,
+              // 🔥 AGREGAR color de texto según estatus
+              item.id_estatus_usuario === 1 ? styles.badgeTextActive : styles.badgeTextInactive
+            ]}>
+              {item.id_estatus_usuario === 1 ? "Activo" : "Inactivo"}
+            </Text>
+          </View>
+        </View>
+      </View>
+      <TouchableOpacity
+        style={styles.editButton}
+        onPress={() => openModal(item)}
+      >
+        <Ionicons name="create" size={20} color="#539DF3" />
+      </TouchableOpacity>
+    </View>
+  </Swipeable>
+);
   const openModal = (user: any = null) => {
     if (user) {
       // --- Editando Usuario ---
@@ -155,42 +298,7 @@ export default function GestionUsuariosScreen() {
     }
   };
 
-  const renderItem = ({ item }: { item: any }) => (
-    <View style={[styles.itemContainer, isDark && styles.itemContainerDark]}>
-      <View style={styles.itemContent}>
-        <Text style={[styles.itemTitle, isDark && styles.textDark]}>
-          {item.primer_nombre} {item.apellido_paterno}
-        </Text>
-        <Text style={[styles.itemText, isDark && styles.textMutedDark]}>
-          {item.correo}
-        </Text>
-        <View style={styles.itemBadges}>
-          <View style={[
-            styles.badge, 
-            item.id_rol === 1 ? styles.badgeAdmin : styles.badgeUser
-          ]}>
-            <Text style={styles.badgeText}>
-              {item.nombre_rol}
-            </Text>
-          </View>
-          <View style={[
-            styles.badge, 
-            item.id_estatus_usuario === 1 ? styles.badgeActive : styles.badgeInactive
-          ]}>
-            <Text style={styles.badgeText}>
-              {item.id_estatus_usuario === 1 ? "Activo" : "Inactivo"}
-            </Text>
-          </View>
-        </View>
-      </View>
-      <TouchableOpacity
-        style={styles.editButton}
-        onPress={() => openModal(item)}
-      >
-        <Ionicons name="create" size={20} color="#539DF3" />
-      </TouchableOpacity>
-    </View>
-  );
+
 
   return (
     <View style={[styles.container, isDark && styles.containerDark]}>
@@ -436,35 +544,6 @@ export default function GestionUsuariosScreen() {
                   </TouchableOpacity>
                 ))}
               </View>
-
-              {isEditing && (
-                <>
-                  <Text style={[styles.label, isDark && styles.labelDark]}>
-                    Estatus
-                  </Text>
-                  <View style={styles.filterOptions}>
-                    {estatuses.map((estatus: any) => (
-                      <TouchableOpacity
-                        key={estatus.value}
-                        style={[
-                          styles.filterOption,
-                          idEstatus === estatus.value && styles.filterOptionActive,
-                        ]}
-                        onPress={() => setIdEstatus(estatus.value)}
-                      >
-                        <Text
-                          style={[
-                            styles.filterOptionText,
-                            idEstatus === estatus.value && styles.filterOptionTextActive,
-                          ]}
-                        >
-                          {estatus.label}
-                        </Text>
-                      </TouchableOpacity>
-                    ))}
-                  </View>
-                </>
-              )}
             </View>
 
             {/* Acciones del Modal */}
@@ -510,7 +589,6 @@ export default function GestionUsuariosScreen() {
 }
 
 const styles = StyleSheet.create({
-  // Container & Layout
   container: {
     flex: 1,
     backgroundColor: "#F8FAFC",
@@ -636,21 +714,14 @@ const styles = StyleSheet.create({
     borderRadius: 12,
   },
   badgeAdmin: {
-    backgroundColor: "#FFE5E5",
+    backgroundColor: "#ffffffff",
+    borderColor: "#539DF3",
+    borderWidth: 1,
   },
   badgeUser: {
-    backgroundColor: "#E5F0FF",
-  },
-  badgeActive: {
-    backgroundColor: "#E5F7E5",
-  },
-  badgeInactive: {
-    backgroundColor: "#F5F5F5",
-  },
-  badgeText: {
-    fontSize: 12,
-    fontFamily: "Poppins_500Medium",
-    color: "#333",
+    backgroundColor: "#ffffffff",
+    borderColor: "#539DF3",
+    borderWidth: 1,
   },
 
   // Edit Button
@@ -887,5 +958,54 @@ const styles = StyleSheet.create({
   },
   textMutedDark: {
     color: "#888",
+  },
+
+  deleteAction: {
+    justifyContent: "center",
+    alignItems: "center",
+    borderRadius: 12,
+    marginBottom: 8,
+    marginLeft: 8,
+    width: 100,
+  },
+  deleteActionDisabled: {
+    backgroundColor: "#9CA3AF",
+  },
+  deleteContainer: {
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  deletingContainer: {
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  deleteActionText: {
+    color: "white",
+    fontSize: 12,
+    fontFamily: "Poppins_500Medium",
+    marginTop: 4,
+  },
+  
+  // Cambiar colores de badges para estatus
+  badgeActive: {
+    backgroundColor: "#DCFCE7", // Verde más suave
+    borderWidth: 1,
+    borderColor: "#22C55E",
+  },
+  badgeInactive: {
+    backgroundColor: "#FEE2E2", // Rojo más suave
+    borderWidth: 1,
+    borderColor: "#EF4444",
+  },
+  badgeText: {
+    fontSize: 12,
+    fontFamily: "Poppins_500Medium",
+  },
+  // 🔥 AGREGAR colores de texto para estatus
+  badgeTextActive: {
+    color: "#166534", // Verde oscuro
+  },
+  badgeTextInactive: {
+    color: "#991B1B", // Rojo oscuro
   },
 });

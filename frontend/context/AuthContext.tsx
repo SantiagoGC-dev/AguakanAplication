@@ -27,7 +27,7 @@ const AuthContext = createContext<AuthContextData>({} as AuthContextData);
 // 5 minutos en milisegundos
 const EXPIRATION_TIME = 5 * 60 * 1000; 
 // 🔥 TU IP CORRECTA
-const API_BASE_URL = "http://172.20.10.11:3000";
+const API_BASE_URL = "http://192.168.0.166:3000";
 
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
