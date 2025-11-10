@@ -24,7 +24,7 @@ import { useRouter, useLocalSearchParams } from "expo-router";
 import { useFocusEffect } from "@react-navigation/native";
 
 //Configuración de la API y Tipos
-const API_BASE_URL = "http://192.168.0.166:3000";
+const API_BASE_URL = "http://172.20.10.11:3000";
 
 interface FilterOption {
   label: string;
@@ -1720,6 +1720,7 @@ const styles = StyleSheet.create({
     borderTopRightRadius: 24,
     maxHeight: "90%", 
     minHeight: "60%", 
+    flex: 1,
   },
   scrollContent: {
     paddingBottom: 20, 
@@ -1813,13 +1814,12 @@ const styles = StyleSheet.create({
     color: "#fff",
   },
   addScroll: {
-    maxHeight: 400,
+    flex: 1,
     paddingVertical: 8,
   },
 
   // Filter Cards
   filtersScroll: {
-    maxHeight: 400,
     paddingVertical: 8,
   },
   filterCard: {

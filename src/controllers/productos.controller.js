@@ -90,10 +90,9 @@ export const getPrioridades = async (req, res) => {
 };
 
 // Obtener todos los productos
-// Obtener todos los productos (AHORA CON PAGINACIÓN Y FILTROS)
-// Obtener todos los productos (PAGINACIÓN Y FILTROS CORREGIDOS)
 export const getProductos = async (req, res) => {
   try {
+    await updateProductosEstatus();
     // 1. CAPTURAR PARÁMETROS (sin cambios)
     const {
       page = 1,
@@ -110,15 +109,15 @@ export const getProductos = async (req, res) => {
 
     // 2. CONSTRUIR 'WHERE' (sin cambios)
     let whereClauses = [];
-    let params = []; 
+    let params = [];
 
     if (busqueda) {
       whereClauses.push("p.nombre LIKE ?");
       params.push(`%${busqueda}%`);
     }
     if (tipo !== "todos") {
-whereClauses.push("tp.nombre_tipo = ?");
-params.push(tipo);
+      whereClauses.push("tp.nombre_tipo = ?");
+      params.push(tipo);
     }
     if (prioridad !== "todos") {
       whereClauses.push("p.id_prioridad = ?");
@@ -131,17 +130,17 @@ params.push(tipo);
 
     // 3. LÓGICA DE PERIODO (sin cambios)
     switch (periodo) {
-case "semanal":
-whereClauses.push("p.fecha_ingreso >= CURDATE() - INTERVAL 7 DAY");
+      case "semanal":
+        whereClauses.push("p.fecha_ingreso >= CURDATE() - INTERVAL 7 DAY");
         break;
       case "mensual":
-whereClauses.push("p.fecha_ingreso >= CURDATE() - INTERVAL 1 MONTH");
+        whereClauses.push("p.fecha_ingreso >= CURDATE() - INTERVAL 1 MONTH");
         break;
       case "trimestral":
-whereClauses.push("p.fecha_ingreso >= CURDATE() - INTERVAL 3 MONTH");
+        whereClauses.push("p.fecha_ingreso >= CURDATE() - INTERVAL 3 MONTH");
         break;
       case "anual":
-whereClauses.push("p.fecha_ingreso >= CURDATE() - INTERVAL 1 YEAR");
+        whereClauses.push("p.fecha_ingreso >= CURDATE() - INTERVAL 1 YEAR");
         break;
     }
 
@@ -149,7 +148,7 @@ whereClauses.push("p.fecha_ingreso >= CURDATE() - INTERVAL 1 YEAR");
       whereClauses.length > 0 ? `WHERE ${whereClauses.join(" AND ")}` : "";
 
     // 4. LÓGICA DE ORDENAMIENTO (sin cambios)
-const orderBy =
+    const orderBy =
       orden === "recientes"
         ? "ORDER BY p.fecha_ingreso DESC, p.id_producto DESC"
         : "ORDER BY p.fecha_ingreso ASC, p.id_producto ASC";
@@ -205,11 +204,11 @@ LEFT JOIN laboratorio le ON eq.id_laboratorio = le.id_laboratorio
     const [rows] = await pool.query(dataQuery, finalParams);
 
     //
-res.json({ products: rows, totalCount: totalCount });
+    res.json({ products: rows, totalCount: totalCount });
   } catch (error) {
     console.error("❌ Error en getProductos:", error);
     res.status(500).json({ error: "Error al obtener productos" });
-}
+  }
 };
 
 // Obtener un producto por ID
@@ -247,7 +246,7 @@ export const getProductoById = async (req, res) => {
         equipo_laboratorio_id: rows[0].equipo_laboratorio_id,
         equipo_laboratorio_nombre: rows[0].equipo_laboratorio_nombre,
         equipo_laboratorio_ubicacion: rows[0].equipo_laboratorio_ubicacion,
-        todosLosDatos: rows[0]
+        todosLosDatos: rows[0],
       });
     }
 
@@ -296,18 +295,18 @@ export const createProducto = async (req, res) => {
       marca,
       id_tipo_producto,
       datosEquipo: {
-        id_agk, 
-        modelo, 
-        numero_serie, 
-        rango_medicion, 
-        resolucion, 
-        intervalo_trabajo, 
-        id_laboratorio
+        id_agk,
+        modelo,
+        numero_serie,
+        rango_medicion,
+        resolucion,
+        intervalo_trabajo,
+        id_laboratorio,
       },
       datosReactivo: {
         presentacion,
-        caducidad
-      }
+        caducidad,
+      },
     });
 
     const [result] = await connection.query(
@@ -343,21 +342,20 @@ export const createProducto = async (req, res) => {
         id: newProductId,
         caducidad,
         affectedRows: reactivoResult.affectedRows,
-        insertId: reactivoResult.insertId
+        insertId: reactivoResult.insertId,
       });
-
     } else if (id_tipo_producto == 2) {
       // EQUIPO - LÓGICA MEJORADA
       console.log("🔄 Creando equipo con datos:", {
-        id_agk, 
-        modelo, 
-        numero_serie, 
-        rango_medicion, 
-        resolucion, 
-        intervalo_trabajo, 
-        id_laboratorio
+        id_agk,
+        modelo,
+        numero_serie,
+        rango_medicion,
+        resolucion,
+        intervalo_trabajo,
+        id_laboratorio,
       });
-      
+
       const [equipoResult] = await connection.query(
         `INSERT INTO Equipo (id_producto, id_agk, modelo, numero_serie, rango_medicion, resolucion, intervalo_trabajo, id_laboratorio) 
          VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
@@ -372,10 +370,10 @@ export const createProducto = async (req, res) => {
           id_laboratorio || null,
         ]
       );
-      
-      console.log("✅ Equipo CREADO:", { 
+
+      console.log("✅ Equipo CREADO:", {
         affectedRows: equipoResult.affectedRows,
-        insertId: equipoResult.insertId 
+        insertId: equipoResult.insertId,
       });
 
       // ✅ VERIFICACIÓN POST-CREACIÓN
@@ -458,18 +456,18 @@ export const updateProducto = async (req, res) => {
       productoId: id,
       id_tipo_producto,
       datosEquipo: {
-        id_agk, 
-        modelo, 
-        numero_serie, 
-        rango_medicion, 
-        resolucion, 
-        intervalo_trabajo, 
-        id_laboratorio
+        id_agk,
+        modelo,
+        numero_serie,
+        rango_medicion,
+        resolucion,
+        intervalo_trabajo,
+        id_laboratorio,
       },
       datosReactivo: {
         presentacion,
-        caducidad
-      }
+        caducidad,
+      },
     });
 
     // Actualizar producto principal
@@ -495,7 +493,9 @@ export const updateProducto = async (req, res) => {
       return res.status(404).json({ message: "Producto no encontrado" });
     }
 
-    console.log("✅ Producto principal actualizado:", { affectedRows: productoResult.affectedRows });
+    console.log("✅ Producto principal actualizado:", {
+      affectedRows: productoResult.affectedRows,
+    });
 
     // ✅ SOLUCIÓN CORREGIDA: Usar UPDATE/INSERT explícito
     if (id_tipo_producto == 1) {
@@ -538,7 +538,6 @@ export const updateProducto = async (req, res) => {
         [id]
       );
       console.log("✅ FECHA VERIFICADA EN BD:", verificacion[0]?.caducidad);
-
     } else if (id_tipo_producto == 2) {
       // EQUIPO - LÓGICA MEJORADA CON VERIFICACIÓN COMPLETA
       const [existingEquipo] = await connection.query(
@@ -552,14 +551,14 @@ export const updateProducto = async (req, res) => {
         existeEquipo: existingEquipo.length > 0,
         laboratorioActual: existingEquipo[0]?.id_laboratorio,
         datosRecibidos: {
-          id_agk, 
-          modelo, 
-          numero_serie, 
-          rango_medicion, 
-          resolucion, 
-          intervalo_trabajo, 
-          id_laboratorio
-        }
+          id_agk,
+          modelo,
+          numero_serie,
+          rango_medicion,
+          resolucion,
+          intervalo_trabajo,
+          id_laboratorio,
+        },
       });
 
       // ✅ FORZAR INSERCIÓN si no existe el equipo
@@ -579,9 +578,9 @@ export const updateProducto = async (req, res) => {
             id_laboratorio || null,
           ]
         );
-        console.log("✅ Equipo INSERTADO:", { 
+        console.log("✅ Equipo INSERTADO:", {
           affectedRows: insertResult.affectedRows,
-          insertId: insertResult.insertId
+          insertId: insertResult.insertId,
         });
       } else {
         // ✅ ACTUALIZAR equipo existente
@@ -601,9 +600,9 @@ export const updateProducto = async (req, res) => {
             id,
           ]
         );
-        console.log("✅ Equipo ACTUALIZADO:", { 
+        console.log("✅ Equipo ACTUALIZADO:", {
           affectedRows: updateResult.affectedRows,
-          changedRows: updateResult.changedRows
+          changedRows: updateResult.changedRows,
         });
       }
 
@@ -688,7 +687,7 @@ export const updateProductoImagen = async (req, res) => {
     }
 
     // Construir la URL completa de la imagen
-    const imageUrl = `http://192.168.0.166:3000/uploads/${req.file.filename}`;
+    const imageUrl = `http://172.20.10.11:3000/uploads/${req.file.filename}`;
 
     console.log("🖼️ URL COMPLETA que se guardará:", imageUrl);
 
@@ -719,5 +718,49 @@ export const updateProductoImagen = async (req, res) => {
     res
       .status(500)
       .json({ error: "Error interno del servidor al actualizar la imagen." });
+  }
+};
+
+// Obtener la tendencia de stock para la gráfica de un producto
+export const getProductoStockTrend = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    // ✅ CONSULTA CORREGIDA - Compatible con todas las versiones de MySQL
+    const [rows] = await pool.query(
+      `SELECT 
+          m.fecha AS x,
+          @running_total := @running_total + 
+            CASE 
+              WHEN m.id_tipo_movimiento = 1 THEN m.cantidad  -- Entrada
+              ELSE -m.cantidad                               -- Salida
+            END AS y
+        FROM 
+          Movimiento m
+        CROSS JOIN 
+          (SELECT @running_total := 0) rt
+        WHERE 
+          m.id_producto = ?
+        ORDER BY 
+          m.fecha ASC, m.id_movimiento ASC`,
+      [id]
+    );
+
+    // Procesar los datos
+    const datosProcesados = rows.map((row) => ({
+      x: row.x,
+      y: Number(row.y) || 0,
+    }));
+
+    console.log(`📈 Tendencia de stock para producto ${id}:`, {
+      puntos: datosProcesados.length,
+      primerPunto: datosProcesados[0],
+      ultimoPunto: datosProcesados[datosProcesados.length - 1]
+    });
+
+    res.json(datosProcesados);
+  } catch (error) {
+    console.error("❌ Error en getProductoStockTrend:", error);
+    res.status(500).json({ error: "Error al obtener la tendencia de stock" });
   }
 };

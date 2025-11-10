@@ -25,7 +25,7 @@ import { Swipeable } from "react-native-gesture-handler";
 import { useAuth } from "@/context/AuthContext";
 import api from "@/utils/api";
 
-const API_ROOT_URL = "http://192.168.0.166:3000";
+const API_ROOT_URL = "http://172.20.10.11:3000";
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get("window");
 
@@ -221,33 +221,6 @@ export default function ProductDetail() {
     descripcion_adicional: "",
   });
 
-  // ... (procesarDatosParaGrafica, useEffect de animación, formatFecha no cambian) ...
-  const procesarDatosParaGrafica = (movimientos: Movimiento[]) => {
-    if (!movimientos || movimientos.length === 0) return [];
-    const datos: { x: string; y: number }[] = [];
-    let stockAcumulado = producto?.existencia_actual || 0;
-    const movimientosOrdenados = [...movimientos].sort(
-      (a, b) => new Date(a.fecha).getTime() - new Date(b.fecha).getTime()
-    );
-    for (let i = movimientosOrdenados.length - 1; i >= 0; i--) {
-      const mov = movimientosOrdenados[i];
-      if (mov.tipo_movimiento === "Entrada") {
-        stockAcumulado -= mov.cantidad;
-      } else {
-        stockAcumulado += mov.cantidad;
-      }
-      if (
-        i === movimientosOrdenados.length - 1 ||
-        datos[datos.length - 1]?.y !== stockAcumulado
-      ) {
-        datos.unshift({
-          x: new Date(mov.fecha).toLocaleDateString("es-MX"),
-          y: stockAcumulado,
-        });
-      }
-    }
-    return datos;
-  };
   useEffect(() => {
     if (!loading && producto) {
       Animated.parallel([
@@ -814,14 +787,16 @@ export default function ProductDetail() {
       console.log("🔄🔄🔄 RECARGANDO DATOS - INICIO");
 
       // Hacer peticiones en paralelo con api.get
-      const [productResponse, historyResponse] = await Promise.all([
-        api.get(`/productos/${id}?t=${Date.now()}`),
-        api.get(`/movimientos/historial/${id}?t=${Date.now()}`),
-      ]);
+const [productResponse, historyResponse, trendResponse] = await Promise.all([
+  api.get(`/productos/${id}?t=${Date.now()}`),
+  api.get(`/movimientos/historial/${id}?t=${Date.now()}`),
+  api.get(`/productos/${id}/tendencia?t=${Date.now()}`),
+]);
 
       // Con Axios, la respuesta está en .data
       const productData = productResponse.data;
       const historyData = historyResponse.data;
+      const trendData = trendResponse.data; 
 
       // DEBUG CRÍTICO
       console.log("📥 DATOS RECIBIDOS DEL BACKEND:", {
@@ -834,8 +809,7 @@ export default function ProductDetail() {
 
       setProducto(productData);
       setHistorial(historyData);
-      const datosGraficaNuevos = procesarDatosParaGrafica(historyData);
-      setDatosGrafica(datosGraficaNuevos);
+      setDatosGrafica(trendData);
 
       if (productData) {
         const editFormData: any = {
@@ -884,16 +858,6 @@ export default function ProductDetail() {
     refreshProductData(); // Carga todos los datos la primera vez
   }, [id]);
 
-  // AÑADE este useEffect - después de los demás useEffect:
-  useEffect(() => {
-    if (historial.length > 0 && producto) {
-      const datos = procesarDatosParaGrafica(historial);
-      setDatosGrafica(datos);
-    }
-  }, [historial, producto]);
-
-  // ... (El resto de tu JSX y Modales no necesita cambios lógicos) ...
-  // ... (El StyleSheet tampoco necesita cambios) ...
   // Render loading
   if (loading) {
     return (
@@ -1635,6 +1599,9 @@ export default function ProductDetail() {
                         placeholder="YYYY-MM-DD"
                         keyboardType="numbers-and-punctuation"
                       />
+                      <Text style={styles.hintText}>
+                        ¡Formato requerido!: YYYY-MM-DD
+                      </Text>
                     </View>
                   </View>
                 )}
@@ -2274,7 +2241,6 @@ const styles = StyleSheet.create({
     padding: 4,
   },
   modalScroll: {
-    flex: 1,
   },
   modalScrollContent: {
     padding: 20,

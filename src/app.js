@@ -25,7 +25,6 @@ app.use("/api/movimientos", movimientosRoutes);
 app.use("/api/documentos", documentosRoutes);
 app.use("/api/dashboard", dashboardRoutes);
 app.use("/api/reportes", reportesRoutes);
-
 app.use('/api/instructivo', instructivoRoutes);
 
 // Servir archivos estáticos
