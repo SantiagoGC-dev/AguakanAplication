@@ -13,6 +13,7 @@ import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import { ThemedText } from "@/components/themed-text";
 import { useRouter } from "expo-router";
 import { useAuth } from "../../context/AuthContext";
+import { useColorScheme } from "@/hooks/use-color-scheme";
 
 interface DashboardStats {
   totalProductos: number;
@@ -88,6 +89,8 @@ function formatDate(dateString: string) {
 
 export default function HomeScreen() {
   const router = useRouter();
+  const colorScheme = useColorScheme();
+  const isDark = colorScheme === "dark";
 
   // Estados
   const { user: authUser } = useAuth();
@@ -273,13 +276,13 @@ export default function HomeScreen() {
 
   if (loading) {
     return (
-      <View style={styles.loadingContainer}>
+      <View style={[styles.loadingContainer, isDark && styles.loadingContainerDark]}>
         <View style={styles.loadingContent}>
           <Ionicons name="flask" size={48} color="#4B9CD3" />
-          <ThemedText type="title" style={styles.loadingText}>
+          <ThemedText type="title" style={[styles.loadingText, isDark && styles.textDark]}>
             Cargando dashboard...
           </ThemedText>
-          <ThemedText style={styles.loadingSubtext}>
+          <ThemedText style={[styles.loadingSubtext, isDark && styles.textMutedDark]}>
             Preparando tu información
           </ThemedText>
         </View>
@@ -288,16 +291,21 @@ export default function HomeScreen() {
   }
 
   return (
-    <View style={styles.mainContainer}>
+    <View style={[styles.mainContainer, isDark && styles.mainContainerDark]}>
       <ScrollView
         contentContainerStyle={styles.container}
         showsVerticalScrollIndicator={false}
         refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+          <RefreshControl 
+            refreshing={refreshing} 
+            onRefresh={onRefresh}
+            colors={["#539DF3"]}
+            tintColor={isDark ? "#fff" : "#539DF3"}
+          />
         }
       >
         {/* Header Mejorado */}
-        <View style={styles.headerContainer}>
+        <View style={[styles.headerContainer, isDark && styles.headerContainerDark]}>
           <View style={styles.headerContent}>
             <View style={styles.userInfo}>
               <View style={styles.avatarContainer}>
@@ -311,14 +319,14 @@ export default function HomeScreen() {
               </View>
               <View>
                 <View style={styles.welcomeContainer}>
-                  <ThemedText type="title" style={styles.welcomeText}>
+                  <ThemedText type="title" style={[styles.welcomeText, isDark && styles.textDark]}>
                     ¡Hola!{" "}
                   </ThemedText>
-                  <ThemedText type="title" style={styles.userNameText}>
+                  <ThemedText type="title" style={[styles.userNameText, isDark && styles.textDark]}>
                     {userName}
                   </ThemedText>
                 </View>
-                <ThemedText type="subtitle" style={styles.subtitleText}>
+                <ThemedText type="subtitle" style={[styles.subtitleText, isDark && styles.textMutedDark]}>
                   {userRole}
                 </ThemedText>
               </View>
@@ -330,7 +338,7 @@ export default function HomeScreen() {
               <Ionicons
                 name="notifications-outline"
                 size={24}
-                color="#539DF3"
+                color={isDark ? "#0A84FF" : "#539DF3"}
               />
               {(stats.productosBajoStock > 0 || stats.proximosCaducar > 0) && (
                 <View style={styles.notificationBadge}>
@@ -351,6 +359,7 @@ export default function HomeScreen() {
             title="Total Productos"
             value={stats.totalProductos}
             subtitle="En inventario"
+            isDark={isDark}
           />
           <SummaryCard
             icon="alert-circle-outline"
@@ -358,6 +367,7 @@ export default function HomeScreen() {
             title="Bajo Stock"
             value={stats.productosBajoStock}
             subtitle="Revisar pronto"
+            isDark={isDark}
           />
           <SummaryCard
             icon="flask-outline"
@@ -365,6 +375,7 @@ export default function HomeScreen() {
             title="En Uso"
             value={stats.productosEnUso}
             subtitle="Activos ahora"
+            isDark={isDark}
           />
           <SummaryCard
             icon="timer-outline"
@@ -372,16 +383,17 @@ export default function HomeScreen() {
             title="Por Caducar"
             value={stats.proximosCaducar}
             subtitle="Próximos 15 días"
+            isDark={isDark}
           />
         </View>
 
         {/* SECCIÓN MEJORADA: Alertas con diseño más atractivo */}
         {(alertasCaducidad.length > 0 || alertasStock.length > 0) && (
-          <View style={styles.alertasSection}>
+          <View style={[styles.alertasSection, isDark && styles.alertasSectionDark]}>
             <View style={styles.sectionHeader}>
               <View style={styles.sectionTitleContainer}>
                 <Ionicons name="warning" size={20} color="#EF4444" />
-                <ThemedText type="subtitle" style={styles.sectionTitle}>
+                <ThemedText type="subtitle" style={[styles.sectionTitle, isDark && styles.textDark]}>
                   Alertas Importantes
                 </ThemedText>
               </View>
@@ -401,6 +413,7 @@ export default function HomeScreen() {
                   key={alerta.uniqueKey}
                   alerta={alerta}
                   onPress={() => {}}
+                  isDark={isDark}
                 />
               ))}
               {alertasStock.slice(0, 3).map((alerta) => (
@@ -408,6 +421,7 @@ export default function HomeScreen() {
                   key={alerta.uniqueKey}
                   alerta={alerta}
                   onPress={() => {}}
+                  isDark={isDark}
                 />
               ))}
             </ScrollView>
@@ -419,7 +433,7 @@ export default function HomeScreen() {
           <View style={styles.sectionHeader}>
             <View style={styles.sectionTitleContainer}>
               <Ionicons name="flask-outline" size={20} color="#4B9CD3" />
-              <ThemedText type="subtitle" style={styles.sectionTitle}>
+              <ThemedText type="subtitle" style={[styles.sectionTitle, isDark && styles.textDark]}>
                 Productos en Uso
               </ThemedText>
             </View>
@@ -439,14 +453,15 @@ export default function HomeScreen() {
                 <ActiveProductCard
                   key={producto.uniqueKey}
                   producto={producto}
-                  onPress={() => router.push(`/detail/${producto.id}`)} // 🔥 RESTAURAR navegación
+                  onPress={() => router.push(`/detail/${producto.id}`)}
+                  isDark={isDark}
                 />
               ))}
             </ScrollView>
           ) : (
-            <View style={styles.emptyState}>
-              <Ionicons name="flask-outline" size={40} color="#CBD5E1" />
-              <ThemedText style={styles.emptyStateText}>
+            <View style={[styles.emptyState, isDark && styles.emptyStateDark]}>
+              <Ionicons name="flask-outline" size={40} color={isDark ? "#333" : "#CBD5E1"} />
+              <ThemedText style={[styles.emptyStateText, isDark && styles.textMutedDark]}>
                 No hay productos en uso actualmente
               </ThemedText>
             </View>
@@ -458,7 +473,7 @@ export default function HomeScreen() {
           <View style={styles.sectionHeader}>
             <View style={styles.sectionTitleContainer}>
               <Ionicons name="shuffle" size={20} color="#4B9CD3" />
-              <ThemedText type="subtitle" style={styles.sectionTitle}>
+              <ThemedText type="subtitle" style={[styles.sectionTitle, isDark && styles.textDark]}>
                 Actividad Reciente
               </ThemedText>
             </View>
@@ -474,13 +489,14 @@ export default function HomeScreen() {
                 <MovimientoItem
                   key={movimiento.uniqueKey}
                   movimiento={movimiento}
+                  isDark={isDark}
                 />
               ))}
             </View>
           ) : (
-            <View style={styles.emptyState}>
-              <Ionicons name="shuffle" size={40} color="#CBD5E1" />
-              <ThemedText style={styles.emptyStateText}>
+            <View style={[styles.emptyState, isDark && styles.emptyStateDark]}>
+              <Ionicons name="shuffle" size={40} color={isDark ? "#333" : "#CBD5E1"} />
+              <ThemedText style={[styles.emptyStateText, isDark && styles.textMutedDark]}>
                 No hay movimientos recientes
               </ThemedText>
             </View>
@@ -496,13 +512,13 @@ export default function HomeScreen() {
         onRequestClose={() => setModalNotificacionesVisible(false)}
       >
         <View style={styles.modalContainer}>
-          <View style={styles.modalContent}>
-            <View style={styles.modalHeader}>
+          <View style={[styles.modalContent, isDark && styles.modalContentDark]}>
+            <View style={[styles.modalHeader, isDark && styles.modalHeaderDark]}>
               <View>
-                <ThemedText type="subtitle" style={styles.modalTitle}>
+                <ThemedText type="subtitle" style={[styles.modalTitle, isDark && styles.textDark]}>
                   Productos que requieren atención
                 </ThemedText>
-                <ThemedText style={styles.modalSubtitle}>
+                <ThemedText style={[styles.modalSubtitle, isDark && styles.textMutedDark]}>
                   Selecciona para ir a sus detalles!
                 </ThemedText>
               </View>
@@ -510,7 +526,7 @@ export default function HomeScreen() {
                 onPress={() => setModalNotificacionesVisible(false)}
                 style={styles.closeButton}
               >
-                <Ionicons name="close" size={24} color="#666" />
+                <Ionicons name="close" size={24} color={isDark ? "#fff" : "#666"} />
               </TouchableOpacity>
             </View>
 
@@ -522,7 +538,7 @@ export default function HomeScreen() {
                     <View
                       style={[
                         styles.modalIconContainer,
-                        { backgroundColor: "#FEF2F2" },
+                        { backgroundColor: isDark ? "#2A1A1A" : "#FEF2F2" },
                       ]}
                     >
                       <Ionicons
@@ -533,7 +549,7 @@ export default function HomeScreen() {
                     </View>
                     <ThemedText
                       type="defaultSemiBold"
-                      style={styles.modalSectionTitle}
+                      style={[styles.modalSectionTitle, isDark && styles.textDark]}
                     >
                       Próximos a Caducar ({alertasCaducidad.length})
                     </ThemedText>
@@ -544,9 +560,10 @@ export default function HomeScreen() {
                       style={[
                         styles.notificationItem,
                         {
-                          backgroundColor: "#FEF2F2",
+                          backgroundColor: isDark ? "#2A1A1A" : "#FEF2F2",
                           borderLeftColor: "#F87171",
                         },
+                        isDark && styles.notificationItemDark,
                       ]}
                       onPress={() => {
                         setModalNotificacionesVisible(false);
@@ -555,15 +572,15 @@ export default function HomeScreen() {
                     >
                       <ThemedText
                         type="defaultSemiBold"
-                        style={styles.notificationProduct}
+                        style={[styles.notificationProduct, isDark && styles.textDark]}
                       >
                         {alerta.producto}
                       </ThemedText>
-                      <ThemedText style={styles.notificationText}>
+                      <ThemedText style={[styles.notificationText, isDark && styles.textMutedDark]}>
                         Lote: {alerta.lote} • {alerta.diasRestantes} días
                         restantes
                       </ThemedText>
-                      <ThemedText style={styles.notificationSubtext}>
+                      <ThemedText style={[styles.notificationSubtext, isDark && styles.textMutedDark]}>
                         Caduca: {formatDate(alerta.fechaCaducidad || "")}
                       </ThemedText>
                     </TouchableOpacity>
@@ -578,7 +595,7 @@ export default function HomeScreen() {
                     <View
                       style={[
                         styles.modalIconContainer,
-                        { backgroundColor: "#FFFBEB" },
+                        { backgroundColor: isDark ? "#2A2400" : "#FFFBEB" },
                       ]}
                     >
                       <Ionicons
@@ -589,7 +606,7 @@ export default function HomeScreen() {
                     </View>
                     <ThemedText
                       type="defaultSemiBold"
-                      style={styles.modalSectionTitle}
+                      style={[styles.modalSectionTitle, isDark && styles.textDark]}
                     >
                       Bajo Stock ({alertasStock.length})
                     </ThemedText>
@@ -600,9 +617,10 @@ export default function HomeScreen() {
                       style={[
                         styles.notificationItem,
                         {
-                          backgroundColor: "#FFFBEB",
+                          backgroundColor: isDark ? "#2A2400" : "#FFFBEB",
                           borderLeftColor: "#EFB700",
                         },
+                        isDark && styles.notificationItemDark,
                       ]}
                       onPress={() => {
                         setModalNotificacionesVisible(false);
@@ -611,15 +629,15 @@ export default function HomeScreen() {
                     >
                       <ThemedText
                         type="defaultSemiBold"
-                        style={styles.notificationProduct}
+                        style={[styles.notificationProduct, isDark && styles.textDark]}
                       >
                         {alerta.producto}
                       </ThemedText>
-                      <ThemedText style={styles.notificationText}>
+                      <ThemedText style={[styles.notificationText, isDark && styles.textMutedDark]}>
                         Lote: {alerta.lote} • Stock: {alerta.stockActual}/
                         {alerta.stockMinimo}
                       </ThemedText>
-                      <ThemedText style={styles.notificationSubtext}>
+                      <ThemedText style={[styles.notificationSubtext, isDark && styles.textMutedDark]}>
                         Stock crítico - Reabastecer pronto
                       </ThemedText>
                     </TouchableOpacity>
@@ -640,28 +658,30 @@ function SummaryCard({
   title,
   value,
   subtitle,
+  isDark,
 }: {
   icon: any;
   color: string;
   title: string;
   value: number;
   subtitle?: string;
+  isDark: boolean;
 }) {
   return (
-    <View style={[styles.card, { borderLeftColor: color }]}>
+    <View style={[styles.card, isDark && styles.cardDark, { borderLeftColor: color }]}>
       <View style={styles.cardHeader}>
-        <View style={[styles.iconContainer, { backgroundColor: color + "20" }]}>
+        <View style={[styles.iconContainer, { backgroundColor: color + (isDark ? "30" : "20") }]}>
           <Ionicons name={icon} size={20} color={color} />
         </View>
       </View>
       <ThemedText type="title" style={[styles.cardValue, { color }]}>
         {value}
       </ThemedText>
-      <ThemedText type="defaultSemiBold" style={styles.cardTitle}>
+      <ThemedText type="defaultSemiBold" style={[styles.cardTitle, isDark && styles.textDark]}>
         {title}
       </ThemedText>
       {subtitle && (
-        <ThemedText style={styles.cardSubtitle}>{subtitle}</ThemedText>
+        <ThemedText style={[styles.cardSubtitle, isDark && styles.textMutedDark]}>{subtitle}</ThemedText>
       )}
     </View>
   );
@@ -670,12 +690,14 @@ function SummaryCard({
 function ActiveProductCard({
   producto,
   onPress,
+  isDark,
 }: {
   producto: ProductoEnUso;
   onPress: () => void;
+  isDark: boolean;
 }) {
   return (
-    <TouchableOpacity style={styles.activeProductCard} onPress={onPress}>
+    <TouchableOpacity style={[styles.activeProductCard, isDark && styles.activeProductCardDark]} onPress={onPress}>
       {producto.imagen ? (
         <Image
           source={{ uri: producto.imagen }}
@@ -683,7 +705,7 @@ function ActiveProductCard({
           contentFit="cover"
         />
       ) : (
-        <View style={styles.productIcon}>
+        <View style={[styles.productIcon, isDark && styles.productIconDark]}>
           <MaterialCommunityIcons name="flask" size={24} color="#4B9CD3" />
         </View>
       )}
@@ -691,25 +713,25 @@ function ActiveProductCard({
         <ThemedText
           type="defaultSemiBold"
           numberOfLines={1}
-          style={styles.productName}
+          style={[styles.productName, isDark && styles.textDark]}
         >
           {producto.nombre}
         </ThemedText>
         <View style={styles.productDetail}>
-          <Ionicons name="barcode-outline" size={14} color="#666" />
-          <ThemedText style={styles.productText}>
+          <Ionicons name="barcode-outline" size={14} color={isDark ? "#888" : "#666"} />
+          <ThemedText style={[styles.productText, isDark && styles.textMutedDark]}>
             Lote: {producto.lote}
           </ThemedText>
         </View>
         <View style={styles.productDetail}>
-          <Ionicons name="calendar-outline" size={14} color="#666" />
-          <ThemedText style={styles.productText}>
+          <Ionicons name="calendar-outline" size={14} color={isDark ? "#888" : "#666"} />
+          <ThemedText style={[styles.productText, isDark && styles.textMutedDark]}>
             Inicio: {formatDate(producto.fechaUso)}
           </ThemedText>
         </View>
         <View style={styles.productDetail}>
-          <Ionicons name="person-outline" size={14} color="#666" />
-          <ThemedText style={styles.productText}>
+          <Ionicons name="person-outline" size={14} color={isDark ? "#888" : "#666"} />
+          <ThemedText style={[styles.productText, isDark && styles.textMutedDark]}>
             {producto.responsable}
           </ThemedText>
         </View>
@@ -719,7 +741,7 @@ function ActiveProductCard({
 }
 
 /* Componente: Movimiento reciente mejorado */
-function MovimientoItem({ movimiento }: { movimiento: Movimiento }) {
+function MovimientoItem({ movimiento, isDark }: { movimiento: Movimiento; isDark: boolean }) {
   const getIconConfig = (mov: Movimiento) => {
     // VERIFICAR PRIMERO EL MOTIVO_BAJA para movimientos de uso
     if (mov.motivo_baja === "Iniciar uso") {
@@ -740,11 +762,11 @@ function MovimientoItem({ movimiento }: { movimiento: Movimiento }) {
   const iconConfig = getIconConfig(movimiento);
 
   return (
-    <View style={styles.movItem}>
+    <View style={[styles.movItem, isDark && styles.movItemDark]}>
       <View
         style={[
           styles.movIconContainer,
-          { backgroundColor: iconConfig.color + "20" },
+          { backgroundColor: iconConfig.color + (isDark ? "30" : "20") },
         ]}
       >
         <Ionicons
@@ -754,20 +776,20 @@ function MovimientoItem({ movimiento }: { movimiento: Movimiento }) {
         />
       </View>
       <View style={styles.movInfo}>
-        <ThemedText type="defaultSemiBold" style={styles.movProduct}>
+        <ThemedText type="defaultSemiBold" style={[styles.movProduct, isDark && styles.textDark]}>
           {movimiento.producto}
         </ThemedText>
-        <ThemedText style={styles.movDetails}>
+        <ThemedText style={[styles.movDetails, isDark && styles.textMutedDark]}>
           {movimiento.motivo_baja || movimiento.tipo_movimiento} ·{" "}
           {movimiento.usuario}
         </ThemedText>
         {movimiento.descripcion_adicional && (
-          <ThemedText style={styles.movMotivo}>
+          <ThemedText style={[styles.movMotivo, isDark && styles.movMotivoDark]}>
             {movimiento.descripcion_adicional}
           </ThemedText>
         )}
       </View>
-      <ThemedText style={styles.movDate}>
+      <ThemedText style={[styles.movDate, isDark && styles.textMutedDark]}>
         {formatDate(movimiento.fecha)}
       </ThemedText>
     </View>
@@ -778,22 +800,24 @@ function MovimientoItem({ movimiento }: { movimiento: Movimiento }) {
 function AlertaCard({
   alerta,
   onPress,
+  isDark,
 }: {
   alerta: Alerta;
   onPress: () => void;
+  isDark: boolean;
 }) {
   const alertaConfig = {
     caducidad: {
       icon: "timer-outline",
       color: "#DC2626",
-      bgColor: "#f7f7f7ff",
+      bgColor: isDark ? "#2A1A1A" : "#f7f7f7ff",
       text: "Caduca pronto",
       borderColor: "#FECACA",
     },
     stock: {
       icon: "alert-circle-outline",
       color: "#EFB700",
-      bgColor: "#f7f7f7ff",
+      bgColor: isDark ? "#2A2400" : "#f7f7f7ff",
       text: "Stock bajo",
       borderColor: "#FDE68A",
     },
@@ -808,6 +832,7 @@ function AlertaCard({
           borderLeftColor: alertaConfig.color,
           borderLeftWidth: 4,
         },
+        isDark && styles.alertaCardDark,
       ]}
     >
       <View style={styles.alertaHeader}>
@@ -825,16 +850,16 @@ function AlertaCard({
       </View>
       <ThemedText
         type="defaultSemiBold"
-        style={styles.alertaProduct}
+        style={[styles.alertaProduct, isDark && styles.textDark]}
         numberOfLines={1}
       >
         {alerta.producto}
       </ThemedText>
-      <ThemedText style={styles.alertaDetail}>Lote: {alerta.lote}</ThemedText>
+      <ThemedText style={[styles.alertaDetail, isDark && styles.textMutedDark]}>Lote: {alerta.lote}</ThemedText>
       {/* Solo muestra días restantes para alertas de caducidad */}
       {alerta.tipo === "caducidad" && alerta.diasRestantes !== undefined && (
-        <View style={styles.alertaBadge}>
-          <ThemedText style={styles.alertaBadgeText}>
+        <View style={[styles.alertaBadge, isDark && styles.alertaBadgeDark]}>
+          <ThemedText style={[styles.alertaBadgeText, isDark && styles.textDark]}>
             {alerta.diasRestantes} días restantes
           </ThemedText>
         </View>
@@ -842,8 +867,8 @@ function AlertaCard({
 
       {/* Solo muestra stock para alertas de stock bajo */}
       {alerta.tipo === "stock" && alerta.stockActual !== undefined && (
-        <View style={styles.alertaBadge}>
-          <ThemedText style={styles.alertaBadgeText}>
+        <View style={[styles.alertaBadge, isDark && styles.alertaBadgeDark]}>
+          <ThemedText style={[styles.alertaBadgeText, isDark && styles.textDark]}>
             Stock: {alerta.stockActual}/{alerta.stockMinimo}
           </ThemedText>
         </View>
@@ -857,11 +882,17 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: "#F8FAFC",
   },
+  mainContainerDark: {
+    backgroundColor: "#000",
+  },
   loadingContainer: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
     backgroundColor: "#F8FAFC",
+  },
+  loadingContainerDark: {
+    backgroundColor: "#000",
   },
   loadingContent: {
     alignItems: "center",
@@ -886,6 +917,9 @@ const styles = StyleSheet.create({
   },
   headerContainer: {
     marginBottom: 24,
+  },
+  headerContainerDark: {
+    // Puedes agregar estilos específicos si es necesario
   },
   headerContent: {
     flexDirection: "row",
@@ -921,13 +955,13 @@ const styles = StyleSheet.create({
     fontSize: 23,
     marginBottom: 2,
     color: "#000000ff",
-    fontFamily: "Poppins_700Bold", // Normal weight para "Hola,"
+    fontFamily: "Poppins_700Bold",
   },
   userNameText: {
     fontSize: 23,
     marginBottom: 2,
     color: "#000000ff",
-    fontFamily: "Poppins_500Medium", // Bold weight solo para el nombre
+    fontFamily: "Poppins_500Medium",
   },
   subtitleText: {
     fontSize: 14,
@@ -979,6 +1013,11 @@ const styles = StyleSheet.create({
     shadowRadius: 12,
     elevation: 3,
   },
+  alertasSectionDark: {
+    backgroundColor: "#1c1c1e",
+    shadowColor: "#000",
+    shadowOpacity: 0.2,
+  },
   alertasScroll: {
     gap: 12,
   },
@@ -992,6 +1031,10 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.05,
     shadowRadius: 4,
     elevation: 1,
+  },
+  alertaCardDark: {
+    shadowColor: "#000",
+    shadowOpacity: 0.2,
   },
   alertaHeader: {
     flexDirection: "row",
@@ -1029,6 +1072,9 @@ const styles = StyleSheet.create({
     borderRadius: 6,
     alignSelf: "flex-start",
   },
+  alertaBadgeDark: {
+    backgroundColor: "rgba(255, 255, 255, 0.1)",
+  },
   alertaBadgeText: {
     fontSize: 11,
     color: "#475569",
@@ -1056,6 +1102,11 @@ const styles = StyleSheet.create({
     shadowRadius: 12,
     elevation: 3,
     marginBottom: 8,
+  },
+  cardDark: {
+    backgroundColor: "#1c1c1e",
+    shadowColor: "#000",
+    shadowOpacity: 0.2,
   },
   cardHeader: {
     flexDirection: "row",
@@ -1132,6 +1183,12 @@ const styles = StyleSheet.create({
     alignItems: "flex-start",
     gap: 12,
   },
+  activeProductCardDark: {
+    backgroundColor: "#1c1c1e",
+    borderColor: "#333",
+    shadowColor: "#000",
+    shadowOpacity: 0.2,
+  },
   productImage: {
     width: 60,
     height: 60,
@@ -1144,6 +1201,9 @@ const styles = StyleSheet.create({
     backgroundColor: "#F1F5F9",
     justifyContent: "center",
     alignItems: "center",
+  },
+  productIconDark: {
+    backgroundColor: "#2c2c2e",
   },
   productInfo: {
     flex: 1,
@@ -1183,6 +1243,11 @@ const styles = StyleSheet.create({
     elevation: 3,
     gap: 12,
   },
+  movItemDark: {
+    backgroundColor: "#1c1c1e",
+    shadowColor: "#000",
+    shadowOpacity: 0.2,
+  },
   movIconContainer: {
     width: 40,
     height: 40,
@@ -1206,14 +1271,18 @@ const styles = StyleSheet.create({
   },
   movMotivo: {
     fontSize: 12,
-    color: "#6B7280", // Gris medio
-    backgroundColor: "#F3F4F6", // Fondo claro
+    color: "#6B7280",
+    backgroundColor: "#F3F4F6",
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 8,
     fontFamily: "Poppins_500Medium",
     fontStyle: "italic",
     marginTop: 4,
+  },
+  movMotivoDark: {
+    color: "#888",
+    backgroundColor: "#2c2c2e",
   },
   movDate: {
     fontSize: 12,
@@ -1235,6 +1304,11 @@ const styles = StyleSheet.create({
     shadowRadius: 12,
     elevation: 3,
   },
+  emptyStateDark: {
+    backgroundColor: "#1c1c1e",
+    shadowColor: "#000",
+    shadowOpacity: 0.2,
+  },
   emptyStateText: {
     fontSize: 14,
     color: "#64748B",
@@ -1253,6 +1327,9 @@ const styles = StyleSheet.create({
     maxHeight: "80%",
     paddingBottom: 34,
   },
+  modalContentDark: {
+    backgroundColor: "#1c1c1e",
+  },
   modalHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -1260,6 +1337,9 @@ const styles = StyleSheet.create({
     padding: 24,
     borderBottomWidth: 1,
     borderBottomColor: "#E2E8F0",
+  },
+  modalHeaderDark: {
+    borderBottomColor: "#333",
   },
   modalTitle: {
     fontSize: 18,
@@ -1307,6 +1387,9 @@ const styles = StyleSheet.create({
     borderLeftWidth: 4,
     borderLeftColor: "#E2E8F0",
   },
+  notificationItemDark: {
+    borderLeftColor: "#333",
+  },
   notificationProduct: {
     fontSize: 15,
     color: "#1E293B",
@@ -1323,5 +1406,13 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: "#94A3B8",
     fontFamily: "Poppins_400Regular",
+  },
+
+  // Text Colors para Dark Mode
+  textDark: {
+    color: "#fff",
+  },
+  textMutedDark: {
+    color: "#888",
   },
 });

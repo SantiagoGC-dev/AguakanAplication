@@ -13,6 +13,7 @@ import { Ionicons } from "@expo/vector-icons";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import { ThemedText } from "@/components/themed-text";
 import { useRouter } from "expo-router";
+import { useColorScheme } from "@/hooks/use-color-scheme";
 
 // Configuración de API
 const API_BASE_URL = "http://172.20.10.11:3000/api";
@@ -60,6 +61,9 @@ interface PaginationInfo {
 
 export default function ReportesScreen() {
   const router = useRouter();
+  const colorScheme = useColorScheme();
+  const isDark = colorScheme === "dark";
+  
   const [refreshing, setRefreshing] = useState(false);
   const [filtrosVisible, setFiltrosVisible] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -354,26 +358,26 @@ export default function ReportesScreen() {
       const { estado, color } = getEstadoStock(item.stockActual);
 
       return (
-        <View style={styles.productoContainer}>
+        <View style={[styles.productoContainer, isDark && styles.productoContainerDark]}>
           {/* Encabezado del producto */}
           <TouchableOpacity
             style={styles.productoHeader}
             onPress={() => onToggle(item.id)}
           >
             <View style={styles.productoInfo}>
-              <ThemedText style={styles.productoNombre}>
+              <ThemedText style={[styles.productoNombre, isDark && styles.textDark]}>
                 {item.nombre}
               </ThemedText>
               <View style={styles.productoMeta}>
-                <ThemedText style={styles.productoTipo}>
+                <ThemedText style={[styles.productoTipo, isDark && styles.textMutedDark]}>
                   {item.tipo === "reactivo"
                     ? "Reactivo"
                     : item.tipo === "material"
                     ? "Material"
                     : "Equipo"}
                 </ThemedText>
-                <View style={styles.separator} />
-                <ThemedText style={styles.lotesCount}>
+                <View style={[styles.separator, isDark && styles.separatorDark]} />
+                <ThemedText style={[styles.lotesCount, isDark && styles.textMutedDark]}>
                   {item.lotes.length}{" "}
                   {item.lotes.length === 1 ? "lote" : "lotes"}
                 </ThemedText>
@@ -381,7 +385,7 @@ export default function ReportesScreen() {
             </View>
             <View style={styles.productoActions}>
               <View
-                style={[styles.stockBadge, { backgroundColor: "#f6f6f6ff" }]}
+                style={[styles.stockBadge, { backgroundColor: isDark ? "#2c2c2e" : "#f6f6f6ff" }]}
               >
                 <ThemedText style={[styles.stockText, { color: "#539DF3" }]}>
                   {item.stockActual} unidades
@@ -390,59 +394,59 @@ export default function ReportesScreen() {
               <Ionicons
                 name={isExpanded ? "chevron-up" : "chevron-down"}
                 size={20}
-                color="#64748B"
+                color={isDark ? "#888" : "#64748B"}
               />
             </View>
           </TouchableOpacity>
 
           {/* Detalles expandidos */}
           {isExpanded && (
-            <View style={styles.lotesContainer}>
+            <View style={[styles.lotesContainer, isDark && styles.lotesContainerDark]}>
               {/* Header específico por tipo */}
-              <View style={styles.tableHeader}>
+              <View style={[styles.tableHeader, isDark && styles.tableHeaderDark]}>
                 {item.tipo === "reactivo" && (
                   <>
-                    <ThemedText style={styles.tableHeaderText}>Lote</ThemedText>
-                    <ThemedText style={styles.tableHeaderText}>
+                    <ThemedText style={[styles.tableHeaderText, isDark && styles.textMutedDark]}>Lote</ThemedText>
+                    <ThemedText style={[styles.tableHeaderText, isDark && styles.textMutedDark]}>
                       Consumido
                     </ThemedText>
-                    <ThemedText style={styles.tableHeaderText}>
+                    <ThemedText style={[styles.tableHeaderText, isDark && styles.textMutedDark]}>
                       Stock
                     </ThemedText>
-                    <ThemedText style={styles.tableHeaderText}>
+                    <ThemedText style={[styles.tableHeaderText, isDark && styles.textMutedDark]}>
                       F. Ingreso
                     </ThemedText>
                   </>
                 )}
                 {item.tipo === "material" && (
                   <>
-                    <ThemedText style={styles.tableHeaderText}>Lote</ThemedText>
-                    <ThemedText style={styles.tableHeaderText}>
+                    <ThemedText style={[styles.tableHeaderText, isDark && styles.textMutedDark]}>Lote</ThemedText>
+                    <ThemedText style={[styles.tableHeaderText, isDark && styles.textMutedDark]}>
                       Marca
                     </ThemedText>
-                    <ThemedText style={styles.tableHeaderText}>
+                    <ThemedText style={[styles.tableHeaderText, isDark && styles.textMutedDark]}>
                       Stock
                     </ThemedText>
-                    <ThemedText style={styles.tableHeaderText}>
+                    <ThemedText style={[styles.tableHeaderText, isDark && styles.textMutedDark]}>
                       F. Ingreso
                     </ThemedText>
                   </>
                 )}
                 {item.tipo === "equipo" && (
                   <>
-                    <ThemedText style={styles.tableHeaderText}>
+                    <ThemedText style={[styles.tableHeaderText, isDark && styles.textMutedDark]}>
                       Marca/Modelo
                     </ThemedText>
-                    <ThemedText style={styles.tableHeaderText}>
+                    <ThemedText style={[styles.tableHeaderText, isDark && styles.textMutedDark]}>
                       ID AGK
                     </ThemedText>
-                    <ThemedText style={styles.tableHeaderText}>
+                    <ThemedText style={[styles.tableHeaderText, isDark && styles.textMutedDark]}>
                       No. Serie
                     </ThemedText>
-                    <ThemedText style={styles.tableHeaderText}>
+                    <ThemedText style={[styles.tableHeaderText, isDark && styles.textMutedDark]}>
                       Estatus
                     </ThemedText>
-                    <ThemedText style={styles.tableHeaderText}>
+                    <ThemedText style={[styles.tableHeaderText, isDark && styles.textMutedDark]}>
                       F. Ingreso
                     </ThemedText>
                   </>
@@ -450,48 +454,48 @@ export default function ReportesScreen() {
               </View>
               {/* Lotes */}
               {item.lotes.map((lote) => (
-                <View key={lote.id} style={styles.loteRow}>
+                <View key={lote.id} style={[styles.loteRow, isDark && styles.loteRowDark]}>
                   {item.tipo === "reactivo" && (
                     <>
-                      <ThemedText style={styles.loteText}>
+                      <ThemedText style={[styles.loteText, isDark && styles.textMutedDark]}>
                         {lote.lote}
                       </ThemedText>
-                      <ThemedText style={styles.loteText}>
+                      <ThemedText style={[styles.loteText, isDark && styles.textMutedDark]}>
                         {lote.cantidadConsumida || 0}u
                       </ThemedText>
-                      <ThemedText style={styles.loteText}>
+                      <ThemedText style={[styles.loteText, isDark && styles.textMutedDark]}>
                         {lote.stockActual}u
                       </ThemedText>
-                      <ThemedText style={styles.loteText}>
+                      <ThemedText style={[styles.loteText, isDark && styles.textMutedDark]}>
                         {lote.fechaIngreso}
                       </ThemedText>
                     </>
                   )}
                   {item.tipo === "material" && (
                     <>
-                      <ThemedText style={styles.loteText}>
+                      <ThemedText style={[styles.loteText, isDark && styles.textMutedDark]}>
                         {lote.lote}
                       </ThemedText>
-                      <ThemedText style={styles.loteText}>
+                      <ThemedText style={[styles.loteText, isDark && styles.textMutedDark]}>
                         {lote.marca}
                       </ThemedText>
-                      <ThemedText style={styles.loteText}>
+                      <ThemedText style={[styles.loteText, isDark && styles.textMutedDark]}>
                         {lote.stockActual}u
                       </ThemedText>
-                      <ThemedText style={styles.loteText}>
+                      <ThemedText style={[styles.loteText, isDark && styles.textMutedDark]}>
                         {lote.fechaIngreso}
                       </ThemedText>
                     </>
                   )}
                   {item.tipo === "equipo" && (
                     <>
-                      <ThemedText style={styles.loteText}>
+                      <ThemedText style={[styles.loteText, isDark && styles.textMutedDark]}>
                         {lote.marca} / {lote.modelo}
                       </ThemedText>
-                      <ThemedText style={styles.loteText}>
+                      <ThemedText style={[styles.loteText, isDark && styles.textMutedDark]}>
                         {lote.idAgk}
                       </ThemedText>
-                      <ThemedText style={styles.loteText}>
+                      <ThemedText style={[styles.loteText, isDark && styles.textMutedDark]}>
                         {lote.numeroSerie}
                       </ThemedText>
                       <View
@@ -500,8 +504,8 @@ export default function ReportesScreen() {
                           {
                             backgroundColor:
                               lote.estatus === "activo"
-                                ? "#10B98115"
-                                : "#6B728015",
+                                ? isDark ? "#10B98130" : "#10B98115"
+                                : isDark ? "#6B728030" : "#6B728015",
                           },
                         ]}
                       >
@@ -519,7 +523,7 @@ export default function ReportesScreen() {
                           {lote.estatus === "activo" ? "Activo" : "Inactivo"}
                         </ThemedText>
                       </View>
-                      <ThemedText style={styles.loteText}>
+                      <ThemedText style={[styles.loteText, isDark && styles.textMutedDark]}>
                         {lote.fechaIngreso}
                       </ThemedText>
                     </>
@@ -542,7 +546,7 @@ export default function ReportesScreen() {
         onToggle={toggleProductoExpandido}
       />
     ),
-    [productosExpandidos, toggleProductoExpandido]
+    [productosExpandidos, toggleProductoExpandido, isDark]
   );
 
   // NUEVO: Footer para loading de más datos
@@ -551,36 +555,36 @@ export default function ReportesScreen() {
 
     return (
       <View style={styles.footerLoading}>
-        <ThemedText style={styles.footerText}>
+        <ThemedText style={[styles.footerText, isDark && styles.textMutedDark]}>
           Cargando más productos...
         </ThemedText>
       </View>
     );
-  }, [pagination.hasMore]);
+  }, [pagination.hasMore, isDark]);
 
   const renderListHeader = () => (
     <>
       {/* Header */}
-      <View style={styles.header}>
+      <View style={[styles.header, isDark && styles.headerDark]}>
         <View style={styles.headerTop}>
-          <ThemedText type="title" style={styles.headerTitle}>
+          <ThemedText type="title" style={[styles.headerTitle, isDark && styles.textDark]}>
             Reportes
           </ThemedText>
           <View style={styles.headerActions}>
             <TouchableOpacity
-              style={styles.filterButton}
+              style={[styles.filterButton, isDark && styles.filterButtonDark]}
               onPress={() => setFiltrosVisible(true)}
             >
-              <Ionicons name="options-outline" size={20} color="#1E293B" />
-              <ThemedText style={styles.filterText}>Filtrar Periodo</ThemedText>
-              <Ionicons name="chevron-down" size={16} color="#1E293B" />
+              <Ionicons name="options-outline" size={20} color={isDark ? "#fff" : "#1E293B"} />
+              <ThemedText style={[styles.filterText, isDark && styles.textDark]}>Filtrar Periodo</ThemedText>
+              <Ionicons name="chevron-down" size={16} color={isDark ? "#fff" : "#1E293B"} />
             </TouchableOpacity>
           </View>
         </View>
 
         {/* Periodo actual */}
         <View style={styles.periodoContainer}>
-          <ThemedText style={styles.periodoText}>
+          <ThemedText style={[styles.periodoText, isDark && styles.textMutedDark]}>
             Periodo: {periodoTexto}
           </ThemedText>
         </View>
@@ -588,11 +592,11 @@ export default function ReportesScreen() {
         {/* Botones de exportar */}
         <View style={styles.exportButtons}>
           <TouchableOpacity
-            style={styles.exportButtonBig}
+            style={[styles.exportButtonBig, isDark && styles.exportButtonBigDark]}
             onPress={exportarExcel}
           >
             <Ionicons name="stats-chart-outline" size={20} color="#5CB85C" />
-            <ThemedText style={styles.exportButtonText}>
+            <ThemedText style={[styles.exportButtonText, isDark && styles.textDark]}>
               Exportar (Excel)
             </ThemedText>
           </TouchableOpacity>
@@ -604,6 +608,7 @@ export default function ReportesScreen() {
         <TouchableOpacity
           style={[
             styles.filtroCard,
+            isDark && styles.filtroCardDark,
             filtros.tipoProducto === "todos" && styles.filtroCardActive,
           ]}
           onPress={() =>
@@ -636,6 +641,7 @@ export default function ReportesScreen() {
         <TouchableOpacity
           style={[
             styles.filtroCard,
+            isDark && styles.filtroCardDark,
             filtros.tipoProducto === "reactivo" && styles.filtroCardActive,
           ]}
           onPress={() =>
@@ -650,6 +656,7 @@ export default function ReportesScreen() {
           <ThemedText
             style={[
               styles.filtroNumber,
+              isDark && styles.filtroNumberDark,
               filtros.tipoProducto === "reactivo" && styles.filtroNumberActive,
             ]}
           >
@@ -658,6 +665,7 @@ export default function ReportesScreen() {
           <ThemedText
             style={[
               styles.filtroLabel,
+              isDark && styles.filtroLabelDark,
               filtros.tipoProducto === "reactivo" && styles.filtroLabelActive,
             ]}
           >
@@ -668,6 +676,7 @@ export default function ReportesScreen() {
         <TouchableOpacity
           style={[
             styles.filtroCard,
+            isDark && styles.filtroCardDark,
             filtros.tipoProducto === "material" && styles.filtroCardActive,
           ]}
           onPress={() =>
@@ -682,6 +691,7 @@ export default function ReportesScreen() {
           <ThemedText
             style={[
               styles.filtroNumber,
+              isDark && styles.filtroNumberDark,
               filtros.tipoProducto === "material" && styles.filtroNumberActive,
             ]}
           >
@@ -690,6 +700,7 @@ export default function ReportesScreen() {
           <ThemedText
             style={[
               styles.filtroLabel,
+              isDark && styles.filtroLabelDark,
               filtros.tipoProducto === "material" && styles.filtroLabelActive,
             ]}
           >
@@ -700,6 +711,7 @@ export default function ReportesScreen() {
         <TouchableOpacity
           style={[
             styles.filtroCard,
+            isDark && styles.filtroCardDark,
             filtros.tipoProducto === "equipo" && styles.filtroCardActive,
           ]}
           onPress={() =>
@@ -714,6 +726,7 @@ export default function ReportesScreen() {
           <ThemedText
             style={[
               styles.filtroNumber,
+              isDark && styles.filtroNumberDark,
               filtros.tipoProducto === "equipo" && styles.filtroNumberActive,
             ]}
           >
@@ -722,6 +735,7 @@ export default function ReportesScreen() {
           <ThemedText
             style={[
               styles.filtroLabel,
+              isDark && styles.filtroLabelDark,
               filtros.tipoProducto === "equipo" && styles.filtroLabelActive,
             ]}
           >
@@ -735,7 +749,7 @@ export default function ReportesScreen() {
   // --- Pantalla de Carga ---
   if (loading && productos.length === 0) {
     return (
-      <View style={styles.loadingContainer}>
+      <View style={[styles.loadingContainer, isDark && styles.loadingContainerDark]}>
         <View style={styles.loadingContent}>
           <Ionicons name="document-text" size={48} color="#4B9CD3" />
           <ThemedText type="title" style={styles.loadingText}>
@@ -748,7 +762,7 @@ export default function ReportesScreen() {
 
   // --- Render Principal ---
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, isDark && styles.containerDark]}>
       {/* FLATLIST OPTIMIZADA CON PAGINACIÓN */}
       <FlatList
         // --- Props de Datos ---
@@ -765,9 +779,9 @@ export default function ReportesScreen() {
               <Ionicons
                 name="document-text-outline"
                 size={48}
-                color="#64748B"
+                color={isDark ? "#666" : "#64748B"}
               />
-              <ThemedText style={styles.emptyStateText}>
+              <ThemedText style={[styles.emptyStateText, isDark && styles.textMutedDark]}>
                 No hay productos para mostrar con los filtros actuales
               </ThemedText>
             </View>
@@ -775,7 +789,11 @@ export default function ReportesScreen() {
         }
         // --- Props de Scroll y Refresh ---
         refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+          <RefreshControl 
+            refreshing={refreshing} 
+            onRefresh={onRefresh}
+            tintColor={isDark ? "#fff" : "#000"}
+          />
         }
         // OPTIMIZACIONES DE PERFORMANCE
         initialNumToRender={10}
@@ -788,37 +806,37 @@ export default function ReportesScreen() {
         onEndReachedThreshold={0.3}
         // --- Estilos ---
         contentContainerStyle={styles.listContent}
-        style={{ flex: 1 }}
+        style={[styles.flatList, isDark && styles.flatListDark]}
         showsVerticalScrollIndicator={false}
       />
 
       {/* Modal de Filtros de Periodo */}
       <Modal visible={filtrosVisible} animationType="slide" transparent>
         <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <View style={styles.modalHeader}>
-              <ThemedText type="title" style={styles.modalTitle}>
+          <View style={[styles.modalContent, isDark && styles.modalContentDark]}>
+            <View style={[styles.modalHeader, isDark && styles.modalHeaderDark]}>
+              <ThemedText type="title" style={[styles.modalTitle, isDark && styles.textDark]}>
                 Periodo del Reporte
               </ThemedText>
               <TouchableOpacity
                 style={styles.closeButton}
                 onPress={() => setFiltrosVisible(false)}
               >
-                <Ionicons name="close" size={24} color="#666" />
+                <Ionicons name="close" size={24} color={isDark ? "#fff" : "#666"} />
               </TouchableOpacity>
             </View>
 
             <View style={styles.periodoOptions}>
-              <ThemedText style={styles.label}>Desde:</ThemedText>
+              <ThemedText style={[styles.label, isDark && styles.textDark]}>Desde:</ThemedText>
               <DateTimePicker
                 value={fechaDesdeTemp}
                 mode="date"
                 display={Platform.OS === "ios" ? "spinner" : "default"}
                 onChange={(_, date) => date && setFechaDesdeTemp(date)}
-                style={styles.datePicker}
+                style={[styles.datePicker, isDark && styles.datePickerDark]}
               />
 
-              <ThemedText style={[styles.label, { marginTop: 10 }]}>
+              <ThemedText style={[styles.label, { marginTop: 10 }, isDark && styles.textDark]}>
                 Hasta:
               </ThemedText>
               <DateTimePicker
@@ -826,7 +844,7 @@ export default function ReportesScreen() {
                 mode="date"
                 display={Platform.OS === "ios" ? "spinner" : "default"}
                 onChange={(_, date) => date && setFechaHastaTemp(date)}
-                style={styles.datePicker}
+                style={[styles.datePicker, isDark && styles.datePickerDark]}
               />
             </View>
 
@@ -853,11 +871,23 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: "#F8FAFC",
   },
+  containerDark: {
+    backgroundColor: "#000",
+  },
+  flatList: {
+    flex: 1,
+  },
+  flatListDark: {
+    backgroundColor: "#000",
+  },
   loadingContainer: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
     backgroundColor: "#F8FAFC",
+  },
+  loadingContainerDark: {
+    backgroundColor: "#000",
   },
   loadingContent: {
     alignItems: "center",
@@ -876,6 +906,9 @@ const styles = StyleSheet.create({
     paddingBottom: 16,
     borderBottomLeftRadius: 20,
     borderBottomRightRadius: 20,
+  },
+  headerDark: {
+    backgroundColor: "#000000ff",
   },
   headerTop: {
     flexDirection: "row",
@@ -904,6 +937,10 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "#E5E7EB",
   },
+  filterButtonDark: {
+    backgroundColor: "#2c2c2e",
+    borderColor: "#333",
+  },
   filterText: {
     fontSize: 12,
     color: "#1E293B",
@@ -927,6 +964,10 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "#E5E7EB",
     paddingHorizontal: 12,
+  },
+  exportButtonBigDark: {
+    backgroundColor: "#2c2c2e",
+    borderColor: "#333",
   },
   exportButtonText: {
     fontSize: 14,
@@ -989,6 +1030,10 @@ const styles = StyleSheet.create({
     borderColor: "#F1F5F9",
     flex: 1,
   },
+  filtroCardDark: {
+    backgroundColor: "#2c2c2e",
+    borderColor: "#333",
+  },
   filtroCardActive: {
     backgroundColor: "#539DF3",
     shadowColor: "#539DF3",
@@ -1000,6 +1045,9 @@ const styles = StyleSheet.create({
     color: "#1E293B",
     fontFamily: "Poppins_700Bold",
   },
+  filtroNumberDark: {
+    color: "#CCCCCC",
+  },
   filtroNumberActive: {
     color: "#FFFFFF",
   },
@@ -1008,6 +1056,9 @@ const styles = StyleSheet.create({
     color: "#000000ff",
     fontFamily: "Poppins_700Bold",
     textAlign: "center",
+  },
+  filtroLabelDark: {
+    color: "#FFFFFF",
   },
   filtroLabelActive: {
     color: "#FFFFFF",
@@ -1042,6 +1093,10 @@ const styles = StyleSheet.create({
     borderWidth: 0.1,
     borderColor: "#E0E0E0",
   },
+  productoContainerDark: {
+    backgroundColor: "#1c1c1e",
+    borderColor: "#333",
+  },
   productoHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -1072,6 +1127,9 @@ const styles = StyleSheet.create({
     height: 12,
     backgroundColor: "#E5E7EB",
   },
+  separatorDark: {
+    backgroundColor: "#333",
+  },
   lotesCount: {
     fontSize: 12,
     color: "#64748B",
@@ -1097,6 +1155,10 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     borderTopColor: "#F1F5F9",
   },
+  lotesContainerDark: {
+    backgroundColor: "#2c2c2e",
+    borderTopColor: "#333",
+  },
   tableHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -1105,6 +1167,9 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: "#E5E7EB",
     marginBottom: 6,
+  },
+  tableHeaderDark: {
+    borderBottomColor: "#333",
   },
   tableHeaderText: {
     fontSize: 10,
@@ -1121,6 +1186,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 4,
     borderBottomWidth: 1,
     borderBottomColor: "#F1F5F9",
+  },
+  loteRowDark: {
+    borderBottomColor: "#333",
   },
   loteText: {
     fontSize: 10,
@@ -1151,6 +1219,9 @@ const styles = StyleSheet.create({
     paddingBottom: Platform.OS === "ios" ? 40 : 20,
     maxHeight: "80%",
   },
+  modalContentDark: {
+    backgroundColor: "#1c1c1e",
+  },
   modalHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -1158,6 +1229,9 @@ const styles = StyleSheet.create({
     padding: 20,
     borderBottomWidth: 1,
     borderBottomColor: "#E5E7EB",
+  },
+  modalHeaderDark: {
+    borderBottomColor: "#333",
   },
   modalTitle: {
     fontSize: 20,
@@ -1204,7 +1278,18 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     width: "100%",
   },
+  datePickerDark: {
+    backgroundColor: "#2c2c2e",
+  },
   spacer: {
     height: Platform.OS === "ios" ? 30 : 20,
+  },
+
+  // Text Colors
+  textDark: {
+    color: "#fff",
+  },
+  textMutedDark: {
+    color: "#888",
   },
 });

@@ -22,6 +22,7 @@ import Icon from "react-native-vector-icons/MaterialIcons";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { useFocusEffect } from "@react-navigation/native";
+import { useColorScheme } from "@/hooks/use-color-scheme";
 
 //Configuración de la API y Tipos
 const API_BASE_URL = "http://172.20.10.11:3000";
@@ -49,6 +50,7 @@ interface FormFieldProps {
   keyboardType?: "default" | "numeric";
   value: any;
   onChange: (value: any) => void;
+  isDark: boolean;
 }
 
 interface ProductoItemProps {
@@ -56,7 +58,9 @@ interface ProductoItemProps {
   expandedId: number | null;
   onExpand: (id: number) => void;
   onViewDetails: (id: number) => void;
+  isDark: boolean;
 }
+
 // --- Funciones auxiliares para estatus ---
 const formatFecha = (fecha: string): string => {
   if (!fecha) return "N/A";
@@ -119,6 +123,7 @@ const FormField = ({
   keyboardType = "default",
   value,
   onChange,
+  isDark,
 }: FormFieldProps) => {
   const [showPicker, setShowPicker] = useState(false);
   const [tempDate, setTempDate] = useState<Date | null>(null);
@@ -176,22 +181,22 @@ const FormField = ({
 
   if (isDate) {
     return (
-      <View style={styles.formFieldContainer}>
+      <View style={[styles.formFieldContainer, isDark && styles.formFieldContainerDark]}>
         <TouchableOpacity
           onPress={showDatePicker}
           style={styles.dateTouchableArea}
         >
-          <Text style={value ? styles.dateText : styles.datePlaceholder}>
+          <Text style={[value ? styles.dateText : styles.datePlaceholder, isDark && styles.textDark]}>
             {value ? `Caducidad: ${value}` : label}
           </Text>
           <Icon name="calendar-today" size={20} color="#539DF3" />
         </TouchableOpacity>
 
         {showPicker && (
-          <View style={styles.datePickerContainer}>
+          <View style={[styles.datePickerContainer, isDark && styles.datePickerContainerDark]}>
             {/* Header del DatePicker */}
             <View style={styles.datePickerHeader}>
-              <Text style={styles.datePickerTitle}>
+              <Text style={[styles.datePickerTitle, isDark && styles.textDark]}>
                 Seleccionar fecha de caducidad
               </Text>
             </View>
@@ -203,7 +208,7 @@ const FormField = ({
               display={Platform.OS === "ios" ? "spinner" : "default"}
               onChange={handleDateChange}
               style={styles.datePicker}
-              textColor="#000000" // Forzar color negro
+              textColor={isDark ? "#000000" : "#000000"}
             />
 
             {/* Botones de acción para iOS */}
@@ -214,9 +219,10 @@ const FormField = ({
                   style={[
                     styles.datePickerButton,
                     styles.datePickerButtonCancel,
+                    isDark && styles.datePickerButtonCancelDark,
                   ]}
                 >
-                  <Text style={styles.datePickerButtonTextCancel}>
+                  <Text style={[styles.datePickerButtonTextCancel, isDark && styles.textDark]}>
                     Cancelar
                   </Text>
                 </TouchableOpacity>
@@ -250,11 +256,11 @@ const FormField = ({
   }
 
   return (
-    <View style={styles.formFieldContainer}>
+    <View style={[styles.formFieldContainer, isDark && styles.formFieldContainerDark]}>
       <TextInput
-        style={styles.formInput}
+        style={[styles.formInput, isDark && styles.formInputDark]}
         placeholder={label}
-        placeholderTextColor="#999"
+        placeholderTextColor={isDark ? "#888" : "#999"}
         keyboardType={keyboardType}
         onChangeText={(text) => onChange(text)}
         value={value?.toString() || ""}
@@ -269,14 +275,16 @@ const FormSelect = ({
   value,
   onValueChange,
   options,
+  isDark,
 }: {
   label: string;
   value: any;
   onValueChange: (value: any) => void;
   options: any[];
+  isDark: boolean;
 }) => (
-  <View style={styles.formFieldContainer}>
-    <Text style={styles.selectLabel}>{label}</Text>
+  <View style={[styles.formFieldContainer, isDark && styles.formFieldContainerDark]}>
+    <Text style={[styles.selectLabel, isDark && styles.textDark]}>{label}</Text>
     <ScrollView horizontal showsHorizontalScrollIndicator={false}>
       <View style={styles.optionsRow}>
         {options.map((option, index) => (
@@ -284,6 +292,7 @@ const FormSelect = ({
             key={option.value || option.id || index}
             style={[
               styles.optionChip,
+              isDark && styles.optionChipDark,
               value === option.value && styles.optionChipSelected,
             ]}
             onPress={() => onValueChange(option.value)}
@@ -291,6 +300,7 @@ const FormSelect = ({
             <Text
               style={[
                 styles.optionChipText,
+                isDark && styles.optionChipTextDark,
                 value === option.value && styles.optionChipTextSelected,
               ]}
             >
@@ -309,14 +319,16 @@ const FormSelectLaboratorio = ({
   value,
   onValueChange,
   options,
+  isDark,
 }: {
   label: string;
   value: any;
   onValueChange: (value: any) => void;
   options: any[];
+  isDark: boolean;
 }) => (
-  <View style={styles.formFieldContainer}>
-    <Text style={styles.selectLabel}>{label}</Text>
+  <View style={[styles.formFieldContainer, isDark && styles.formFieldContainerDark]}>
+    <Text style={[styles.selectLabel, isDark && styles.textDark]}>{label}</Text>
     <ScrollView horizontal showsHorizontalScrollIndicator={false}>
       <View style={styles.optionsRow}>
         {options.map((option) => (
@@ -324,6 +336,7 @@ const FormSelectLaboratorio = ({
             key={option.id_laboratorio}
             style={[
               styles.optionChip,
+              isDark && styles.optionChipDark,
               value === option.id_laboratorio && styles.optionChipSelected,
             ]}
             onPress={() => onValueChange(option.id_laboratorio)}
@@ -331,6 +344,7 @@ const FormSelectLaboratorio = ({
             <Text
               style={[
                 styles.optionChipText,
+                isDark && styles.optionChipTextDark,
                 value === option.id_laboratorio &&
                   styles.optionChipTextSelected,
               ]}
@@ -345,19 +359,23 @@ const FormSelectLaboratorio = ({
 );
 
 const ProductoItem = React.memo<ProductoItemProps>(
-  ({ item, expandedId, onExpand, onViewDetails }) => {
+  ({ item, expandedId, onExpand, onViewDetails, isDark }) => {
     return (
       <TouchableOpacity
         style={[
           styles.row,
+          isDark && styles.rowDark,
           expandedId === item.id_producto && styles.rowExpanded,
+          expandedId === item.id_producto && isDark && styles.rowExpandedDark,
         ]}
         onPress={() => onExpand(item.id_producto)}
       >
         <View style={styles.rowMain}>
           <View style={styles.rowContent}>
-            <Text style={styles.rowTitle}>{item.nombre}</Text>
-            <Text style={styles.rowSubtitle}>
+            <Text style={[styles.rowTitle, isDark && styles.textDark]}>
+              {item.nombre}
+            </Text>
+            <Text style={[styles.rowSubtitle, isDark && styles.textMutedDark]}>
               {item.marca} • {item.tipo}
             </Text>
           </View>
@@ -365,7 +383,7 @@ const ProductoItem = React.memo<ProductoItemProps>(
             <View
               style={[
                 styles.statusBadge,
-                { backgroundColor: getEstatusColor(item) + "20" },
+                { backgroundColor: getEstatusColor(item) + (isDark ? "30" : "20") },
               ]}
             >
               <Text
@@ -386,21 +404,29 @@ const ProductoItem = React.memo<ProductoItemProps>(
         </View>
 
         {expandedId === item.id_producto && (
-          <View style={styles.rowDetails}>
+          <View style={[styles.rowDetails, isDark && styles.rowDetailsDark]}>
             <View style={styles.detailsGrid}>
               <View style={styles.detailItem}>
-                <Text style={styles.detailLabel}>Lote</Text>
-                <Text style={styles.detailValue}>{item.lote || "N/A"}</Text>
+                <Text style={[styles.detailLabel, isDark && styles.textMutedDark]}>
+                  Lote
+                </Text>
+                <Text style={[styles.detailValue, isDark && styles.textDark]}>
+                  {item.lote || "N/A"}
+                </Text>
               </View>
               <View style={styles.detailItem}>
-                <Text style={styles.detailLabel}>Stock</Text>
-                <Text style={styles.detailValue}>
+                <Text style={[styles.detailLabel, isDark && styles.textMutedDark]}>
+                  Stock
+                </Text>
+                <Text style={[styles.detailValue, isDark && styles.textDark]}>
                   {item.existencia_actual} / {item.stock_minimo}
                 </Text>
               </View>
               <View style={styles.detailItem}>
-                <Text style={styles.detailLabel}>Prioridad</Text>
-                <Text style={styles.detailValue}>
+                <Text style={[styles.detailLabel, isDark && styles.textMutedDark]}>
+                  Prioridad
+                </Text>
+                <Text style={[styles.detailValue, isDark && styles.textDark]}>
                   {item.prioridad || "Media"}
                 </Text>
               </View>
@@ -408,9 +434,11 @@ const ProductoItem = React.memo<ProductoItemProps>(
 
             {/* Información adicional para reactivos */}
             {item.id_tipo_producto === 1 && item.caducidad && (
-              <View style={styles.detailExtra}>
-                <Text style={styles.detailLabel}>Caducidad</Text>
-                <Text style={styles.detailValue}>
+              <View style={[styles.detailExtra, isDark && styles.detailExtraDark]}>
+                <Text style={[styles.detailLabel, isDark && styles.textMutedDark]}>
+                  Caducidad
+                </Text>
+                <Text style={[styles.detailValue, isDark && styles.textDark]}>
                   {formatFecha(item.caducidad)}
                   {(() => {
                     const dias = calcularDiasHastaCaducidad(item.caducidad);
@@ -438,7 +466,7 @@ const ProductoItem = React.memo<ProductoItemProps>(
             )}
 
             <TouchableOpacity
-              style={styles.detailButton}
+              style={[styles.detailButton, isDark && styles.detailButtonDark]}
               onPress={() => onViewDetails(item.id_producto)}
             >
               <Text style={styles.detailButtonText}>Ver Detalles</Text>
@@ -453,6 +481,9 @@ const ProductoItem = React.memo<ProductoItemProps>(
 
 // --- InventarioScreen Principal ---
 export default function InventarioScreen() {
+  const colorScheme = useColorScheme();
+  const isDark = colorScheme === "dark";
+  
   const [productos, setProductos] = useState<any[]>([]);
   const [busqueda, setBusqueda] = useState("");
   const [busquedaTerm, setBusquedaTerm] = useState(""); // PARA DEBOUNCE
@@ -928,6 +959,7 @@ export default function InventarioScreen() {
       keyboardType,
       value: formState[name],
       onChange: (v: any) => handleFormChange(name, v),
+      isDark,
     });
 
     const prioridadOptions = [
@@ -951,6 +983,7 @@ export default function InventarioScreen() {
               value={formState.id_prioridad}
               onValueChange={(v) => handleFormChange("id_prioridad", v)}
               options={prioridadOptions}
+              isDark={isDark}
             />
 
             <FormField {...commonProps("numero_serie", "No. de serie")} />
@@ -968,9 +1001,10 @@ export default function InventarioScreen() {
               value={formState.id_laboratorio}
               onValueChange={(v) => handleFormChange("id_laboratorio", v)}
               options={laboratorios}
+              isDark={isDark}
             />
 
-            <Text style={styles.infoText}>
+            <Text style={[styles.infoText, isDark && styles.textMutedDark]}>
               *El estatus será "Disponible" automáticamente
             </Text>
           </View>
@@ -988,6 +1022,7 @@ export default function InventarioScreen() {
               value={formState.id_prioridad}
               onValueChange={(v) => handleFormChange("id_prioridad", v)}
               options={prioridadOptions}
+              isDark={isDark}
             />
 
             <FormField
@@ -1005,7 +1040,7 @@ export default function InventarioScreen() {
             <FormField
               {...commonProps("stock_minimo", "Stock Mínimo", false, "numeric")}
             />
-            <Text style={styles.infoText}>
+            <Text style={[styles.infoText, isDark && styles.textMutedDark]}>
               *El estatus será "Disponible" automáticamente
             </Text>
           </View>
@@ -1023,6 +1058,7 @@ export default function InventarioScreen() {
               value={formState.id_prioridad}
               onValueChange={(v) => handleFormChange("id_prioridad", v)}
               options={prioridadOptions}
+              isDark={isDark}
             />
 
             <FormField
@@ -1033,14 +1069,14 @@ export default function InventarioScreen() {
                 "numeric"
               )}
             />
-            <Text style={styles.infoText}>
+            <Text style={[styles.infoText, isDark && styles.textMutedDark]}>
               *El estatus será "Disponible" automáticamente
             </Text>
           </View>
         );
       default:
         return (
-          <Text key="defaultForm" style={styles.emptyStateText}>
+          <Text key="defaultForm" style={[styles.emptyStateText, isDark && styles.textMutedDark]}>
             Selecciona un tipo para empezar.
           </Text>
         );
@@ -1100,13 +1136,13 @@ export default function InventarioScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.safe}>
-      <View style={styles.container}>
+    <SafeAreaView style={[styles.safe, isDark && styles.safeDark]}>
+      <View style={[styles.container, isDark && styles.containerDark]}>
         {/* Header */}
         <View style={styles.header}>
           <View>
-            <Text style={styles.title}>Inventario</Text>
-            <Text style={styles.subtitle}>Todos tus productos</Text>
+            <Text style={[styles.title, isDark && styles.textDark]}>Inventario</Text>
+            <Text style={[styles.subtitle, isDark && styles.textMutedDark]}>Todos tus productos</Text>
           </View>
           {filtrosAplicados && (
             <TouchableOpacity
@@ -1121,17 +1157,17 @@ export default function InventarioScreen() {
 
         {/* Barra de búsqueda y acciones */}
         <View style={styles.topBar}>
-          <View style={styles.searchContainer}>
+          <View style={[styles.searchContainer, isDark && styles.searchContainerDark]}>
             <Icon
               name="search"
               size={20}
-              color="#666"
+              color={isDark ? "#888" : "#666"}
               style={styles.searchIcon}
             />
             <TextInput
-              style={styles.input}
+              style={[styles.input, isDark && styles.inputDark]}
               placeholder="Buscar producto..."
-              placeholderTextColor="#999"
+              placeholderTextColor={isDark ? "#888" : "#999"}
               value={busqueda}
               onChangeText={setBusqueda}
             />
@@ -1139,6 +1175,7 @@ export default function InventarioScreen() {
           <TouchableOpacity
             style={[
               styles.filterBtn,
+              isDark && styles.filterBtnDark,
               filtrosAplicados && styles.filterBtnActive,
             ]}
             onPress={() => setShowFilters(true)}
@@ -1146,7 +1183,7 @@ export default function InventarioScreen() {
             <Icon
               name="filter-list"
               size={20}
-              color={filtrosAplicados ? "#fff" : "#666"}
+              color={filtrosAplicados ? "#fff" : (isDark ? "#888" : "#666")}
             />
           </TouchableOpacity>
           <TouchableOpacity
@@ -1162,7 +1199,7 @@ export default function InventarioScreen() {
         {cargandoInicial && productos.length === 0 ? ( 
           <View style={styles.loadingContainer}>
             <ActivityIndicator size="large" color="#539DF3" />
-            <Text style={styles.loadingText}>Cargando productos...</Text>
+            <Text style={[styles.loadingText, isDark && styles.textMutedDark]}>Cargando productos...</Text>
           </View>
         ) : (
           /* Lista de Productos CON PULLDOWN REFRESH */
@@ -1180,9 +1217,9 @@ export default function InventarioScreen() {
                 refreshing={refreshing}
                 onRefresh={onRefresh}
                 colors={["#539DF3"]}
-                tintColor="#539DF3"
+                tintColor={isDark ? "#fff" : "#539DF3"}
                 title="Actualizando..."
-                titleColor="#666"
+                titleColor={isDark ? "#888" : "#666"}
               />
             }
             onEndReached={handleLoadMore}
@@ -1199,18 +1236,19 @@ export default function InventarioScreen() {
                     params: { id: id.toString() },
                   })
                 }
+                isDark={isDark}
               />
             )}
             ListEmptyComponent={
               !cargandoInicial ? (
-                <View style={styles.emptyState}>
-                  <Icon name="inventory" size={60} color="#ccc" />
-                  <Text style={styles.emptyStateTitle}>
+                <View style={[styles.emptyState, isDark && styles.emptyStateDark]}>
+                  <Icon name="inventory" size={60} color={isDark ? "#333" : "#ccc"} />
+                  <Text style={[styles.emptyStateTitle, isDark && styles.textDark]}>
                     {filtrosAplicados
                       ? "No se encontraron resultados"
                       : "No hay productos"}
                   </Text>
-                  <Text style={styles.emptyStateText}>
+                  <Text style={[styles.emptyStateText, isDark && styles.textMutedDark]}>
                     {filtrosAplicados
                       ? "Intenta con otros filtros"
                       : "Comienza agregando tu primer producto"}
@@ -1218,7 +1256,7 @@ export default function InventarioScreen() {
 
                   {/* Botón de refresh en empty state */}
                   <TouchableOpacity
-                    style={styles.refreshButton}
+                    style={[styles.refreshButton, isDark && styles.refreshButtonDark]}
                     onPress={onRefresh}
                   >
                     <Icon name="refresh" size={20} color="#539DF3" />
@@ -1241,24 +1279,25 @@ export default function InventarioScreen() {
               activeOpacity={1}
               onPress={() => Keyboard.dismiss()}
             >
-              <View style={styles.modalContent}>
-                <View style={styles.modalHeader}>
-                  <Text style={styles.modalTitle}>Nuevo producto</Text>
+              <View style={[styles.modalContent, isDark && styles.modalContentDark]}>
+                <View style={[styles.modalHeader, isDark && styles.modalHeaderDark]}>
+                  <Text style={[styles.modalTitle, isDark && styles.textDark]}>Nuevo producto</Text>
                   <TouchableOpacity
                     style={styles.closeButton}
                     onPress={() => setShowAddModal(false)}
                   >
-                    <Icon name="close" size={24} color="#666" />
+                    <Icon name="close" size={24} color={isDark ? "#fff" : "#666"} />
                   </TouchableOpacity>
                 </View>
 
                 {/* Selector de Tipo de Producto */}
-                <View style={styles.addTypeSelector}>
+                <View style={[styles.addTypeSelector, isDark && styles.addTypeSelectorDark]}>
                   {tiposDisponibles.map((tipo) => (
                     <TouchableOpacity
                       key={tipo.id_tipo_producto}
                       style={[
                         styles.addTypeButton,
+                        isDark && styles.addTypeButtonDark,
                         selectedProductType === tipo.nombre_tipo &&
                           styles.addTypeButtonActive,
                       ]}
@@ -1267,6 +1306,7 @@ export default function InventarioScreen() {
                       <Text
                         style={[
                           styles.addTypeText,
+                          isDark && styles.addTypeTextDark,
                           selectedProductType === tipo.nombre_tipo &&
                             styles.addTypeTextActive,
                         ]}
@@ -1285,16 +1325,16 @@ export default function InventarioScreen() {
                   keyboardShouldPersistTaps="handled"
                 >
                   {renderProductForm()}
-                  <Text style={styles.requiredNote}>* Campos obligatorios</Text>
+                  <Text style={[styles.requiredNote, isDark && styles.textMutedDark]}>* Campos obligatorios</Text>
                 </ScrollView>
 
                 {/* Botones de acción */}
-                <View style={styles.buttonRow}>
+                <View style={[styles.buttonRow, isDark && styles.buttonRowDark]}>
                   <Pressable
-                    style={styles.cancelBtn}
+                    style={[styles.cancelBtn, isDark && styles.cancelBtnDark]}
                     onPress={() => setShowAddModal(false)}
                   >
-                    <Text style={styles.cancelBtnText}>Cancelar</Text>
+                    <Text style={[styles.cancelBtnText, isDark && styles.textDark]}>Cancelar</Text>
                   </Pressable>
 
                   <Pressable
@@ -1312,27 +1352,28 @@ export default function InventarioScreen() {
         {/* Modal de Filtros */}
         <Modal visible={showFilters} animationType="slide" transparent>
           <View style={styles.modalOverlay}>
-            <View style={styles.modalContent}>
-              <View style={styles.modalHeader}>
-                <Text style={styles.modalTitle}>Filtros</Text>
+            <View style={[styles.modalContent, isDark && styles.modalContentDark]}>
+              <View style={[styles.modalHeader, isDark && styles.modalHeaderDark]}>
+                <Text style={[styles.modalTitle, isDark && styles.textDark]}>Filtros</Text>
                 <TouchableOpacity
                   style={styles.closeButton}
                   onPress={() => setShowFilters(false)}
                 >
-                  <Icon name="close" size={24} color="#666" />
+                  <Icon name="close" size={24} color={isDark ? "#fff" : "#666"} />
                 </TouchableOpacity>
               </View>
 
               <ScrollView style={styles.filtersScroll}>
                 {/* Nuevo Filtro: Ordenamiento */}
-                <View style={styles.filterCard}>
-                  <Text style={styles.filterCardTitle}>Ordenar por</Text>
+                <View style={[styles.filterCard, isDark && styles.filterCardDark]}>
+                  <Text style={[styles.filterCardTitle, isDark && styles.textDark]}>Ordenar por</Text>
                   <View style={styles.filterOptions}>
                     {ordenOptions.map((option) => (
                       <TouchableOpacity
                         key={option.value}
                         style={[
                           styles.filterOption,
+                          isDark && styles.filterOptionDark,
                           orden === option.value && styles.filterOptionActive,
                         ]}
                         onPress={() => setOrden(option.value)}
@@ -1340,6 +1381,7 @@ export default function InventarioScreen() {
                         <Text
                           style={[
                             styles.filterOptionText,
+                            isDark && styles.filterOptionTextDark,
                             orden === option.value &&
                               styles.filterOptionTextActive,
                           ]}
@@ -1350,8 +1392,8 @@ export default function InventarioScreen() {
                     ))}
                   </View>
                 </View>
-                <View style={styles.filterCard}>
-                  <Text style={styles.filterCardTitle}>
+                <View style={[styles.filterCard, isDark && styles.filterCardDark]}>
+                  <Text style={[styles.filterCardTitle, isDark && styles.textDark]}>
                     Selección de periodo
                   </Text>
                   <View style={styles.filterOptions}>
@@ -1360,6 +1402,7 @@ export default function InventarioScreen() {
                         key={option.value}
                         style={[
                           styles.filterOption,
+                          isDark && styles.filterOptionDark,
                           periodo === option.value && styles.filterOptionActive,
                         ]}
                         onPress={() => setPeriodo(option.value)}
@@ -1367,6 +1410,7 @@ export default function InventarioScreen() {
                         <Text
                           style={[
                             styles.filterOptionText,
+                            isDark && styles.filterOptionTextDark,
                             periodo === option.value &&
                               styles.filterOptionTextActive,
                           ]}
@@ -1378,12 +1422,13 @@ export default function InventarioScreen() {
                   </View>
                 </View>
 
-                <View style={styles.filterCard}>
-                  <Text style={styles.filterCardTitle}>Tipo de Producto</Text>
+                <View style={[styles.filterCard, isDark && styles.filterCardDark]}>
+                  <Text style={[styles.filterCardTitle, isDark && styles.textDark]}>Tipo de Producto</Text>
                   <View style={styles.filterOptions}>
                     <TouchableOpacity
                       style={[
                         styles.filterOption,
+                        isDark && styles.filterOptionDark,
                         tipoProductoFiltro === "todos" &&
                           styles.filterOptionActive,
                       ]}
@@ -1392,6 +1437,7 @@ export default function InventarioScreen() {
                       <Text
                         style={[
                           styles.filterOptionText,
+                          isDark && styles.filterOptionTextDark,
                           tipoProductoFiltro === "todos" &&
                             styles.filterOptionTextActive,
                         ]}
@@ -1406,6 +1452,7 @@ export default function InventarioScreen() {
                           key={tipo.id_tipo_producto}
                           style={[
                             styles.filterOption,
+                            isDark && styles.filterOptionDark,
                             tipoProductoFiltro === tipoNormalizado &&
                               styles.filterOptionActive,
                           ]}
@@ -1414,6 +1461,7 @@ export default function InventarioScreen() {
                           <Text
                             style={[
                               styles.filterOptionText,
+                              isDark && styles.filterOptionTextDark,
                               tipoProductoFiltro === tipoNormalizado &&
                                 styles.filterOptionTextActive,
                             ]}
@@ -1426,14 +1474,15 @@ export default function InventarioScreen() {
                   </View>
                 </View>
 
-                <View style={styles.filterCard}>
-                  <Text style={styles.filterCardTitle}>Prioridad</Text>
+                <View style={[styles.filterCard, isDark && styles.filterCardDark]}>
+                  <Text style={[styles.filterCardTitle, isDark && styles.textDark]}>Prioridad</Text>
                   <View style={styles.filterOptions}>
                     {prioridadOptions.map((option) => (
                       <TouchableOpacity
                         key={option.value}
                         style={[
                           styles.filterOption,
+                          isDark && styles.filterOptionDark,
                           prioridad === option.value &&
                             styles.filterOptionActive,
                         ]}
@@ -1442,6 +1491,7 @@ export default function InventarioScreen() {
                         <Text
                           style={[
                             styles.filterOptionText,
+                            isDark && styles.filterOptionTextDark,
                             prioridad === option.value &&
                               styles.filterOptionTextActive,
                           ]}
@@ -1452,14 +1502,15 @@ export default function InventarioScreen() {
                     ))}
                   </View>
                 </View>
-                <View style={styles.filterCard}>
-                  <Text style={styles.filterCardTitle}>Estatus</Text>
+                <View style={[styles.filterCard, isDark && styles.filterCardDark]}>
+                  <Text style={[styles.filterCardTitle, isDark && styles.textDark]}>Estatus</Text>
                   <View style={styles.filterOptions}>
                     {estatusOptions.map((option) => (
                       <TouchableOpacity
                         key={option.value}
                         style={[
                           styles.filterOption,
+                          isDark && styles.filterOptionDark,
                           estatusFiltro === option.value &&
                             styles.filterOptionActive,
                         ]}
@@ -1468,6 +1519,7 @@ export default function InventarioScreen() {
                         <Text
                           style={[
                             styles.filterOptionText,
+                            isDark && styles.filterOptionTextDark,
                             estatusFiltro === option.value &&
                               styles.filterOptionTextActive,
                           ]}
@@ -1480,9 +1532,9 @@ export default function InventarioScreen() {
                 </View>
               </ScrollView>
 
-              <View style={styles.filterActions}>
-                <Pressable style={styles.resetBtn} onPress={resetearFiltros}>
-                  <Text style={styles.resetBtnText}>Limpiar Filtros</Text>
+              <View style={[styles.filterActions, isDark && styles.filterActionsDark]}>
+                <Pressable style={[styles.resetBtn, isDark && styles.resetBtnDark]} onPress={resetearFiltros}>
+                  <Text style={[styles.resetBtnText, isDark && styles.textDark]}>Limpiar Filtros</Text>
                 </Pressable>
                 <Pressable style={styles.applyBtn} onPress={aplicarFiltros}>
                   <Text style={styles.applyBtnText}>Aplicar Filtros</Text>
@@ -1498,7 +1550,9 @@ export default function InventarioScreen() {
 
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: "#f8fafc", paddingBottom: -90 },
+  safeDark: { backgroundColor: "#000" },
   container: { flex: 1, paddingVertical: 1, paddingHorizontal: 16, },
+  containerDark: { backgroundColor: "#000" },
 
   // Header
   header: {
@@ -1558,6 +1612,12 @@ const styles = StyleSheet.create({
     shadowRadius: 3,
     elevation: 2,
   },
+  searchContainerDark: {
+    backgroundColor: "#1c1c1e",
+    borderColor: "#333",
+    shadowColor: "#000",
+    shadowOpacity: 0.2,
+  },
   searchIcon: { marginRight: 8 },
   input: {
     flex: 1,
@@ -1565,6 +1625,9 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontFamily: "Poppins_400Regular",
     color: "#333",
+  },
+  inputDark: {
+    color: "#fff",
   },
   filterBtn: {
     backgroundColor: "#f1f5f9",
@@ -1577,6 +1640,10 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 3,
     elevation: 2,
+  },
+  filterBtnDark: {
+    backgroundColor: "#1c1c1e",
+    borderColor: "#333",
   },
   filterBtnActive: {
     backgroundColor: "#539DF3",
@@ -1616,11 +1683,21 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "#f1f5f9",
   },
+  rowDark: {
+    backgroundColor: "#1c1c1e",
+    borderColor: "#333",
+    shadowColor: "#000",
+    shadowOpacity: 0.2,
+  },
   rowExpanded: {
     backgroundColor: "#fafbfc",
     borderColor: "#539DF3",
     shadowColor: "#539DF3",
     shadowOpacity: 0.1,
+  },
+  rowExpandedDark: {
+    backgroundColor: "#2c2c2e",
+    borderColor: "#539DF3",
   },
   rowMain: {
     flexDirection: "row",
@@ -1670,6 +1747,9 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     borderTopColor: "#f1f5f9",
   },
+  rowDetailsDark: {
+    borderTopColor: "#333",
+  },
   detailsGrid: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -1691,6 +1771,15 @@ const styles = StyleSheet.create({
     color: "#1a1a1a",
     fontWeight: "600",
   },
+  detailExtra: {
+    marginBottom: 12,
+    padding: 8,
+    backgroundColor: "#f8f9fa",
+    borderRadius: 8,
+  },
+  detailExtraDark: {
+    backgroundColor: "#2c2c2e",
+  },
   detailButton: {
     flexDirection: "row",
     alignItems: "center",
@@ -1700,6 +1789,10 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     borderWidth: 1,
     borderColor: "#e1e5e9",
+  },
+  detailButtonDark: {
+    backgroundColor: "#2c2c2e",
+    borderColor: "#333",
   },
   detailButtonText: {
     color: "#539DF3",
@@ -1722,6 +1815,9 @@ const styles = StyleSheet.create({
     minHeight: "60%", 
     flex: 1,
   },
+  modalContentDark: {
+    backgroundColor: "#1c1c1e",
+  },
   scrollContent: {
     paddingBottom: 20, 
   },
@@ -1733,14 +1829,14 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: "#f1f5f9",
   },
+  modalHeaderDark: {
+    borderBottomColor: "#333",
+  },
   modalTitle: {
     fontFamily: "Poppins_700Bold",
     fontSize: 20,
     fontWeight: "700",
     color: "#1a1a1a",
-  },
-  closeButton: {
-    padding: 4,
   },
 
   // Form Styles
@@ -1759,9 +1855,18 @@ const styles = StyleSheet.create({
     shadowRadius: 3,
     elevation: 1,
   },
+  formFieldContainerDark: {
+    backgroundColor: "#1c1c1e",
+    borderColor: "#333",
+    shadowColor: "#000",
+    shadowOpacity: 0.2,
+  },
   formInput: {
     fontSize: 16,
     color: "#1a1a1a",
+  },
+  formInputDark: {
+    color: "#fff",
   },
   datePlaceholder: {
     color: "#999",
@@ -1792,6 +1897,10 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: "#f1f5f9",
   },
+  addTypeSelectorDark: {
+    backgroundColor: "#1c1c1e",
+    borderBottomColor: "#333",
+  },
   addTypeButton: {
     paddingHorizontal: 20,
     paddingVertical: 10,
@@ -1799,6 +1908,10 @@ const styles = StyleSheet.create({
     backgroundColor: "#f8fafc",
     borderWidth: 1,
     borderColor: "#e1e5e9",
+  },
+  addTypeButtonDark: {
+    backgroundColor: "#2c2c2e",
+    borderColor: "#333",
   },
   addTypeButtonActive: {
     backgroundColor: "#539DF3",
@@ -1809,6 +1922,9 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: "600",
     color: "#666",
+  },
+  addTypeTextDark: {
+    color: "#888",
   },
   addTypeTextActive: {
     color: "#fff",
@@ -1836,6 +1952,12 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "#f1f5f9",
   },
+  filterCardDark: {
+    backgroundColor: "#1c1c1e",
+    borderColor: "#333",
+    shadowColor: "#000",
+    shadowOpacity: 0.2,
+  },
   filterCardTitle: {
     fontFamily: "Poppins_500Medium",
     fontSize: 16,
@@ -1856,6 +1978,10 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "#e1e5e9",
   },
+  filterOptionDark: {
+    backgroundColor: "#2c2c2e",
+    borderColor: "#333",
+  },
   filterOptionActive: {
     backgroundColor: "#3B82F6",
     borderColor: "#3B82F6",
@@ -1865,6 +1991,9 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: "#666",
     fontWeight: "500",
+  },
+  filterOptionTextDark: {
+    color: "#888",
   },
   filterOptionTextActive: {
     color: "#fff",
@@ -1880,6 +2009,10 @@ const styles = StyleSheet.create({
     gap: 12,
     backgroundColor: "#fff",
   },
+  buttonRowDark: {
+    backgroundColor: "#1c1c1e",
+    borderTopColor: "#333",
+  },
   cancelBtn: {
     flex: 1,
     backgroundColor: "#f8fafc",
@@ -1888,6 +2021,10 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     borderWidth: 1,
     borderColor: "#e1e5e9",
+  },
+  cancelBtnDark: {
+    backgroundColor: "#2c2c2e",
+    borderColor: "#333",
   },
   cancelBtnText: {
     fontWeight: "600",
@@ -1903,6 +2040,10 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     borderWidth: 1,
     borderColor: "#e1e5e9",
+  },
+  resetBtnDark: {
+    backgroundColor: "#2c2c2e",
+    borderColor: "#333",
   },
   resetBtnText: {
     fontWeight: "600",
@@ -1933,6 +2074,9 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     padding: 60,
+  },
+  emptyStateDark: {
+    backgroundColor: "#000",
   },
   emptyStateTitle: {
     marginTop: 16,
@@ -1969,6 +2113,10 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "#e1e5e9",
   },
+  optionChipDark: {
+    backgroundColor: "#2c2c2e",
+    borderColor: "#333",
+  },
   optionChipSelected: {
     backgroundColor: "#539DF3",
     borderColor: "#539DF3",
@@ -1977,6 +2125,9 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: "#666",
     fontWeight: "500",
+  },
+  optionChipTextDark: {
+    color: "#888",
   },
   optionChipTextSelected: {
     color: "#fff",
@@ -1989,6 +2140,10 @@ const styles = StyleSheet.create({
     borderTopColor: "#f1f5f9",
     gap: 12,
     backgroundColor: "#fff",
+  },
+  filterActionsDark: {
+    backgroundColor: "#1c1c1e",
+    borderTopColor: "#333",
   },
   // Info Text
   requiredNote: {
@@ -2009,12 +2164,7 @@ const styles = StyleSheet.create({
     marginBottom: 8,
     marginHorizontal: 20,
   },
-  detailExtra: {
-    marginBottom: 12,
-    padding: 8,
-    backgroundColor: "#f8f9fa",
-    borderRadius: 8,
-  },
+  
   datePickerContainer: {
     backgroundColor: "#fff",
     borderRadius: 10,
@@ -2025,6 +2175,9 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.25,
     shadowRadius: 3.84,
     elevation: 5,
+  },
+  datePickerContainerDark: {
+    backgroundColor: "#1c1c1e",
   },
   datePickerHeader: {
     paddingBottom: 10,
@@ -2061,6 +2214,10 @@ const styles = StyleSheet.create({
     backgroundColor: "#f8f9fa",
     borderWidth: 1,
     borderColor: "#dee2e6",
+  },
+  datePickerButtonCancelDark: {
+    backgroundColor: "#2c2c2e",
+    borderColor: "#333",
   },
   datePickerButtonConfirm: {
     backgroundColor: "#539DF3",
@@ -2106,10 +2263,25 @@ const styles = StyleSheet.create({
     marginTop: 16,
     gap: 8,
   },
+  refreshButtonDark: {
+    backgroundColor: "#2c2c2e",
+    borderColor: "#333",
+  },
   refreshButtonText: {
     color: "#539DF3",
     fontWeight: "600",
     fontSize: 14,
     fontFamily: "Poppins_500Medium",
+  },
+  closeButton: {
+    padding: 4,
+  },
+
+  // Text Colors para Dark Mode
+  textDark: {
+    color: "#fff",
+  },
+  textMutedDark: {
+    color: "#888",
   },
 });

@@ -24,6 +24,7 @@ import TendenciaStockChart from "../../components/TendenciaStockChart";
 import { Swipeable } from "react-native-gesture-handler";
 import { useAuth } from "@/context/AuthContext";
 import api from "@/utils/api";
+import { useColorScheme } from "@/hooks/use-color-scheme";
 
 const API_ROOT_URL = "http://172.20.10.11:3000";
 
@@ -107,6 +108,7 @@ interface Movimiento {
   fecha_inicio: string | null;
   fecha_fin: string | null;
 }
+
 // ... (Todas tus funciones helper: calcularDiferenciaFechas, calcularDiasHastaCaducidad, etc. no cambian) ...
 function calcularDiferenciaFechas(inicio: string, fin: string): string {
   if (!inicio || !fin) return "N/A";
@@ -169,6 +171,9 @@ const getEstatusText = (producto: Producto): string => {
 export default function ProductDetail() {
   const { user } = useAuth();
   const { id } = useLocalSearchParams();
+  const colorScheme = useColorScheme();
+  const isDark = colorScheme === "dark";
+  
   const [producto, setProducto] = useState<Producto | null>(null);
   const [loading, setLoading] = useState(true);
   const [editModalVisible, setEditModalVisible] = useState(false);
@@ -861,17 +866,17 @@ const [productResponse, historyResponse, trendResponse] = await Promise.all([
   // Render loading
   if (loading) {
     return (
-      <View style={styles.center}>
+      <View style={[styles.center, isDark && styles.centerDark]}>
         <ActivityIndicator size="large" color="#539DF3" />
-        <Text style={{ marginTop: 10 }}>Cargando producto...</Text>
+        <Text style={[styles.loadingText, isDark && styles.textDark]}>Cargando producto...</Text>
       </View>
     );
   }
   // Render si no hay producto
   if (!producto) {
     return (
-      <View style={styles.center}>
-        <Text>No se encontró el producto</Text>
+      <View style={[styles.center, isDark && styles.centerDark]}>
+        <Text style={[styles.noProductText, isDark && styles.textDark]}>No se encontró el producto</Text>
       </View>
     );
   }
@@ -879,7 +884,7 @@ const [productResponse, historyResponse, trendResponse] = await Promise.all([
   const statusText = getEstatusText(producto);
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, isDark && styles.containerDark]}>
       <Animated.ScrollView
         style={[
           styles.scrollView,
@@ -892,7 +897,7 @@ const [productResponse, historyResponse, trendResponse] = await Promise.all([
         showsVerticalScrollIndicator={false}
       >
         {/* === NUEVO HEADER REDISEÑADO === */}
-        <View style={styles.header}>
+        <View style={[styles.header, isDark && styles.headerDark]}>
           <Image
             source={
               producto.imagen
@@ -910,16 +915,16 @@ const [productResponse, historyResponse, trendResponse] = await Promise.all([
         </View>
 
         <View style={styles.headerContent}>
-          <Text style={styles.title}>{producto.nombre}</Text>
-          <Text style={styles.subtitle}>{producto.tipo}</Text>
-          <View style={styles.statusContainer}>
+          <Text style={[styles.title, isDark && styles.textDark]}>{producto.nombre}</Text>
+          <Text style={[styles.subtitle, isDark && styles.textMutedDark]}>{producto.tipo}</Text>
+          <View style={[styles.statusContainer, isDark && styles.statusContainerDark]}>
             <View
               style={[
                 styles.statusDot,
                 { backgroundColor: getEstatusColor(producto) },
               ]}
             />
-            <Text style={styles.statusText}>{getEstatusText(producto)}</Text>
+            <Text style={[styles.statusText, isDark && styles.textDark]}>{getEstatusText(producto)}</Text>
           </View>
         </View>
 
@@ -928,11 +933,11 @@ const [productResponse, historyResponse, trendResponse] = await Promise.all([
           {/* Mostrar botón de editar SOLO si el usuario es administrador (rol === 1) */}
           {user?.rol === 1 && (
             <TouchableOpacity
-              style={[styles.mainButton, styles.secondaryButton]}
+              style={[styles.mainButton, styles.secondaryButton, isDark && styles.secondaryButtonDark]}
               onPress={() => setEditModalVisible(true)}
             >
-              <Ionicons name="create-outline" size={20} color="#000000ff" />
-              <Text style={[styles.mainButtonText, styles.secondaryButtonText]}>
+              <Ionicons name="create-outline" size={20} color={isDark ? "#fff" : "#000000ff"} />
+              <Text style={[styles.mainButtonText, styles.secondaryButtonText, isDark && styles.textDark]}>
                 Editar
               </Text>
             </TouchableOpacity>
@@ -960,7 +965,8 @@ const [productResponse, historyResponse, trendResponse] = await Promise.all([
               <View
                 style={[
                   styles.warningCard,
-                  { backgroundColor: dias < 0 ? "#FEF2F2" : "#FFFBEB" },
+                  isDark && styles.warningCardDark,
+                  { backgroundColor: dias < 0 ? (isDark ? "#2c1c1c" : "#FEF2F2") : (isDark ? "#2c281c" : "#FFFBEB") },
                 ]}
               >
                 <Ionicons
@@ -977,7 +983,7 @@ const [productResponse, historyResponse, trendResponse] = await Promise.all([
                   >
                     {dias < 0 ? "PRODUCTO CADUCADO" : "PRÓXIMO A CADUCAR"}
                   </Text>
-                  <Text style={styles.warningMessage}>
+                  <Text style={[styles.warningMessage, isDark && styles.textMutedDark]}>
                     {dias < 0
                       ? "Este producto ha caducado"
                       : dias === 0
@@ -990,43 +996,43 @@ const [productResponse, historyResponse, trendResponse] = await Promise.all([
           })()}
 
         {/* Tarjeta de información principal */}
-        <View style={styles.card}>
+        <View style={[styles.card, isDark && styles.cardDark]}>
           <View style={styles.cardHeader}>
             <Ionicons
               name="information-circle-outline"
               size={24}
-              color="#000000ff"
+              color={isDark ? "#fff" : "#000000ff"}
             />
-            <Text style={styles.cardTitle}>Información General</Text>
+            <Text style={[styles.cardTitle, isDark && styles.textDark]}>Información General</Text>
           </View>
           <View style={styles.infoGrid}>
             <View style={styles.infoItem}>
-              <Text style={styles.infoLabel}>Marca</Text>
-              <Text style={styles.infoValue}>{producto.marca}</Text>
+              <Text style={[styles.infoLabel, isDark && styles.textMutedDark]}>Marca</Text>
+              <Text style={[styles.infoValue, isDark && styles.textDark]}>{producto.marca}</Text>
             </View>
             <View style={styles.infoItem}>
-              <Text style={styles.infoLabel}>Lote</Text>
-              <Text style={styles.infoValue}>{producto.lote || "N/A"}</Text>
+              <Text style={[styles.infoLabel, isDark && styles.textMutedDark]}>Lote</Text>
+              <Text style={[styles.infoValue, isDark && styles.textDark]}>{producto.lote || "N/A"}</Text>
             </View>
             <View style={styles.infoItem}>
-              <Text style={styles.infoLabel}>Fecha Ingreso</Text>
-              <Text style={styles.infoValue}>
+              <Text style={[styles.infoLabel, isDark && styles.textMutedDark]}>Fecha Ingreso</Text>
+              <Text style={[styles.infoValue, isDark && styles.textDark]}>
                 {formatFecha(producto.fecha_ingreso)}
               </Text>
             </View>
             <View style={styles.infoItem}>
-              <Text style={styles.infoLabel}>Prioridad</Text>
-              <Text style={styles.infoValue}>{producto.prioridad}</Text>
+              <Text style={[styles.infoLabel, isDark && styles.textMutedDark]}>Prioridad</Text>
+              <Text style={[styles.infoValue, isDark && styles.textDark]}>{producto.prioridad}</Text>
             </View>
             <View style={styles.infoItem}>
-              <Text style={styles.infoLabel}>Stock Mínimo</Text>
-              <Text style={styles.infoValue}>
+              <Text style={[styles.infoLabel, isDark && styles.textMutedDark]}>Stock Mínimo</Text>
+              <Text style={[styles.infoValue, isDark && styles.textDark]}>
                 {producto.stock_minimo} unidades
               </Text>
             </View>
             <View style={styles.infoItem}>
-              <Text style={styles.infoLabel}>Stock Actual</Text>
-              <Text style={[styles.infoValue, styles.stockValue]}>
+              <Text style={[styles.infoLabel, isDark && styles.textMutedDark]}>Stock Actual</Text>
+              <Text style={[styles.infoValue, styles.stockValue, isDark && styles.textDark]}>
                 {producto.existencia_actual} unidades
               </Text>
             </View>
@@ -1035,21 +1041,21 @@ const [productResponse, historyResponse, trendResponse] = await Promise.all([
 
         {/* Detalles específicos por tipo */}
         {producto.id_tipo_producto === 1 && (
-          <View style={styles.card}>
+          <View style={[styles.card, isDark && styles.cardDark]}>
             <View style={styles.cardHeader}>
-              <Ionicons name="flask-outline" size={24} color="#000000ff" />
-              <Text style={styles.cardTitle}>Detalles del Reactivo</Text>
+              <Ionicons name="flask-outline" size={24} color={isDark ? "#fff" : "#000000ff"} />
+              <Text style={[styles.cardTitle, isDark && styles.textDark]}>Detalles del Reactivo</Text>
             </View>
             <View style={styles.detailsGrid}>
               <View style={styles.detailItem}>
-                <Text style={styles.detailLabel}>Presentación</Text>
-                <Text style={styles.detailValue}>
+                <Text style={[styles.detailLabel, isDark && styles.textMutedDark]}>Presentación</Text>
+                <Text style={[styles.detailValue, isDark && styles.textDark]}>
                   {producto.presentacion || "N/A"}
                 </Text>
               </View>
               <View style={styles.detailItem}>
-                <Text style={styles.detailLabel}>Caducidad</Text>
-                <Text style={styles.detailValue}>
+                <Text style={[styles.detailLabel, isDark && styles.textMutedDark]}>Caducidad</Text>
+                <Text style={[styles.detailValue, isDark && styles.textDark]}>
                   {producto.caducidad ? formatFecha(producto.caducidad) : "N/A"}
                 </Text>
               </View>
@@ -1058,50 +1064,50 @@ const [productResponse, historyResponse, trendResponse] = await Promise.all([
         )}
 
         {producto.id_tipo_producto === 2 && (
-          <View style={styles.card}>
+          <View style={[styles.card, isDark && styles.cardDark]}>
             <View style={styles.cardHeader}>
               <Ionicons
                 name="hardware-chip-outline"
                 size={24}
-                color="#000000ff"
+                color={isDark ? "#fff" : "#000000ff"}
               />
-              <Text style={styles.cardTitle}>Detalles del Equipo</Text>
+              <Text style={[styles.cardTitle, isDark && styles.textDark]}>Detalles del Equipo</Text>
             </View>
             <View style={styles.detailsGrid}>
               <View style={styles.detailItem}>
-                <Text style={styles.detailLabel}>ID AGK</Text>
-                <Text style={styles.detailValue}>
+                <Text style={[styles.detailLabel, isDark && styles.textMutedDark]}>ID AGK</Text>
+                <Text style={[styles.detailValue, isDark && styles.textDark]}>
                   {producto.id_agk || "N/A"}
                 </Text>
               </View>
               <View style={styles.detailItem}>
-                <Text style={styles.detailLabel}>Modelo</Text>
-                <Text style={styles.detailValue}>
+                <Text style={[styles.detailLabel, isDark && styles.textMutedDark]}>Modelo</Text>
+                <Text style={[styles.detailValue, isDark && styles.textDark]}>
                   {producto.modelo || "N/A"}
                 </Text>
               </View>
               <View style={styles.detailItem}>
-                <Text style={styles.detailLabel}>Número de Serie</Text>
-                <Text style={styles.detailValue}>
+                <Text style={[styles.detailLabel, isDark && styles.textMutedDark]}>Número de Serie</Text>
+                <Text style={[styles.detailValue, isDark && styles.textDark]}>
                   {producto.numero_serie || "N/A"}
                 </Text>
               </View>
               <View style={styles.detailItem}>
-                <Text style={styles.detailLabel}>Rango de Medición</Text>
-                <Text style={styles.detailValue}>
+                <Text style={[styles.detailLabel, isDark && styles.textMutedDark]}>Rango de Medición</Text>
+                <Text style={[styles.detailValue, isDark && styles.textDark]}>
                   {producto.rango_medicion || "N/A"}
                 </Text>
               </View>
               <View style={styles.detailItem}>
-                <Text style={styles.detailLabel}>Resolución</Text>
-                <Text style={styles.detailValue}>
+                <Text style={[styles.detailLabel, isDark && styles.textMutedDark]}>Resolución</Text>
+                <Text style={[styles.detailValue, isDark && styles.textDark]}>
                   {producto.resolucion || "N/A"}
                 </Text>
               </View>
               <View style={styles.detailItem}>
-                <Text style={styles.detailLabel}>Laboratorio</Text>
+                <Text style={[styles.detailLabel, isDark && styles.textMutedDark]}>Laboratorio</Text>
                 <Text
-                  style={[styles.detailValue, styles.laboratorioValue]}
+                  style={[styles.detailValue, styles.laboratorioValue, isDark && styles.textDark]}
                   numberOfLines={2}
                   ellipsizeMode="tail"
                 >
@@ -1115,49 +1121,49 @@ const [productResponse, historyResponse, trendResponse] = await Promise.all([
 
         {/* === NUEVA SECCIÓN DE DOCUMENTOS SIMPLIFICADA === */}
         {producto.id_tipo_producto === 1 && (
-          <View style={styles.card}>
+          <View style={[styles.card, isDark && styles.cardDark]}>
             <View style={styles.cardHeader}>
               <Ionicons
                 name="folder-open-outline"
                 size={24}
-                color="#000000ff"
+                color={isDark ? "#fff" : "#000000ff"}
               />
-              <Text style={styles.cardTitle}>Archivos</Text>
+              <Text style={[styles.cardTitle, isDark && styles.textDark]}>Archivos</Text>
             </View>
             <TouchableOpacity
-              style={styles.documentLink}
+              style={[styles.documentLink, isDark && styles.documentLinkDark]}
               onPress={() => handleOpenDocumentModal("certificado")}
             >
               <Ionicons
                 name="document-attach-outline"
                 size={22}
-                color="#1E293B"
+                color={isDark ? "#fff" : "#1E293B"}
               />
-              <Text style={styles.documentLinkText}>Certificados</Text>
-              <Ionicons name="chevron-forward" size={20} color="#94A3B8" />
+              <Text style={[styles.documentLinkText, isDark && styles.textDark]}>Certificados</Text>
+              <Ionicons name="chevron-forward" size={20} color={isDark ? "#888" : "#94A3B8"} />
             </TouchableOpacity>
             <TouchableOpacity
-              style={styles.documentLink}
+              style={[styles.documentLink, isDark && styles.documentLinkDark]}
               onPress={() => handleOpenDocumentModal("hds")}
             >
               <Ionicons
                 name="shield-checkmark-outline"
                 size={22}
-                color="#1E293B"
+                color={isDark ? "#fff" : "#1E293B"}
               />
-              <Text style={styles.documentLinkText}>
+              <Text style={[styles.documentLinkText, isDark && styles.textDark]}>
                 Hojas de Seguridad (HDS)
               </Text>
-              <Ionicons name="chevron-forward" size={20} color="#94A3B8" />
+              <Ionicons name="chevron-forward" size={20} color={isDark ? "#888" : "#94A3B8"} />
             </TouchableOpacity>
           </View>
         )}
 
         {/* Historial de movimientos */}
-        <View style={styles.card}>
+        <View style={[styles.card, isDark && styles.cardDark]}>
           <View style={styles.cardHeader}>
-            <Ionicons name="shuffle" size={24} color="#000000ff" />
-            <Text style={styles.cardTitle}>Control de Movimientos</Text>
+            <Ionicons name="shuffle" size={24} color={isDark ? "#fff" : "#000000ff"} />
+            <Text style={[styles.cardTitle, isDark && styles.textDark]}>Control de Movimientos</Text>
           </View>
           {cargandoHistorial ? (
             <ActivityIndicator
@@ -1171,7 +1177,7 @@ const [productResponse, historyResponse, trendResponse] = await Promise.all([
               nestedScrollEnabled={true}
             >
               {historial.map((mov) => (
-                <View key={mov.id_movimiento} style={styles.historialItem}>
+                <View key={mov.id_movimiento} style={[styles.historialItem, isDark && styles.historialItemDark]}>
                   <View style={styles.historialIcon}>
                     <Ionicons
                       name={
@@ -1204,13 +1210,13 @@ const [productResponse, historyResponse, trendResponse] = await Promise.all([
                     />
                   </View>
                   <View style={styles.historialContent}>
-                    <Text style={styles.historialTitle}>
+                    <Text style={[styles.historialTitle, isDark && styles.textDark]}>
                       {mov.tipo_movimiento === "Entrada"
                         ? "Entrada"
                         : mov.motivo_baja || mov.tipo_movimiento}{" "}
                       ({mov.cantidad} Uds.)
                     </Text>
-                    <Text style={styles.historialSubtitle}>
+                    <Text style={[styles.historialSubtitle, isDark && styles.textMutedDark]}>
                       {new Date(mov.fecha).toLocaleString("es-MX")} por{" "}
                       {mov.responsable}
                     </Text>
@@ -1219,7 +1225,8 @@ const [productResponse, historyResponse, trendResponse] = await Promise.all([
                     {mov.motivo_baja === "Finalizar uso" &&
                       mov.fecha_inicio &&
                       mov.fecha_fin && (
-                        <Text style={styles.historialDescription}>
+                        <Text style={[styles.historialDescription,
+                        isDark && styles.historialdescriptionDark]}>
                           ⏱️ Duración de uso:{" "}
                           {calcularDiferenciaFechas(
                             mov.fecha_inicio,
@@ -1230,7 +1237,8 @@ const [productResponse, historyResponse, trendResponse] = await Promise.all([
 
                     {/* Mostrar nota para TODOS los movimientos que tengan descripción */}
                     {mov.descripcion_adicional && (
-                      <Text style={styles.historialDescription}>
+                      <Text style={[styles.historialDescription,
+                       isDark && styles.historialdescriptionDark]}>
                         📝 Nota: {mov.descripcion_adicional}
                       </Text>
                     )}
@@ -1239,7 +1247,7 @@ const [productResponse, historyResponse, trendResponse] = await Promise.all([
               ))}
             </ScrollView>
           ) : (
-            <Text style={styles.noHistorialText}>
+            <Text style={[styles.noHistorialText, isDark && styles.textMutedDark]}>
               No hay movimientos registrados.
             </Text>
           )}
@@ -1247,10 +1255,10 @@ const [productResponse, historyResponse, trendResponse] = await Promise.all([
 
         {/* Gráfica de tendencia */}
         {producto.id_tipo_producto === 1 && datosGrafica.length > 1 && (
-          <View style={styles.card}>
+          <View style={[styles.card, isDark && styles.cardDark]}>
             <View style={styles.cardHeader}>
-              <Ionicons name="trending-up" size={24} color="#000000ff" />
-              <Text style={styles.cardTitle}>Tendencia de Stock</Text>
+              <Ionicons name="trending-up" size={24} color={isDark ? "#fff" : "#000000ff"} />
+              <Text style={[styles.cardTitle, isDark && styles.textDark]}>Tendencia de Stock</Text>
             </View>
             <TendenciaStockChart
               datos={datosGrafica}
@@ -1267,7 +1275,7 @@ const [productResponse, historyResponse, trendResponse] = await Promise.all([
         transparent={true}
       >
         <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
+          <View style={[styles.modalContent, isDark && styles.modalContentDark]}>
             <LinearGradient
               colors={["#87bcf8ff", "#539DF3"]}
               style={styles.modalHeader}
@@ -1289,9 +1297,9 @@ const [productResponse, historyResponse, trendResponse] = await Promise.all([
               {documentos.filter((doc) => doc.tipo === selectedDocType)
                 .length === 0 ? (
                 <View style={styles.emptyState}>
-                  <Ionicons name="document-outline" size={64} color="#CBD5E1" />
-                  <Text style={styles.emptyStateText}>No hay documentos</Text>
-                  <Text style={styles.emptyStateSubtext}>
+                  <Ionicons name="document-outline" size={64} color={isDark ? "#444" : "#CBD5E1"} />
+                  <Text style={[styles.emptyStateText, isDark && styles.textDark]}>No hay documentos</Text>
+                  <Text style={[styles.emptyStateSubtext, isDark && styles.textMutedDark]}>
                     Presiona "Subir Nuevo" para agregar un documento PDF
                   </Text>
                 </View>
@@ -1321,25 +1329,25 @@ const [productResponse, historyResponse, trendResponse] = await Promise.all([
                       rightThreshold={40}
                     >
                       <TouchableOpacity
-                        style={styles.docItem}
+                        style={[styles.docItem, isDark && styles.docItemDark]}
                         onPress={() => handleViewDocument(doc)}
                         activeOpacity={0.7}
                       >
-                        <View style={styles.docIconContainer}>
+                        <View style={[styles.docIconContainer, isDark && styles.docIconContainerDark]}>
                           <Ionicons
                             name="document-text-outline"
                             size={24}
-                            color="#000000ff"
+                            color={isDark ? "#fff" : "#000000ff"}
                           />
                         </View>
                         <View style={styles.docInfo}>
-                          <Text style={styles.docName} numberOfLines={1}>
+                          <Text style={[styles.docName, isDark && styles.textDark]} numberOfLines={1}>
                             {doc.nombre}
                           </Text>
                           <View style={styles.docMeta}>
-                            <Text style={styles.docMetaText}>PDF</Text>
+                            <Text style={[styles.docMetaText, isDark && styles.textMutedDark]}>PDF</Text>
                             {doc.fecha_subida && (
-                              <Text style={styles.docDate}>
+                              <Text style={[styles.docDate, isDark && styles.textMutedDark]}>
                                 {new Date(
                                   doc.fecha_subida
                                 ).toLocaleDateString()}
@@ -1350,7 +1358,7 @@ const [productResponse, historyResponse, trendResponse] = await Promise.all([
                         <Ionicons
                           name="chevron-forward"
                           size={20}
-                          color="#CBD5E1"
+                          color={isDark ? "#888" : "#CBD5E1"}
                         />
                       </TouchableOpacity>
                     </Swipeable>
@@ -1358,16 +1366,16 @@ const [productResponse, historyResponse, trendResponse] = await Promise.all([
               )}
 
               <TouchableOpacity
-                style={styles.uploadButton}
+                style={[styles.uploadButton, isDark && styles.uploadButtonDark]}
                 onPress={() => handleUploadDocument(selectedDocType)}
                 disabled={uploading}
               >
                 {uploading ? (
-                  <ActivityIndicator size="small" color="white" />
+                  <ActivityIndicator size="small" color={isDark ? "#fff" : "black"} />
                 ) : (
                   <>
-                    <Ionicons name="cloud-upload" size={20} color="black" />
-                    <Text style={styles.uploadButtonText}>
+                    <Ionicons name="cloud-upload" size={20} color={isDark ? "#fff" : "black"} />
+                    <Text style={[styles.uploadButtonText, isDark && styles.textDark]}>
                       Subir Nuevo{" "}
                       {selectedDocType === "certificado"
                         ? "Certificado"
@@ -1378,10 +1386,10 @@ const [productResponse, historyResponse, trendResponse] = await Promise.all([
               </TouchableOpacity>
 
               <View style={styles.formatInfo}>
-                <Text style={styles.formatInfoText}>
+                <Text style={[styles.formatInfoText, isDark && styles.textMutedDark]}>
                   Solo se permiten archivos PDF (máx. 10MB)
                 </Text>
-                <Text style={styles.formatInfoSubtext}>
+                <Text style={[styles.formatInfoSubtext, isDark && styles.textMutedDark]}>
                   Desliza hacia la izquierda sobre un documento para eliminarlo
                 </Text>
               </View>
@@ -1389,6 +1397,7 @@ const [productResponse, historyResponse, trendResponse] = await Promise.all([
           </View>
         </View>
       </Modal>
+
       {/* Modal de Edición */}
       <Modal
         visible={editModalVisible}
@@ -1404,7 +1413,7 @@ const [productResponse, historyResponse, trendResponse] = await Promise.all([
             activeOpacity={1}
             onPress={() => Keyboard.dismiss()}
           >
-            <View style={styles.modalContent}>
+            <View style={[styles.modalContent, isDark && styles.modalContentDark]}>
               <LinearGradient
                 colors={["#87bcf8ff", "#539DF3"]}
                 style={styles.modalHeader}
@@ -1423,44 +1432,46 @@ const [productResponse, historyResponse, trendResponse] = await Promise.all([
                 showsVerticalScrollIndicator={true}
                 contentContainerStyle={styles.modalScrollContent}
               >
-                {/* El contenido del formulario no cambia, pero heredará los nuevos estilos de input, label, etc. */}
                 <View style={styles.formSection}>
-                  <Text style={styles.sectionTitle}>Información General</Text>
+                  <Text style={[styles.sectionTitle, isDark && styles.textDark]}>Información General</Text>
                   <View style={styles.inputGroup}>
-                    <Text style={styles.label}>Nombre del Producto</Text>
+                    <Text style={[styles.label, isDark && styles.textDark]}>Nombre del Producto</Text>
                     <TextInput
-                      style={styles.input}
+                      style={[styles.input, isDark && styles.inputDark]}
                       value={editForm.nombre}
                       onChangeText={(text) =>
                         setEditForm({ ...editForm, nombre: text })
                       }
                       placeholder="Ingresa el nombre del producto"
+                      placeholderTextColor={isDark ? "#666" : "#999"}
                     />
                   </View>
 
                   <View style={styles.inputGroup}>
-                    <Text style={styles.label}>Marca</Text>
+                    <Text style={[styles.label, isDark && styles.textDark]}>Marca</Text>
                     <TextInput
-                      style={styles.input}
+                      style={[styles.input, isDark && styles.inputDark]}
                       value={editForm.marca}
                       onChangeText={(text) =>
                         setEditForm({ ...editForm, marca: text })
                       }
                       placeholder="Ingresa la marca"
+                      placeholderTextColor={isDark ? "#666" : "#999"}
                     />
                   </View>
 
                   {(producto.id_tipo_producto === 1 ||
                     producto.id_tipo_producto === 3) && (
                     <View style={styles.inputGroup}>
-                      <Text style={styles.label}>Lote</Text>
+                      <Text style={[styles.label, isDark && styles.textDark]}>Lote</Text>
                       <TextInput
-                        style={styles.input}
+                        style={[styles.input, isDark && styles.inputDark]}
                         value={editForm.lote}
                         onChangeText={(text) =>
                           setEditForm({ ...editForm, lote: text })
                         }
                         placeholder="Ingresa el número de lote"
+                        placeholderTextColor={isDark ? "#666" : "#999"}
                       />
                     </View>
                   )}
@@ -1469,42 +1480,45 @@ const [productResponse, historyResponse, trendResponse] = await Promise.all([
                     <View
                       style={[styles.inputGroup, { flex: 1, marginRight: 8 }]}
                     >
-                      <Text style={styles.label}>Stock Actual</Text>
+                      <Text style={[styles.label, isDark && styles.textDark]}>Stock Actual</Text>
                       <TextInput
-                        style={styles.input}
+                        style={[styles.input, isDark && styles.inputDark]}
                         value={editForm.existencia_actual}
                         onChangeText={(text) =>
                           setEditForm({ ...editForm, existencia_actual: text })
                         }
                         placeholder="0"
                         keyboardType="numeric"
+                        placeholderTextColor={isDark ? "#666" : "#999"}
                       />
                     </View>
 
                     <View
                       style={[styles.inputGroup, { flex: 1, marginLeft: 8 }]}
                     >
-                      <Text style={styles.label}>Stock Mínimo</Text>
+                      <Text style={[styles.label, isDark && styles.textDark]}>Stock Mínimo</Text>
                       <TextInput
-                        style={styles.input}
+                        style={[styles.input, isDark && styles.inputDark]}
                         value={editForm.stock_minimo}
                         onChangeText={(text) =>
                           setEditForm({ ...editForm, stock_minimo: text })
                         }
                         placeholder="0"
                         keyboardType="numeric"
+                        placeholderTextColor={isDark ? "#666" : "#999"}
                       />
                     </View>
                   </View>
 
                   <View style={styles.inputGroup}>
-                    <Text style={styles.label}>Prioridad</Text>
+                    <Text style={[styles.label, isDark && styles.textDark]}>Prioridad</Text>
                     <View style={styles.inlineSelectOptions}>
                       {opcionesPrioridad.map((opcion) => (
                         <TouchableOpacity
                           key={opcion.value}
                           style={[
                             styles.selectOption,
+                            isDark && styles.selectOptionDark,
                             editForm.id_prioridad === opcion.value &&
                               styles.selectOptionActive,
                           ]}
@@ -1519,6 +1533,7 @@ const [productResponse, historyResponse, trendResponse] = await Promise.all([
                           <Text
                             style={[
                               styles.selectOptionText,
+                              isDark && styles.selectOptionTextDark,
                               editForm.id_prioridad === opcion.value &&
                                 styles.selectOptionTextActive,
                             ]}
@@ -1531,13 +1546,14 @@ const [productResponse, historyResponse, trendResponse] = await Promise.all([
                   </View>
 
                   <View style={styles.inputGroup}>
-                    <Text style={styles.label}>Estatus</Text>
+                    <Text style={[styles.label, isDark && styles.textDark]}>Estatus</Text>
                     <View style={styles.inlineSelectOptions}>
                       {opcionesEstatus.map((opcion) => (
                         <TouchableOpacity
                           key={opcion.value}
                           style={[
                             styles.selectOption,
+                            isDark && styles.selectOptionDark,
                             editForm.id_estatus_producto === opcion.value &&
                               styles.selectOptionActive,
                           ]}
@@ -1552,6 +1568,7 @@ const [productResponse, historyResponse, trendResponse] = await Promise.all([
                           <Text
                             style={[
                               styles.selectOptionText,
+                              isDark && styles.selectOptionTextDark,
                               editForm.id_estatus_producto === opcion.value &&
                                 styles.selectOptionTextActive,
                             ]}
@@ -1567,26 +1584,27 @@ const [productResponse, historyResponse, trendResponse] = await Promise.all([
                 {/* Campos específicos por tipo */}
                 {producto.id_tipo_producto === 1 && (
                   <View style={styles.formSection}>
-                    <Text style={styles.sectionTitle}>
+                    <Text style={[styles.sectionTitle, isDark && styles.textDark]}>
                       Detalles del Reactivo
                     </Text>
 
                     <View style={styles.inputGroup}>
-                      <Text style={styles.label}>Presentación</Text>
+                      <Text style={[styles.label, isDark && styles.textDark]}>Presentación</Text>
                       <TextInput
-                        style={styles.input}
+                        style={[styles.input, isDark && styles.inputDark]}
                         value={editForm.presentacion}
                         onChangeText={(text) =>
                           setEditForm({ ...editForm, presentacion: text })
                         }
                         placeholder="Ej: 500ml, 1kg, 100 unidades"
+                        placeholderTextColor={isDark ? "#666" : "#999"}
                       />
                     </View>
 
                     <View style={styles.inputGroup}>
-                      <Text style={styles.label}>Caducidad</Text>
+                      <Text style={[styles.label, isDark && styles.textDark]}>Caducidad</Text>
                       <TextInput
-                        style={styles.input}
+                        style={[styles.input, isDark && styles.inputDark]}
                         value={
                           editForm.caducidad
                             ? editForm.caducidad.split("T")[0]
@@ -1598,8 +1616,9 @@ const [productResponse, historyResponse, trendResponse] = await Promise.all([
                         }}
                         placeholder="YYYY-MM-DD"
                         keyboardType="numbers-and-punctuation"
+                        placeholderTextColor={isDark ? "#666" : "#999"}
                       />
-                      <Text style={styles.hintText}>
+                      <Text style={[styles.hintText, isDark && styles.textMutedDark]}>
                         ¡Formato requerido!: YYYY-MM-DD
                       </Text>
                     </View>
@@ -1608,41 +1627,44 @@ const [productResponse, historyResponse, trendResponse] = await Promise.all([
 
                 {producto.id_tipo_producto === 2 && (
                   <View style={styles.formSection}>
-                    <Text style={styles.sectionTitle}>Detalles del Equipo</Text>
+                    <Text style={[styles.sectionTitle, isDark && styles.textDark]}>Detalles del Equipo</Text>
 
                     <View style={styles.inputGroup}>
-                      <Text style={styles.label}>ID AGK</Text>
+                      <Text style={[styles.label, isDark && styles.textDark]}>ID AGK</Text>
                       <TextInput
-                        style={styles.input}
+                        style={[styles.input, isDark && styles.inputDark]}
                         value={editForm.id_agk}
                         onChangeText={(text) =>
                           setEditForm({ ...editForm, id_agk: text })
                         }
                         placeholder="Ingresa el ID AGK"
+                        placeholderTextColor={isDark ? "#666" : "#999"}
                       />
                     </View>
 
                     <View style={styles.inputGroup}>
-                      <Text style={styles.label}>Modelo</Text>
+                      <Text style={[styles.label, isDark && styles.textDark]}>Modelo</Text>
                       <TextInput
-                        style={styles.input}
+                        style={[styles.input, isDark && styles.inputDark]}
                         value={editForm.modelo}
                         onChangeText={(text) =>
                           setEditForm({ ...editForm, modelo: text })
                         }
                         placeholder="Ingresa el modelo"
+                        placeholderTextColor={isDark ? "#666" : "#999"}
                       />
                     </View>
 
                     <View style={styles.inputGroup}>
-                      <Text style={styles.label}>Número de Serie</Text>
+                      <Text style={[styles.label, isDark && styles.textDark]}>Número de Serie</Text>
                       <TextInput
-                        style={styles.input}
+                        style={[styles.input, isDark && styles.inputDark]}
                         value={editForm.numero_serie}
                         onChangeText={(text) =>
                           setEditForm({ ...editForm, numero_serie: text })
                         }
                         placeholder="Ingresa el número de serie"
+                        placeholderTextColor={isDark ? "#666" : "#999"}
                       />
                     </View>
 
@@ -1650,52 +1672,56 @@ const [productResponse, historyResponse, trendResponse] = await Promise.all([
                       <View
                         style={[styles.inputGroup, { flex: 1, marginRight: 8 }]}
                       >
-                        <Text style={styles.label}>Rango de Medición</Text>
+                        <Text style={[styles.label, isDark && styles.textDark]}>Rango de Medición</Text>
                         <TextInput
-                          style={styles.input}
+                          style={[styles.input, isDark && styles.inputDark]}
                           value={editForm.rango_medicion}
                           onChangeText={(text) =>
                             setEditForm({ ...editForm, rango_medicion: text })
                           }
                           placeholder="Ej: 0-100°C"
+                          placeholderTextColor={isDark ? "#666" : "#999"}
                         />
                       </View>
 
                       <View
                         style={[styles.inputGroup, { flex: 1, marginLeft: 8 }]}
                       >
-                        <Text style={styles.label}>Resolución</Text>
+                        <Text style={[styles.label, isDark && styles.textDark]}>Resolución</Text>
                         <TextInput
-                          style={styles.input}
+                          style={[styles.input, isDark && styles.inputDark]}
                           value={editForm.resolucion}
                           onChangeText={(text) =>
                             setEditForm({ ...editForm, resolucion: text })
                           }
                           placeholder="Ej: 0.1°C"
+                          placeholderTextColor={isDark ? "#666" : "#999"}
                         />
                       </View>
                     </View>
 
                     <View style={styles.inputGroup}>
-                      <Text style={styles.label}>Intervalo de Trabajo</Text>
+                      <Text style={[styles.label, isDark && styles.textDark]}>Intervalo de Trabajo</Text>
                       <TextInput
-                        style={styles.input}
+                        style={[styles.input, isDark && styles.inputDark]}
                         value={editForm.intervalo_trabajo}
                         onChangeText={(text) =>
                           setEditForm({ ...editForm, intervalo_trabajo: text })
                         }
                         placeholder="Ej: 8 horas continuas"
+                        placeholderTextColor={isDark ? "#666" : "#999"}
                       />
                     </View>
 
                     <View style={styles.inputGroup}>
-                      <Text style={styles.label}>Laboratorio</Text>
+                      <Text style={[styles.label, isDark && styles.textDark]}>Laboratorio</Text>
                       <View style={styles.inlineSelectOptions}>
                         {opcionesLaboratorios.map((opcion) => (
                           <TouchableOpacity
                             key={opcion.value}
                             style={[
                               styles.selectOption,
+                              isDark && styles.selectOptionDark,
                               editForm.id_laboratorio === opcion.value &&
                                 styles.selectOptionActive,
                             ]}
@@ -1709,6 +1735,7 @@ const [productResponse, historyResponse, trendResponse] = await Promise.all([
                             <Text
                               style={[
                                 styles.selectOptionText,
+                                isDark && styles.selectOptionTextDark,
                                 editForm.id_laboratorio === opcion.value &&
                                   styles.selectOptionTextActive,
                               ]}
@@ -1724,11 +1751,11 @@ const [productResponse, historyResponse, trendResponse] = await Promise.all([
 
                 <View style={styles.modalActions}>
                   <TouchableOpacity
-                    style={[styles.modalButton, styles.saveButton]}
+                    style={[styles.modalButton, styles.saveButton, isDark && styles.saveButtonDark]}
                     onPress={handleSaveEdit}
                   >
-                    <Ionicons name="save" size={20} color="black" />
-                    <Text style={styles.saveButtonText}>Guardar Cambios</Text>
+                    <Ionicons name="save" size={20} color={isDark ? "#fff" : "black"} />
+                    <Text style={[styles.saveButtonText, isDark && styles.textDark]}>Guardar Cambios</Text>
                   </TouchableOpacity>
                 </View>
               </ScrollView>
@@ -1752,7 +1779,7 @@ const [productResponse, historyResponse, trendResponse] = await Promise.all([
             activeOpacity={1}
             onPress={() => Keyboard.dismiss()}
           >
-            <View style={styles.modalContent}>
+            <View style={[styles.modalContent, isDark && styles.modalContentDark]}>
               <LinearGradient
                 colors={["#87bcf8ff", "#539DF3"]}
                 style={styles.modalHeader}
@@ -1775,9 +1802,9 @@ const [productResponse, historyResponse, trendResponse] = await Promise.all([
                   {/* Campo: Cantidad - OCULTAR para Baja */}
                   {reportForm.id_motivo_baja !== "4" && (
                     <View style={styles.inputGroup}>
-                      <Text style={styles.label}>Cantidad a reportar</Text>
+                      <Text style={[styles.label, isDark && styles.textDark]}>Cantidad a reportar</Text>
                       <TextInput
-                        style={styles.input}
+                        style={[styles.input, isDark && styles.inputDark]}
                         value={reportForm.cantidad}
                         onChangeText={(text) => {
                           const num = parseInt(text) || 0;
@@ -1789,8 +1816,9 @@ const [productResponse, historyResponse, trendResponse] = await Promise.all([
                         }}
                         placeholder="1"
                         keyboardType="numeric"
+                        placeholderTextColor={isDark ? "#666" : "#999"}
                       />
-                      <Text style={styles.hintText}>
+                      <Text style={[styles.hintText, isDark && styles.textMutedDark]}>
                         Stock disponible: {producto.existencia_actual} unidades
                       </Text>
                     </View>
@@ -1798,13 +1826,13 @@ const [productResponse, historyResponse, trendResponse] = await Promise.all([
 
                   {/* Mostrar mensaje especial para Baja */}
                   {reportForm.id_motivo_baja === "4" && (
-                    <View style={styles.infoBox}>
+                    <View style={[styles.infoBox, isDark && styles.infoBoxDark]}>
                       <Ionicons
                         name="information-circle"
                         size={20}
                         color="#539DF3"
                       />
-                      <Text style={styles.infoText}>
+                      <Text style={[styles.infoText, isDark && styles.textDark]}>
                         Se dará de baja TODO el stock disponible (
                         {producto.existencia_actual} unidades)
                       </Text>
@@ -1813,7 +1841,7 @@ const [productResponse, historyResponse, trendResponse] = await Promise.all([
 
                   {/* Campo: Motivo del reporte - VERSIÓN FILTRADA */}
                   <View style={styles.inputGroup}>
-                    <Text style={styles.label}>Motivo del reporte</Text>
+                    <Text style={[styles.label, isDark && styles.textDark]}>Motivo del reporte</Text>
                     {loadingMovimientos ? (
                       <ActivityIndicator size="small" color="#539DF3" />
                     ) : (
@@ -1851,6 +1879,7 @@ const [productResponse, historyResponse, trendResponse] = await Promise.all([
                               key={motivo.id_motivo_baja}
                               style={[
                                 styles.radioOption,
+                                isDark && styles.radioOptionDark,
                                 reportForm.id_motivo_baja ===
                                   motivo.id_motivo_baja.toString() &&
                                   styles.radioOptionSelected,
@@ -1866,13 +1895,13 @@ const [productResponse, historyResponse, trendResponse] = await Promise.all([
                                 });
                               }}
                             >
-                              <View style={styles.radioCircle}>
+                              <View style={[styles.radioCircle, isDark && styles.radioCircleDark]}>
                                 {reportForm.id_motivo_baja ===
                                   motivo.id_motivo_baja.toString() && (
                                   <View style={styles.radioInnerCircle} />
                                 )}
                               </View>
-                              <Text style={styles.radioText}>
+                              <Text style={[styles.radioText, isDark && styles.textDark]}>
                                 {motivo.nombre_motivo}
                               </Text>
                             </TouchableOpacity>
@@ -1882,11 +1911,11 @@ const [productResponse, historyResponse, trendResponse] = await Promise.all([
                   </View>
                   {/* Campo: Descripción adicional */}
                   <View style={styles.inputGroup}>
-                    <Text style={styles.label}>
+                    <Text style={[styles.label, isDark && styles.textDark]}>
                       Descripción adicional (opcional)
                     </Text>
                     <TextInput
-                      style={[styles.input, styles.textArea]}
+                      style={[styles.input, styles.textArea, isDark && styles.inputDark]}
                       value={reportForm.descripcion_adicional}
                       onChangeText={(text) =>
                         setReportForm({
@@ -1902,17 +1931,18 @@ const [productResponse, historyResponse, trendResponse] = await Promise.all([
                       onSubmitEditing={() => {
                         Keyboard.dismiss();
                       }}
+                      placeholderTextColor={isDark ? "#666" : "#999"}
                     />
                   </View>
                 </View>
 
                 {/* Botón para confirmar la acción */}
                 <TouchableOpacity
-                  style={[styles.modalButton, styles.reportSubmitButton]}
+                  style={[styles.modalButton, styles.reportSubmitButton, isDark && styles.reportSubmitButtonDark]}
                   onPress={handleReportBaja}
                 >
-                  <Ionicons name="checkmark-circle" size={20} color="black" />
-                  <Text style={styles.reportButtonText}>Realizar reporte</Text>
+                  <Ionicons name="checkmark-circle" size={20} color={isDark ? "#fff" : "black"} />
+                  <Text style={[styles.reportButtonText, isDark && styles.textDark]}>Realizar reporte</Text>
                 </TouchableOpacity>
               </ScrollView>
             </View>
@@ -1928,11 +1958,17 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: "#F8FAFC", 
   },
+  containerDark: {
+    backgroundColor: "#000",
+  },
   center: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
     backgroundColor: "#F8FAFC",
+  },
+  centerDark: {
+    backgroundColor: "#000",
   },
   scrollView: {
     flex: 1,
@@ -1948,6 +1984,9 @@ const styles = StyleSheet.create({
     borderBottomLeftRadius: 24,
     borderBottomRightRadius: 24,
     alignItems: "center",
+  },
+  headerDark: {
+    backgroundColor: "#000000ff",
   },
   productImage: {
     width: screenWidth * 0.5,
@@ -1994,6 +2033,9 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
     borderRadius: 20,
   },
+  statusContainerDark: {
+    backgroundColor: "#2c2c2e",
+  },
   statusDot: {
     width: 8,
     height: 8,
@@ -2007,7 +2049,6 @@ const styles = StyleSheet.create({
     fontWeight: "600",
   },
 
- 
   mainActionsContainer: {
     flexDirection: "row",
     gap: 12,
@@ -2029,6 +2070,10 @@ const styles = StyleSheet.create({
   secondaryButton: {
     backgroundColor: "#ffffffff",
     borderWidth: 1,
+    borderColor: "#539DF3",
+  },
+  secondaryButtonDark: {
+    backgroundColor: "#2c2c2e",
     borderColor: "#539DF3",
   },
   mainButtonText: {
@@ -2053,6 +2098,11 @@ const styles = StyleSheet.create({
     shadowRadius: 10,
     elevation: 3,
   },
+  cardDark: {
+    backgroundColor: "#1c1c1e",
+    borderWidth: 1,
+    borderColor: "#333",
+  },
   cardHeader: {
     flexDirection: "row",
     alignItems: "center",
@@ -2072,6 +2122,9 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     borderTopWidth: 1,
     borderTopColor: "#F1F5F9",
+  },
+  documentLinkDark: {
+    borderTopColor: "#333",
   },
   documentLinkText: {
     flex: 1,
@@ -2148,6 +2201,10 @@ const styles = StyleSheet.create({
     marginBottom: 16,
     marginHorizontal: 16,
   },
+  warningCardDark: {
+    borderWidth: 1,
+    borderColor: "#333",
+  },
   warningTextContainer: {
     flex: 1,
     marginLeft: 12,
@@ -2174,6 +2231,9 @@ const styles = StyleSheet.create({
     borderTopColor: "#F1F5F9",
     alignItems: "center",
   },
+  historialItemDark: {
+    borderTopColor: "#333",
+  },
   historialIcon: {
     marginRight: 15,
   },
@@ -2198,10 +2258,14 @@ const styles = StyleSheet.create({
     color: "#555",
     fontStyle: "italic",
     marginTop: 8,
-    backgroundColor: "#F8FAFC",
+    backgroundColor: "#ecececff",
     padding: 8,
     borderRadius: 6,
     overflow: "hidden",
+  },
+  historialdescriptionDark: {
+    backgroundColor: "#2c2c2eff",
+    color: "#ccc",
   },
   noHistorialText: {
     textAlign: "center",
@@ -2222,6 +2286,9 @@ const styles = StyleSheet.create({
     borderTopRightRadius: 24,
     maxHeight: "90%",
     minHeight: "50%",
+  },
+  modalContentDark: {
+    backgroundColor: "#1c1c1e",
   },
   modalHeader: {
     flexDirection: "row",
@@ -2283,6 +2350,9 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     marginBottom: 8,
   },
+  docItemDark: {
+    backgroundColor: "#2c2c2e",
+  },
   docIconContainer: {
     width: 40,
     height: 40,
@@ -2291,6 +2361,9 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     marginRight: 12,
+  },
+  docIconContainerDark: {
+    backgroundColor: "#333",
   },
   docInfo: {
     flex: 1,
@@ -2328,6 +2401,10 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     marginTop: 16,
     gap: 8,
+  },
+  uploadButtonDark: {
+    backgroundColor: "#2c2c2e",
+    borderColor: "#539DF3",
   },
   uploadButtonText: {
     color: "#000000ff",
@@ -2378,6 +2455,11 @@ const styles = StyleSheet.create({
     fontFamily: "Poppins_400Regular",
     backgroundColor: "white",
   },
+  inputDark: {
+    backgroundColor: "#2c2c2e",
+    borderColor: "#333",
+    color: "#fff",
+  },
   textArea: {
     minHeight: 80,
     textAlignVertical: "top",
@@ -2399,6 +2481,10 @@ const styles = StyleSheet.create({
     borderColor: "#D1D5DB",
     backgroundColor: "white",
   },
+  selectOptionDark: {
+    backgroundColor: "#2c2c2e",
+    borderColor: "#333",
+  },
   selectOptionActive: {
     backgroundColor: "#539DF3",
     borderColor: "#539DF3",
@@ -2407,6 +2493,9 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontFamily: "Poppins_400Regular",
     color: "#374151",
+  },
+  selectOptionTextDark: {
+    color: "#fff",
   },
   selectOptionTextActive: {
     color: "white",
@@ -2422,6 +2511,10 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     marginBottom: 8,
   },
+  radioOptionDark: {
+    backgroundColor: "#2c2c2e",
+    borderColor: "#333",
+  },
   radioOptionSelected: {
     backgroundColor: "#EEF2FF",
     borderColor: "#539DF3",
@@ -2435,6 +2528,9 @@ const styles = StyleSheet.create({
     marginRight: 12,
     alignItems: "center",
     justifyContent: "center",
+  },
+  radioCircleDark: {
+    borderColor: "#666",
   },
   radioInnerCircle: {
     width: 10,
@@ -2457,6 +2553,10 @@ const styles = StyleSheet.create({
     borderColor: "#539DF3",
     borderWidth: 1,
   },
+  saveButtonDark: {
+    backgroundColor: "#2c2c2e",
+    borderColor: "#539DF3",
+  },
   saveButtonText: {
     color: "#000000ff",
     fontWeight: "bold",
@@ -2467,6 +2567,10 @@ const styles = StyleSheet.create({
     backgroundColor: "#ffffffff",
     borderColor: "#539DF3",
     borderWidth: 1,
+  },
+  reportSubmitButtonDark: {
+    backgroundColor: "#2c2c2e",
+    borderColor: "#539DF3",
   },
   reportButtonText: {
     color: "black",
@@ -2490,6 +2594,9 @@ const styles = StyleSheet.create({
     marginBottom: 16,
     borderLeftWidth: 4,
     borderLeftColor: "#539DF3",
+  },
+  infoBoxDark: {
+    backgroundColor: "#2c2c2e",
   },
   infoText: {
     marginLeft: 8,
@@ -2527,5 +2634,20 @@ const styles = StyleSheet.create({
     textAlign: "center",
     marginTop: 4,
     fontStyle: "italic",
+  },
+
+  // Text Colors
+  textDark: {
+    color: "#e8e8e8ff",
+  },
+  textMutedDark: {
+    color: "#d6d6d6ff",
+  },
+  loadingText: {
+    marginTop: 10,
+    color: "#64748B",
+  },
+  noProductText: {
+    color: "#64748B",
   },
 });
