@@ -1,6 +1,7 @@
 import React, { useState, useCallback, useEffect, useMemo } from "react";
 import {
   View,
+  Text,
   TextInput,
   TouchableOpacity,
   ScrollView,
@@ -284,9 +285,9 @@ export default function BitacoraScreen() {
     <View style={[styles.container, isDark && styles.containerDark]}>
       {/* 🔹 Header */}
       <View style={[styles.header, isDark && styles.headerDark]}>
-        <ThemedText type="title" style={[styles.headerTitle, isDark && styles.textDark]}>
-          Bitácora de Movimientos
-        </ThemedText>
+      <Text style={[styles.headerTitle, isDark && styles.textDark]}>
+        Bitácora de Movimientos
+      </Text>
       </View>
 
       {/* 🔹 Badge de filtros activos */}
@@ -446,9 +447,9 @@ export default function BitacoraScreen() {
         <View style={styles.modalOverlay}>
           <View style={[styles.modalContent, isDark && styles.modalContentDark]}>
             <View style={[styles.modalHeader, isDark && styles.modalHeaderDark]}>
-              <ThemedText type="title" style={[styles.modalTitle, isDark && styles.textDark]}>
+              <Text style={[styles.modalTitle, isDark && styles.textDark]}>
                 Filtros
-              </ThemedText>
+              </Text>
               <TouchableOpacity
                 style={styles.closeButton}
                 onPress={() => setFiltrosVisible(false)}
@@ -460,12 +461,9 @@ export default function BitacoraScreen() {
             <ScrollView style={styles.filtersScroll}>
               {/* Filtro: Periodo */}
               <View style={[styles.filterCard, isDark && styles.filterCardDark]}>
-                <ThemedText
-                  type="defaultSemiBold"
-                  style={[styles.filterCardTitle, isDark && styles.textDark]}
-                >
+                <Text style={[styles.filterCardTitle, isDark && styles.textDark]}>
                   Selección de periodo
-                </ThemedText>
+                </Text>
                 <View style={styles.filterOptions}>
                   {[
                     { value: "todos", label: "Todos" },
@@ -758,7 +756,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    paddingTop: 60,
+    paddingTop: 50,
     paddingBottom: 10,
   },
   headerDark: {
@@ -799,19 +797,20 @@ const styles = StyleSheet.create({
     gap: 10,
     marginBottom: 16,
   },
-  searchBox: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: "#FFFFFF",
-    flex: 1,
-    borderRadius: 12,
-    paddingHorizontal: 12,
-    height: 44,
-    shadowColor: "#000",
-    shadowOpacity: 0.06,
-    shadowRadius: 4,
-    elevation: 2,
-  },
+searchBox: {
+  flexDirection: "row",
+  alignItems: "center",
+  backgroundColor: "#FFFFFF",
+  flex: 1,
+  borderRadius: 12,
+  paddingHorizontal: 12,
+  height: 44,
+  shadowColor: "#000",
+  shadowOffset: { width: 0, height: 1 },
+  shadowOpacity: 0.04,
+  shadowRadius: 3,
+  elevation: 1,
+},
   searchBoxDark: {
     backgroundColor: "#1c1c1e",
     borderWidth: 1,
@@ -821,21 +820,23 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 14,
     marginLeft: 6,
+    marginBottom: -5,
     fontFamily: "Poppins_400Regular",
   },
-  filterButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: "#FFFFFF",
-    borderRadius: 12,
-    paddingHorizontal: 10,
-    height: 44,
-    gap: 4,
-    shadowColor: "#000",
-    shadowOpacity: 0.06,
-    shadowRadius: 4,
-    elevation: 2,
-  },
+filterButton: {
+  flexDirection: "row",
+  alignItems: "center",
+  backgroundColor: "#FFFFFF",
+  borderRadius: 12,
+  paddingHorizontal: 10,
+  height: 44,
+  gap: 4,
+  shadowColor: "#000",
+  shadowOffset: { width: 0, height: 1 },
+  shadowOpacity: 0.04,
+  shadowRadius: 3,
+  elevation: 1,
+},
   filterButtonDark: {
     backgroundColor: "#1c1c1e",
     borderWidth: 1,
@@ -860,22 +861,23 @@ const styles = StyleSheet.create({
   },
 
   // List Items
-  item: {
-    flexDirection: "row",
-    alignItems: "flex-start",
-    backgroundColor: "#FFFFFF",
-    borderRadius: 12,
-    padding: 16,
-    shadowColor: "#000",
-    shadowOpacity: 0.06,
-    shadowRadius: 4,
-    elevation: 2,
-  },
-  itemDark: {
-    backgroundColor: "#1c1c1e",
-    borderWidth: 1,
-    borderColor: "#333",
-  },
+item: {
+  flexDirection: "row",
+  alignItems: "flex-start",
+  backgroundColor: "#FFFFFF",
+  borderRadius: 12,
+  padding: 16,
+  shadowColor: "#000",
+  shadowOffset: { width: 0, height: 1 },
+  shadowOpacity: 0.04,
+  shadowRadius: 3,
+  elevation: 1,
+},
+itemDark: {
+  backgroundColor: "#1c1c1e",
+  borderWidth: 1,
+  borderColor: "#333",
+},
   iconContainer: {
     width: 34,
     height: 34,

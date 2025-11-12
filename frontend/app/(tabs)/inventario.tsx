@@ -16,6 +16,7 @@ import {
   Keyboard,
   ActivityIndicator,
   RefreshControl,
+  Dimensions,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import Icon from "react-native-vector-icons/MaterialIcons";
@@ -24,17 +25,16 @@ import { useRouter, useLocalSearchParams } from "expo-router";
 import { useFocusEffect } from "@react-navigation/native";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 
+// Obtener dimensiones de la pantalla
+const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
+
+
 //Configuración de la API y Tipos
-const API_BASE_URL = "http://172.20.10.11:3000";
+const API_BASE_URL = "http://10.149.121.216:3000";
 
 interface FilterOption {
   label: string;
   value: string;
-}
-
-interface EstatusProducto {
-  id_estatus_producto: number;
-  nombre_estatus: string;
 }
 
 interface ProductoTipo {
@@ -313,7 +313,7 @@ const FormSelect = ({
   </View>
 );
 
-// AGREGAR este componente nuevo para laboratorios
+// Componente nuevo para laboratorios
 const FormSelectLaboratorio = ({
   label,
   value,
@@ -840,79 +840,84 @@ export default function InventarioScreen() {
     setFormState((prev: any) => ({ ...prev, [fieldName]: parsedValue }));
   };
 
-  const handleSaveNewProduct = async () => {
-    if (guardandoProducto) return; // Evita múltiples clics
-    setGuardandoProducto(true);    // Bloquea el botón
-    const tipoInfo = tiposDisponibles.find(
-      (t) => t.nombre_tipo === selectedProductType
-    );
+const handleSaveNewProduct = async () => {
+  if (guardandoProducto) return;
+  setGuardandoProducto(true);
 
-    if (!tipoInfo) {
-      Alert.alert("Error", "Tipo de producto no seleccionado o no encontrado.");
+  const tipoInfo = tiposDisponibles.find(
+    (t) => t.nombre_tipo === selectedProductType
+  );
+
+  if (!tipoInfo) {
+    Alert.alert("Error", "Tipo de producto no seleccionado o no encontrado.");
+    setGuardandoProducto(false); // ← AÑADIR ESTO
+    return;
+  }
+
+  const isReactivo = tipoInfo.nombre_tipo === "Reactivo";
+  const isMaterial = tipoInfo.nombre_tipo === "Material";
+  const isEquipo = tipoInfo.nombre_tipo === "Equipo";
+
+  const existencia = isReactivo
+    ? formState.cantidad_ingresada_reactivo
+    : isMaterial
+    ? formState.cantidad_ingresada_material
+    : isEquipo
+    ? 1
+    : formState.existencia_actual;
+
+  const dataToSend = {
+    ...formState,
+    id_tipo_producto: tipoInfo.id_tipo_producto,
+    existencia_actual: Number(existencia) || (isEquipo ? 1 : 0),
+    lote: formState.lote || null,
+    imagen: formState.imagen || null,
+    id_laboratorio:
+      formState.id_laboratorio || laboratorios[0]?.id_laboratorio || 1,
+    id_estatus_producto: 1,
+    stock_minimo: formState.stock_minimo || 0,
+    id_prioridad: formState.id_prioridad || "2",
+  };
+
+  // Validaciones básicas por tipo de producto
+  if (isEquipo) {
+    if (!dataToSend.nombre || !dataToSend.marca || !dataToSend.modelo) {
+      Alert.alert(
+        "Error",
+        "Por favor, complete los campos obligatorios (Nombre, Marca, Modelo)."
+      );
+      setGuardandoProducto(false); // ← AÑADIR ESTO
       return;
     }
-
-    const isReactivo = tipoInfo.nombre_tipo === "Reactivo";
-    const isMaterial = tipoInfo.nombre_tipo === "Material";
-    const isEquipo = tipoInfo.nombre_tipo === "Equipo";
-
-    const existencia = isReactivo
-      ? formState.cantidad_ingresada_reactivo
-      : isMaterial
-      ? formState.cantidad_ingresada_material
-      : isEquipo
-      ? 1
-      : formState.existencia_actual;
-
-    const dataToSend = {
-      ...formState,
-      id_tipo_producto: tipoInfo.id_tipo_producto,
-      existencia_actual: Number(existencia) || (isEquipo ? 1 : 0),
-      lote: formState.lote || null,
-      imagen: formState.imagen || null,
-      id_laboratorio:
-        formState.id_laboratorio || laboratorios[0]?.id_laboratorio || 1,
-      id_estatus_producto: 1,
-      stock_minimo: formState.stock_minimo || 0,
-      id_prioridad: formState.id_prioridad || "2",
-    };
-
-    // Validaciones básicas por tipo de producto
-    if (isEquipo) {
-      if (!dataToSend.nombre || !dataToSend.marca || !dataToSend.modelo) {
-        Alert.alert(
-          "Error",
-          "Por favor, complete los campos obligatorios (Nombre, Marca, Modelo)."
-        );
-        return;
-      }
-    } else if (isReactivo) {
-      if (
-        !dataToSend.nombre ||
-        !dataToSend.marca ||
-        !dataToSend.cantidad_ingresada_reactivo
-      ) {
-        Alert.alert(
-          "Error",
-          "Por favor, complete los campos obligatorios (Nombre, Marca, Cantidad a ingresar)."
-        );
-        return;
-      }
-    } else if (isMaterial) {
-      if (
-        !dataToSend.nombre ||
-        !dataToSend.marca ||
-        !dataToSend.cantidad_ingresada_material
-      ) {
-        Alert.alert(
-          "Error",
-          "Por favor, complete los campos obligatorios (Nombre, Marca, Cantidad a ingresar)."
-        );
-        return;
-      }
+  } else if (isReactivo) {
+    if (
+      !dataToSend.nombre ||
+      !dataToSend.marca ||
+      !dataToSend.cantidad_ingresada_reactivo
+    ) {
+      Alert.alert(
+        "Error",
+        "Por favor, complete los campos obligatorios (Nombre, Marca, Cantidad a ingresar)."
+      );
+      setGuardandoProducto(false); // ← AÑADIR ESTO
+      return;
     }
+  } else if (isMaterial) {
+    if (
+      !dataToSend.nombre ||
+      !dataToSend.marca ||
+      !dataToSend.cantidad_ingresada_material
+    ) {
+      Alert.alert(
+        "Error",
+        "Por favor, complete los campos obligatorios (Nombre, Marca, Cantidad a ingresar)."
+      );
+      setGuardandoProducto(false); // ← AÑADIR ESTO
+      return;
+    }
+  }
 
-    try {
+  try {
     const response = await fetch(`${API_BASE_URL}/api/productos`, {
       method: "POST",
       headers: {
@@ -939,8 +944,9 @@ export default function InventarioScreen() {
     }
   } catch (error) {
     Alert.alert("Error", "Hubo un error de conexión al servidor.");
+    console.error(error);
   } finally {
-    setGuardandoProducto(false); // Libera el botón
+    setGuardandoProducto(false); // ← ESTO SIEMPRE SE EJECUTA
   }
 };
 
@@ -1166,7 +1172,7 @@ export default function InventarioScreen() {
             />
             <TextInput
               style={[styles.input, isDark && styles.inputDark]}
-              placeholder="Buscar producto..."
+              placeholder="Productos"
               placeholderTextColor={isDark ? "#888" : "#999"}
               value={busqueda}
               onChangeText={setBusqueda}
@@ -1268,91 +1274,107 @@ export default function InventarioScreen() {
           />
         )}
 
-        {/* Modal de Añadir Producto */}
-        <Modal visible={showAddModal} animationType="slide" transparent>
-          <KeyboardAvoidingView
-            style={styles.modalOverlay}
-            behavior={Platform.OS === "ios" ? "padding" : "height"}
+        {/* Modal de Añadir Producto - CORREGIDO PARA ANDROID */}
+<Modal visible={showAddModal} animationType="slide" transparent>
+  <TouchableOpacity
+    style={styles.modalOverlay}
+    activeOpacity={1}
+    onPress={() => Keyboard.dismiss()}
+  >
+    <View style={[styles.modalContent, isDark && styles.modalContentDark]}>
+      <View style={[styles.modalHeader, isDark && styles.modalHeaderDark]}>
+        <Text style={[styles.modalTitle, isDark && styles.textDark]}>Nuevo producto</Text>
+<TouchableOpacity
+  style={styles.closeButton}
+  onPress={() => {
+    setShowAddModal(false);
+    setGuardandoProducto(false); // ← AÑADIR ESTO
+  }}
+> 
+          <Icon name="close" size={24} color={isDark ? "#fff" : "#666"} />
+        </TouchableOpacity>
+      </View>
+
+      {/* Selector de Tipo de Producto */}
+      <View style={[styles.addTypeSelector, isDark && styles.addTypeSelectorDark]}>
+        {tiposDisponibles.map((tipo) => (
+          <TouchableOpacity
+            key={tipo.id_tipo_producto}
+            style={[
+              styles.addTypeButton,
+              isDark && styles.addTypeButtonDark,
+              selectedProductType === tipo.nombre_tipo &&
+                styles.addTypeButtonActive,
+            ]}
+            onPress={() => setSelectedProductType(tipo.nombre_tipo)}
           >
-            <TouchableOpacity
-              style={styles.modalOverlay}
-              activeOpacity={1}
-              onPress={() => Keyboard.dismiss()}
+            <Text
+              style={[
+                styles.addTypeText,
+                isDark && styles.addTypeTextDark,
+                selectedProductType === tipo.nombre_tipo &&
+                  styles.addTypeTextActive,
+              ]}
             >
-              <View style={[styles.modalContent, isDark && styles.modalContentDark]}>
-                <View style={[styles.modalHeader, isDark && styles.modalHeaderDark]}>
-                  <Text style={[styles.modalTitle, isDark && styles.textDark]}>Nuevo producto</Text>
-                  <TouchableOpacity
-                    style={styles.closeButton}
-                    onPress={() => setShowAddModal(false)}
-                  >
-                    <Icon name="close" size={24} color={isDark ? "#fff" : "#666"} />
-                  </TouchableOpacity>
-                </View>
+              {tipo.nombre_tipo}
+            </Text>
+          </TouchableOpacity>
+        ))}
+      </View>
 
-                {/* Selector de Tipo de Producto */}
-                <View style={[styles.addTypeSelector, isDark && styles.addTypeSelectorDark]}>
-                  {tiposDisponibles.map((tipo) => (
-                    <TouchableOpacity
-                      key={tipo.id_tipo_producto}
-                      style={[
-                        styles.addTypeButton,
-                        isDark && styles.addTypeButtonDark,
-                        selectedProductType === tipo.nombre_tipo &&
-                          styles.addTypeButtonActive,
-                      ]}
-                      onPress={() => setSelectedProductType(tipo.nombre_tipo)}
-                    >
-                      <Text
-                        style={[
-                          styles.addTypeText,
-                          isDark && styles.addTypeTextDark,
-                          selectedProductType === tipo.nombre_tipo &&
-                            styles.addTypeTextActive,
-                        ]}
-                      >
-                        {tipo.nombre_tipo}
-                      </Text>
-                    </TouchableOpacity>
-                  ))}
-                </View>
+      {/* ScrollView optimizado para Android */}
+<ScrollView
+  style={styles.addScroll}
+  showsVerticalScrollIndicator={true}
+  contentContainerStyle={styles.scrollContent}
+  keyboardShouldPersistTaps="handled"
+  keyboardDismissMode="interactive" // Mejor comportamiento para Android
+  nestedScrollEnabled={true} // Importante para Android
+  overScrollMode="always" // Mejor feedback visual
+  bounces={true} // Efecto de rebote
+  decelerationRate="normal" // Velocidad de desaceleración
+  scrollEventThrottle={16} // Mejor rendimiento
+  removeClippedSubviews={false} // Prop, no estilo — evita error de tipos
+>
+  {renderProductForm()}
+  <Text style={[styles.requiredNote, isDark && styles.textMutedDark]}>* Campos obligatorios</Text>
+  
+  {/* Espacio extra al final para facilitar el scroll */}
+  <View style={styles.scrollSpacer} />
+</ScrollView>
 
-                {/* ScrollView ajustado para el teclado */}
-                <ScrollView
-                  style={styles.addScroll}
-                  showsVerticalScrollIndicator={true}
-                  contentContainerStyle={styles.scrollContent}
-                  keyboardShouldPersistTaps="handled"
-                >
-                  {renderProductForm()}
-                  <Text style={[styles.requiredNote, isDark && styles.textMutedDark]}>* Campos obligatorios</Text>
-                </ScrollView>
+      {/* Botones de acción */}
+      <View style={[styles.buttonRow, isDark && styles.buttonRowDark]}>
+<Pressable
+  style={[styles.cancelBtn, isDark && styles.cancelBtnDark]}
+  onPress={() => {
+    setShowAddModal(false);
+    setGuardandoProducto(false); // ← AÑADIR ESTO
+  }}
+>
+          <Text style={[styles.cancelBtnText, isDark && styles.textDark]}>Cancelar</Text>
+        </Pressable>
 
-                {/* Botones de acción */}
-                <View style={[styles.buttonRow, isDark && styles.buttonRowDark]}>
-                  <Pressable
-                    style={[styles.cancelBtn, isDark && styles.cancelBtnDark]}
-                    onPress={() => setShowAddModal(false)}
-                  >
-                    <Text style={[styles.cancelBtnText, isDark && styles.textDark]}>Cancelar</Text>
-                  </Pressable>
-
-                  <Pressable
-                    style={styles.applyBtn}
-                    onPress={handleSaveNewProduct}
-                  >
-                    <Text style={styles.applyBtnText}>Guardar Producto</Text>
-                  </Pressable>
-                </View>
-              </View>
-            </TouchableOpacity>
-          </KeyboardAvoidingView>
-        </Modal>
+        <Pressable
+          style={[styles.applyBtn, guardandoProducto && styles.applyBtnDisabled]}
+          onPress={handleSaveNewProduct}
+          disabled={guardandoProducto}
+        >
+          {guardandoProducto ? (
+            <ActivityIndicator size="small" color="#fff" />
+          ) : (
+            <Text style={styles.applyBtnText}>Guardar Producto</Text>
+          )}
+        </Pressable>
+      </View>
+    </View>
+  </TouchableOpacity>
+</Modal>
 
         {/* Modal de Filtros */}
         <Modal visible={showFilters} animationType="slide" transparent>
           <View style={styles.modalOverlay}>
-            <View style={[styles.modalContent, isDark && styles.modalContentDark]}>
+            <View style={[styles.modalContent, isDark && styles.modalContentDark, styles.filterModalContent]}>
               <View style={[styles.modalHeader, isDark && styles.modalHeaderDark]}>
                 <Text style={[styles.modalTitle, isDark && styles.textDark]}>Filtros</Text>
                 <TouchableOpacity
@@ -1363,7 +1385,10 @@ export default function InventarioScreen() {
                 </TouchableOpacity>
               </View>
 
-              <ScrollView style={styles.filtersScroll}>
+                <ScrollView 
+                style={styles.filtersScroll}
+                contentContainerStyle={styles.filtersScrollContent}
+                >
                 {/* Nuevo Filtro: Ordenamiento */}
                 <View style={[styles.filterCard, isDark && styles.filterCardDark]}>
                   <Text style={[styles.filterCardTitle, isDark && styles.textDark]}>Ordenar por</Text>
@@ -1549,9 +1574,17 @@ export default function InventarioScreen() {
 }
 
 const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: "#f8fafc", paddingBottom: -90 },
+  safe: { 
+    flex: 1, 
+    backgroundColor: "#f8fafc",
+    marginBottom: -90,
+  },
   safeDark: { backgroundColor: "#000" },
-  container: { flex: 1, paddingVertical: 1, paddingHorizontal: 16, },
+  container: { 
+    flex: 1, 
+    paddingVertical: 8, 
+    paddingHorizontal: 16,
+  },
   containerDark: { backgroundColor: "#000" },
 
   // Header
@@ -1559,20 +1592,22 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "flex-start",
-    marginBottom: 20,
-    paddingTop: 1,
+    marginBottom: 16,
+    paddingTop: 8,
+  },
+  headerTextContainer: {
+    flex: 1,
   },
   title: {
     fontSize: 28,
     fontFamily: "Poppins_700Bold",
-    fontWeight: "700",
-    color: "#000000ff",
-    marginBottom: 1,
+    color: "#000000",
+    marginBottom: 2,
   },
   subtitle: {
-    fontSize: 15,
+    fontSize: 14,
     fontFamily: "Poppins_400Regular",
-    color: "#454545ff",
+    color: "#454545",
     fontWeight: "400",
   },
   filtrosActivosBadge: {
@@ -1583,6 +1618,7 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     borderRadius: 20,
     marginTop: 4,
+    marginLeft: 8,
   },
   filtrosActivosText: {
     color: "#fff",
@@ -1590,12 +1626,13 @@ const styles = StyleSheet.create({
     fontWeight: "500",
     marginRight: 6,
   },
+
   // Top Bar
   topBar: {
     flexDirection: "row",
     alignItems: "center",
-    marginBottom: 20,
-    gap: 12,
+    marginBottom: 16,
+    gap: 8,
   },
   searchContainer: {
     flex: 1,
@@ -1606,6 +1643,7 @@ const styles = StyleSheet.create({
     borderColor: "#e1e5e9",
     borderRadius: 12,
     paddingHorizontal: 12,
+    minHeight: 48,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.05,
@@ -1615,16 +1653,19 @@ const styles = StyleSheet.create({
   searchContainerDark: {
     backgroundColor: "#1c1c1e",
     borderColor: "#333",
-    shadowColor: "#000",
-    shadowOpacity: 0.2,
   },
-  searchIcon: { marginRight: 8 },
+  searchIcon: { 
+    marginRight: 8 
+  },
   input: {
     flex: 1,
     paddingVertical: 12,
     fontSize: 16,
     fontFamily: "Poppins_400Regular",
     color: "#333",
+    minHeight: 48,
+    includeFontPadding: false,
+    textAlignVertical: 'center',
   },
   inputDark: {
     color: "#fff",
@@ -1635,6 +1676,8 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     justifyContent: "center",
     alignItems: "center",
+    minWidth: 48,
+    minHeight: 48,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
@@ -1643,7 +1686,6 @@ const styles = StyleSheet.create({
   },
   filterBtnDark: {
     backgroundColor: "#1c1c1e",
-    borderColor: "#333",
   },
   filterBtnActive: {
     backgroundColor: "#539DF3",
@@ -1656,6 +1698,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 6,
+    minHeight: 48,
     shadowColor: "#539DF3",
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
@@ -1670,25 +1713,25 @@ const styles = StyleSheet.create({
   },
 
   // List Items
-  row: {
-    backgroundColor: "#fff",
-    padding: 16,
-    marginBottom: 12,
-    borderRadius: 16,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 8,
-    elevation: 3,
-    borderWidth: 1,
-    borderColor: "#f1f5f9",
-  },
-  rowDark: {
-    backgroundColor: "#1c1c1e",
-    borderColor: "#333",
-    shadowColor: "#000",
-    shadowOpacity: 0.2,
-  },
+row: {
+  backgroundColor: "#fff",
+  padding: 16,
+  marginBottom: 12,
+  borderRadius: 16,
+  shadowColor: "#000",
+  shadowOffset: { width: 0, height: 1 },
+  shadowOpacity: 0.05,
+  shadowRadius: 4,
+  elevation: 1,
+  borderWidth: 1,
+  borderColor: "#f1f5f9",
+},
+rowDark: {
+  backgroundColor: "#1c1c1e",
+  borderColor: "#333",
+  shadowColor: "#000",
+  shadowOpacity: 0.1,
+},
   rowExpanded: {
     backgroundColor: "#fafbfc",
     borderColor: "#539DF3",
@@ -1801,31 +1844,38 @@ const styles = StyleSheet.create({
     fontFamily: "Poppins_700Bold",
   },
 
-  // Modals
+  // Modals - CORREGIDOS PARA SER MÁS ALTOS
   modalOverlay: {
     flex: 1,
     backgroundColor: "rgba(0,0,0,0.5)",
     justifyContent: "flex-end",
   },
-  modalContent: {
-    backgroundColor: "#fff",
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-    maxHeight: "90%", 
-    minHeight: "60%", 
-    flex: 1,
+modalContent: {
+  backgroundColor: "#fff",
+  borderTopLeftRadius: 24,
+  borderTopRightRadius: 24,
+  maxHeight: screenHeight * 0.9,
+  minHeight: screenHeight * 0.75,
+  flex: 1, // IMPORTANTE: Esto permite que el modal ocupe el espacio disponible
+},
+  filterModalContent: {
+    maxHeight: screenHeight * 0.85,
+    minHeight: screenHeight * 0.65,
   },
   modalContentDark: {
     backgroundColor: "#1c1c1e",
   },
   scrollContent: {
-    paddingBottom: 20, 
+    paddingBottom: 20,
+    paddingTop: 10,
+    flexGrow: 1,
   },
+  
   modalHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    padding: 24,
+    padding: 20,
     borderBottomWidth: 1,
     borderBottomColor: "#f1f5f9",
   },
@@ -1864,6 +1914,7 @@ const styles = StyleSheet.create({
   formInput: {
     fontSize: 16,
     color: "#1a1a1a",
+    fontFamily: "Poppins_400Regular",
   },
   formInputDark: {
     color: "#fff",
@@ -1871,29 +1922,26 @@ const styles = StyleSheet.create({
   datePlaceholder: {
     color: "#999",
     fontSize: 16,
+    fontFamily: "Poppins_400Regular",
   },
   dateText: {
     color: "#1a1a1a",
     fontSize: 16,
+    fontFamily: "Poppins_400Regular",
   },
   dateTouchableArea: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
   },
-  iosDatePicker: {
-    backgroundColor: "#fff",
-    marginHorizontal: 20,
-  },
 
   // Add Type Selector
   addTypeSelector: {
     flexDirection: "row",
     justifyContent: "space-around",
-    paddingHorizontal: 20,
-    paddingVertical: 16,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
     backgroundColor: "#fff",
-    marginBottom: 8,
     borderBottomWidth: 1,
     borderBottomColor: "#f1f5f9",
   },
@@ -1902,12 +1950,14 @@ const styles = StyleSheet.create({
     borderBottomColor: "#333",
   },
   addTypeButton: {
-    paddingHorizontal: 20,
+    paddingHorizontal: 16,
     paddingVertical: 10,
     borderRadius: 20,
     backgroundColor: "#f8fafc",
     borderWidth: 1,
     borderColor: "#e1e5e9",
+    minWidth: 80,
+    alignItems: 'center',
   },
   addTypeButtonDark: {
     backgroundColor: "#2c2c2e",
@@ -1926,17 +1976,23 @@ const styles = StyleSheet.create({
   addTypeTextDark: {
     color: "#888",
   },
-  addTypeTextActive: {
-    color: "#fff",
-  },
-  addScroll: {
-    flex: 1,
-    paddingVertical: 8,
-  },
+addTypeTextActive: {
+  color: "#fff",
+},
+addScroll: {
+  flex: 1,
+},
+scrollSpacer: {
+  height: 60, // Espacio extra al final para facilitar scrolling
+},
 
   // Filter Cards
   filtersScroll: {
+    flex: 1,
+  },
+  filtersScrollContent: {
     paddingVertical: 8,
+    paddingBottom: 20,
   },
   filterCard: {
     backgroundColor: "#fff",
@@ -2000,14 +2056,15 @@ const styles = StyleSheet.create({
     fontWeight: "600",
   },
 
-  // Buttons
+  // Buttons - CORREGIDOS PARA SER MÁS COMPACTOS
   buttonRow: {
     flexDirection: "row",
-    padding: 24,
+    padding: 16,
     borderTopWidth: 1,
     borderTopColor: "#f1f5f9",
     gap: 12,
     backgroundColor: "#fff",
+    minHeight: 70, // Reducido de 80
   },
   buttonRowDark: {
     backgroundColor: "#1c1c1e",
@@ -2016,11 +2073,14 @@ const styles = StyleSheet.create({
   cancelBtn: {
     flex: 1,
     backgroundColor: "#f8fafc",
-    padding: 16,
+    paddingVertical: 12, // Reducido de 16
+    paddingHorizontal: 8,
     alignItems: "center",
+    justifyContent: "center",
     borderRadius: 12,
     borderWidth: 1,
     borderColor: "#e1e5e9",
+    minHeight: 44, // Reducido de 50
   },
   cancelBtnDark: {
     backgroundColor: "#2c2c2e",
@@ -2029,17 +2089,20 @@ const styles = StyleSheet.create({
   cancelBtnText: {
     fontWeight: "600",
     color: "#666",
-    fontSize: 14,
-    fontFamily: "Poppins_700Bold",
+    fontSize: 15, // Ligeramente más pequeño
+    fontFamily: "Poppins_500Medium",
   },
   resetBtn: {
     flex: 1,
     backgroundColor: "#f8fafc",
-    padding: 16,
+    paddingVertical: 12,
+    paddingHorizontal: 8,
     alignItems: "center",
+    justifyContent: "center",
     borderRadius: 12,
     borderWidth: 1,
     borderColor: "#e1e5e9",
+    minHeight: 44,
   },
   resetBtnDark: {
     backgroundColor: "#2c2c2e",
@@ -2048,27 +2111,29 @@ const styles = StyleSheet.create({
   resetBtnText: {
     fontWeight: "600",
     color: "#666",
-    fontSize: 16,
+    fontSize: 15,
     fontFamily: "Poppins_500Medium",
   },
   applyBtn: {
     flex: 1,
     backgroundColor: "#539DF3",
-    padding: 16,
+    paddingVertical: 12,
+    paddingHorizontal: 8,
     alignItems: "center",
+    justifyContent: "center",
     borderRadius: 12,
-    shadowColor: "#539DF3",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 4,
+    minHeight: 44,
+  },
+  applyBtnDisabled: {
+    backgroundColor: "#a0c4ff",
   },
   applyBtnText: {
     color: "#fff",
     fontWeight: "600",
     fontSize: 15,
-    fontFamily: "Poppins_700Bold",
+    fontFamily: "Poppins_500Medium",
   },
+
   // Empty State
   emptyState: {
     alignItems: "center",
@@ -2094,12 +2159,14 @@ const styles = StyleSheet.create({
     textAlign: "center",
     lineHeight: 20,
   },
+
   // Form Select
   selectLabel: {
     fontSize: 12,
     color: "#666",
     marginBottom: 8,
     fontWeight: "500",
+    fontFamily: "Poppins_500Medium",
   },
   optionsRow: {
     flexDirection: "row",
@@ -2125,6 +2192,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: "#666",
     fontWeight: "500",
+    fontFamily: "Poppins_500Medium",
   },
   optionChipTextDark: {
     color: "#888",
@@ -2132,19 +2200,22 @@ const styles = StyleSheet.create({
   optionChipTextSelected: {
     color: "#fff",
   },
+
   // Filter Actions
   filterActions: {
     flexDirection: "row",
-    padding: 24,
+    padding: 16,
     borderTopWidth: 1,
     borderTopColor: "#f1f5f9",
     gap: 12,
     backgroundColor: "#fff",
+    minHeight: 70, // Reducido de 80
   },
   filterActionsDark: {
     backgroundColor: "#1c1c1e",
     borderTopColor: "#333",
   },
+
   // Info Text
   requiredNote: {
     fontSize: 12,
@@ -2154,6 +2225,7 @@ const styles = StyleSheet.create({
     marginTop: 8,
     marginBottom: 8,
     marginHorizontal: 20,
+    fontFamily: "Poppins_400Regular",
   },
   infoText: {
     fontSize: 12,
@@ -2163,6 +2235,7 @@ const styles = StyleSheet.create({
     marginTop: 8,
     marginBottom: 8,
     marginHorizontal: 20,
+    fontFamily: "Poppins_400Regular",
   },
   
   datePickerContainer: {
@@ -2190,6 +2263,7 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     color: "#333",
     textAlign: "center",
+    fontFamily: "Poppins_600SemiBold",
   },
   datePicker: {
     height: Platform.OS === "ios" ? 200 : undefined,
@@ -2225,10 +2299,12 @@ const styles = StyleSheet.create({
   datePickerButtonTextCancel: {
     color: "#6c757d",
     fontWeight: "600",
+    fontFamily: "Poppins_600SemiBold",
   },
   datePickerButtonTextConfirm: {
     color: "#fff",
     fontWeight: "600",
+    fontFamily: "Poppins_600SemiBold",
   },
   androidCloseButton: {
     backgroundColor: "#539DF3",
@@ -2240,6 +2316,7 @@ const styles = StyleSheet.create({
   androidCloseButtonText: {
     color: "#fff",
     fontWeight: "600",
+    fontFamily: "Poppins_600SemiBold",
   },
   loadingContainer: {
     flex: 1,
@@ -2250,6 +2327,7 @@ const styles = StyleSheet.create({
     marginTop: 10,
     color: "#666",
     fontSize: 16,
+    fontFamily: "Poppins_400Regular",
   },
   refreshButton: {
     flexDirection: "row",

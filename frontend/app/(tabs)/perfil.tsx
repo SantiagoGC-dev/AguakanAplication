@@ -281,6 +281,7 @@ export default function PerfilScreen() {
   animationType="slide"
   transparent={false}
   visible={modalVisible}
+  statusBarTranslucent={true} // ← AÑADIR ESTO
   onRequestClose={() => setModalVisible(false)}
 >
   <KeyboardAvoidingView
@@ -510,7 +511,7 @@ const styles = StyleSheet.create({
   // Header
   header: {
     padding: 20,
-    paddingTop: 60,
+    paddingTop: 50,
     backgroundColor: "#F8FAFC"
   },
   headerDark: {
@@ -525,28 +526,28 @@ const styles = StyleSheet.create({
   },
 
   // Profile Card
-  profileCard: {
-    backgroundColor: "#fff",
-    padding: 20,
-    borderRadius: 16,
-    marginBottom: 24,
-    marginTop: -10,
-    borderWidth: 1,
-    borderColor: "#eee",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 3,
-  },
+profileCard: {
+  backgroundColor: "#fff",
+  padding: 17,
+  borderRadius: 16,
+  marginBottom: 24,
+  borderWidth: 1,
+  borderColor: "#eee",
+  shadowColor: "#000",
+  shadowOffset: { width: 0, height: 1 },
+  shadowOpacity: 0.01,
+  shadowRadius: 2,
+  elevation: 1,
+},
   profileCardDark: {
     backgroundColor: "#1c1c1e",
     borderColor: "#333",
   },
-  avatarContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-  },
+avatarContainer: {
+  flexDirection: "row",
+  alignItems: "center",
+  flexWrap: "wrap",
+},
   avatar: {
     width: 70,
     height: 70,
@@ -561,9 +562,11 @@ const styles = StyleSheet.create({
     fontSize: 24,
     fontFamily: "Poppins_700Bold",
   },
-  userInfo: {
-    flex: 1,
-  },
+userInfo: {
+  flex: 1,
+  flexShrink: 1,
+  minWidth: 0, // Esto permite que el texto se ajuste correctamente
+},
   userName: {
     fontSize: 20,
     fontFamily: "Poppins_700Bold",
@@ -593,16 +596,21 @@ const styles = StyleSheet.create({
     marginBottom: 12,
     marginLeft: 4,
   },
-  menuItem: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: "#fff",
-    padding: 16,
-    borderRadius: 12,
-    marginBottom: 8,
-    borderWidth: 1,
-    borderColor: "#eee",
-  },
+menuItem: {
+  flexDirection: "row",
+  alignItems: "center",
+  backgroundColor: "#fff",
+  padding: 16,
+  borderRadius: 12,
+  marginBottom: 8,
+  borderWidth: 1,
+  borderColor: "#eee",
+  shadowColor: "#000",
+  shadowOffset: { width: 0, height: 1 },
+  shadowOpacity: 0.02,
+  shadowRadius: 2,
+  elevation: 1,
+},
   menuItemDark: {
     backgroundColor: "#1c1c1e",
     borderColor: "#333",
@@ -643,21 +651,21 @@ const styles = StyleSheet.create({
   },
 
   // Modal Header
-  modalHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    padding: 16,
-    paddingTop: 60,
-    backgroundColor: "#fff",
-    borderBottomWidth: 1,
-    borderBottomColor: "#f0f0f0",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    elevation: 3,
-  },
+modalHeader: {
+  flexDirection: "row",
+  alignItems: "center",
+  justifyContent: "space-between",
+  padding: 16,
+  marginTop: Platform.OS === "android" ? 40 : 60,
+  backgroundColor: "#fff",
+  borderBottomWidth: 1,
+  borderBottomColor: "#f0f0f0",
+  shadowColor: "#000",
+  shadowOffset: { width: 0, height: 1 },
+  shadowOpacity: 0.04,
+  shadowRadius: 3,
+  elevation: 2,
+},
   modalHeaderDark: {
     backgroundColor: "#1c1c1e",
     borderBottomColor: "#333",
@@ -703,19 +711,19 @@ const styles = StyleSheet.create({
   },
 
   // Modal Cards
-  modalCard: {
-    backgroundColor: "#fff",
-    padding: 20,
-    borderRadius: 16,
-    marginBottom: 20,
-    borderWidth: 1,
-    borderColor: "#eee",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    elevation: 2,
-  },
+modalCard: {
+  backgroundColor: "#fff",
+  padding: 20,
+  borderRadius: 16,
+  marginBottom: 20,
+  borderWidth: 1,
+  borderColor: "#eee",
+  shadowColor: "#000",
+  shadowOffset: { width: 0, height: 1 },
+  shadowOpacity: 0.03,
+  shadowRadius: 4,
+  elevation: 1,
+},
   modalCardDark: {
     backgroundColor: "#1c1c1e",
     borderColor: "#333",

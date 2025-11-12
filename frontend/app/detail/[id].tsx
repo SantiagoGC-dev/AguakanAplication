@@ -26,7 +26,7 @@ import { useAuth } from "@/context/AuthContext";
 import api from "@/utils/api";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 
-const API_ROOT_URL = "http://172.20.10.11:3000";
+const API_ROOT_URL = "http://10.149.121.216:3000";
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get("window");
 
@@ -2337,6 +2337,7 @@ const styles = StyleSheet.create({
   },
   emptyStateSubtext: {
     marginTop: 8,
+    marginHorizontal: 40,
     color: "#94A3B8",
     fontSize: 14,
     fontFamily: "Poppins_400Regular",
@@ -2400,6 +2401,7 @@ const styles = StyleSheet.create({
     padding: 16,
     borderRadius: 12,
     marginTop: 16,
+    marginHorizontal: 16,
     gap: 8,
   },
   uploadButtonDark: {

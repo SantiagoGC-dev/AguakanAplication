@@ -1,6 +1,7 @@
 import React, { useState, useCallback, useEffect, useMemo } from "react";
 import {
   View,
+  Text,
   TouchableOpacity,
   Modal,
   RefreshControl,
@@ -8,6 +9,7 @@ import {
   Alert,
   FlatList,
   Platform,
+  Dimensions,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import DateTimePicker from "@react-native-community/datetimepicker";
@@ -16,7 +18,10 @@ import { useRouter } from "expo-router";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 
 // Configuración de API
-const API_BASE_URL = "http://172.20.10.11:3000/api";
+const API_BASE_URL = "http://10.149.121.216:3000/api";
+
+// Obtener dimensiones de pantalla
+const { width: screenWidth } = Dimensions.get('window');
 
 // --- Interfaces ---
 interface ProductoGrupo {
@@ -47,9 +52,6 @@ interface Filtros {
   tipoProducto: "todos" | "reactivo" | "material" | "equipo";
 }
 
-interface ProductoExpandido {
-  [key: string]: boolean;
-}
 
 interface PaginationInfo {
   page: number;
@@ -67,6 +69,13 @@ export default function ReportesScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [filtrosVisible, setFiltrosVisible] = useState(false);
   const [loading, setLoading] = useState(true);
+
+  // 🔹 NUEVO: Estados para manejar DatePicker en Android
+  const [showDatePickerDesde, setShowDatePickerDesde] = useState(false);
+  const [showDatePickerHasta, setShowDatePickerHasta] = useState(false);
+  const [tempDateDesde, setTempDateDesde] = useState(new Date());
+  const [tempDateHasta, setTempDateHasta] = useState(new Date());
+
 
   // 🔹 OPTIMIZADO: Usar Set en lugar de objeto para mejor performance
   const [productosExpandidos, setProductosExpandidos] = useState<Set<string>>(
@@ -125,6 +134,51 @@ export default function ReportesScreen() {
     return productos; // Ya viene filtrado del backend
   }, [productos]);
 
+
+    const handleDateChangeDesde = (event: any, selectedDate?: Date) => {
+    if (Platform.OS === "android") {
+      setShowDatePickerDesde(false);
+    }
+    
+    if (selectedDate) {
+      setTempDateDesde(selectedDate);
+      // En Android, aplicar inmediatamente
+      if (Platform.OS === "android") {
+        setFechaDesdeTemp(selectedDate);
+      }
+    }
+  };
+
+  const handleDateChangeHasta = (event: any, selectedDate?: Date) => {
+    if (Platform.OS === "android") {
+      setShowDatePickerHasta(false);
+    }
+    
+    if (selectedDate) {
+      setTempDateHasta(selectedDate);
+      // En Android, aplicar inmediatamente
+      if (Platform.OS === "android") {
+        setFechaHastaTemp(selectedDate);
+      }
+    }
+  };
+
+  // Para iOS - confirmar fecha
+  const confirmarFechas = () => {
+    setFechaDesdeTemp(tempDateDesde);
+    setFechaHastaTemp(tempDateHasta);
+  };
+
+  // Mostrar DatePicker para Android
+  const mostrarDatePickerDesde = () => {
+    setTempDateDesde(fechaDesdeTemp);
+    setShowDatePickerDesde(true);
+  };
+
+  const mostrarDatePickerHasta = () => {
+    setTempDateHasta(fechaHastaTemp);
+    setShowDatePickerHasta(true);
+  };
 
   const getEstadoStock = (stockActual: number) => {
     if (stockActual === 0) return { estado: "agotado", color: "#EF4444" };
@@ -233,6 +287,10 @@ export default function ReportesScreen() {
 
   // Aplicar filtros desde modal
   const aplicarFiltrosDesdeModal = useCallback(() => {
+    if (Platform.OS === "ios") {
+      confirmarFechas();
+    }
+
     if (fechaHastaTemp < fechaDesdeTemp) {
       Alert.alert(
         "Rango inválido",
@@ -250,9 +308,9 @@ export default function ReportesScreen() {
 
     setPeriodoTexto(`${desdeTexto} - ${hastaTexto}`);
     setFiltrosVisible(false);
-  }, [fechaDesdeTemp, fechaHastaTemp]);
+  }, [fechaDesdeTemp, fechaHastaTemp, Platform.OS]);
 
-  // Función para exportación a Excel
+  // Función para exportación a Excel 
   const exportarExcel = async () => {
     try {
       Alert.alert(
@@ -567,9 +625,9 @@ export default function ReportesScreen() {
       {/* Header */}
       <View style={[styles.header, isDark && styles.headerDark]}>
         <View style={styles.headerTop}>
-          <ThemedText type="title" style={[styles.headerTitle, isDark && styles.textDark]}>
+          <Text style={[styles.headerTitle, isDark && styles.textDark]}>
             Reportes
-          </ThemedText>
+          </Text>
           <View style={styles.headerActions}>
             <TouchableOpacity
               style={[styles.filterButton, isDark && styles.filterButtonDark]}
@@ -827,25 +885,88 @@ export default function ReportesScreen() {
             </View>
 
             <View style={styles.periodoOptions}>
+              {/* Selector de Fecha Desde */}
               <ThemedText style={[styles.label, isDark && styles.textDark]}>Desde:</ThemedText>
-              <DateTimePicker
-                value={fechaDesdeTemp}
-                mode="date"
-                display={Platform.OS === "ios" ? "spinner" : "default"}
-                onChange={(_, date) => date && setFechaDesdeTemp(date)}
-                style={[styles.datePicker, isDark && styles.datePickerDark]}
-              />
+              
+              {Platform.OS === "ios" ? (
+                // iOS - Picker normal
+                <DateTimePicker
+                  value={tempDateDesde}
+                  mode="date"
+                  display="spinner"
+                  onChange={handleDateChangeDesde}
+                  style={[styles.datePicker, isDark && styles.datePickerDark]}
+                />
+              ) : (
+                // Android - Botón personalizado
+                <TouchableOpacity 
+                  style={[styles.dateButton, isDark && styles.dateButtonDark]}
+                  onPress={mostrarDatePickerDesde}
+                >
+                  <Ionicons name="calendar" size={20} color="#539DF3" />
+                  <ThemedText style={[styles.dateButtonText, isDark && styles.textDark]}>
+                    {formatearFecha(fechaDesdeTemp)}
+                  </ThemedText>
+                </TouchableOpacity>
+              )}
 
-              <ThemedText style={[styles.label, { marginTop: 10 }, isDark && styles.textDark]}>
+              {/* Selector de Fecha Hasta */}
+              <ThemedText style={[styles.label, { marginTop: 16 }, isDark && styles.textDark]}>
                 Hasta:
               </ThemedText>
-              <DateTimePicker
-                value={fechaHastaTemp}
-                mode="date"
-                display={Platform.OS === "ios" ? "spinner" : "default"}
-                onChange={(_, date) => date && setFechaHastaTemp(date)}
-                style={[styles.datePicker, isDark && styles.datePickerDark]}
-              />
+              
+              {Platform.OS === "ios" ? (
+                // iOS - Picker normal
+                <DateTimePicker
+                  value={tempDateHasta}
+                  mode="date"
+                  display="spinner"
+                  onChange={handleDateChangeHasta}
+                  style={[styles.datePicker, isDark && styles.datePickerDark]}
+                />
+              ) : (
+                // Android - Botón personalizado
+                <TouchableOpacity 
+                  style={[styles.dateButton, isDark && styles.dateButtonDark]}
+                  onPress={mostrarDatePickerHasta}
+                >
+                  <Ionicons name="calendar" size={20} color="#539DF3" />
+                  <ThemedText style={[styles.dateButtonText, isDark && styles.textDark]}>
+                    {formatearFecha(fechaHastaTemp)}
+                  </ThemedText>
+                </TouchableOpacity>
+              )}
+
+              {/* DatePickers para Android */}
+              {showDatePickerDesde && Platform.OS === "android" && (
+                <DateTimePicker
+                  value={tempDateDesde}
+                  mode="date"
+                  display="default"
+                  onChange={handleDateChangeDesde}
+                />
+              )}
+              
+              {showDatePickerHasta && Platform.OS === "android" && (
+                <DateTimePicker
+                  value={tempDateHasta}
+                  mode="date"
+                  display="default"
+                  onChange={handleDateChangeHasta}
+                />
+              )}
+
+              {/* Botón de confirmación para iOS */}
+              {Platform.OS === "ios" && (
+                <TouchableOpacity
+                  style={styles.confirmButton}
+                  onPress={confirmarFechas}
+                >
+                  <ThemedText style={styles.confirmButtonText}>
+                    Confirmar Fechas
+                  </ThemedText>
+                </TouchableOpacity>
+              )}
             </View>
 
             <View style={styles.filterActions}>
@@ -902,7 +1023,7 @@ const styles = StyleSheet.create({
   header: {
     backgroundColor: "#F8FAFC",
     paddingHorizontal: 1,
-    paddingTop: Platform.OS === "ios" ? 60 : 40,
+    paddingTop: Platform.OS === "ios" ? 60 : 50,
     paddingBottom: 16,
     borderBottomLeftRadius: 20,
     borderBottomRightRadius: 20,
@@ -951,6 +1072,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 12,
     marginTop: 12,
+    marginBottom: -12,
   },
   exportButtonBig: {
     flexDirection: "row",
@@ -1007,19 +1129,20 @@ const styles = StyleSheet.create({
     color: "#64748B",
     fontFamily: "Poppins_500Medium",
   },
-  filtrosContainer: {
+filtrosContainer: {
     flexDirection: "row",
     paddingHorizontal: 1,
     paddingVertical: 12,
     gap: 8,
-    flexWrap: "wrap",
+    justifyContent: "space-between", // Distribuir espacio uniformemente
   },
-  filtroCard: {
-    minWidth: 70,
+ filtroCard: {
+    minWidth: (screenWidth - 48) / 4, // Calculado basado en pantalla
+    maxWidth: (screenWidth - 48) / 4, // Evitar que crezcan demasiado
     alignItems: "center",
     backgroundColor: "#FFFFFF",
     borderRadius: 12,
-    padding: 10,
+    padding: 8, // Reducido padding
     gap: 4,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
@@ -1028,7 +1151,8 @@ const styles = StyleSheet.create({
     elevation: 2,
     borderWidth: 1,
     borderColor: "#F1F5F9",
-    flex: 1,
+    height: 95, // Altura fija
+    justifyContent: "center", // Centrar contenido verticalmente
   },
   filtroCardDark: {
     backgroundColor: "#2c2c2e",
@@ -1040,10 +1164,11 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.2,
     elevation: 4,
   },
-  filtroNumber: {
-    fontSize: 16,
+filtroNumber: {
+    fontSize: 14, // Reducido ligeramente
     color: "#1E293B",
     fontFamily: "Poppins_700Bold",
+    lineHeight: 16, // Controlar altura de línea
   },
   filtroNumberDark: {
     color: "#CCCCCC",
@@ -1056,6 +1181,10 @@ const styles = StyleSheet.create({
     color: "#000000ff",
     fontFamily: "Poppins_700Bold",
     textAlign: "center",
+    lineHeight: 12, // Controlar altura de línea
+    height: 24, // Altura fija para 2 líneas
+    includeFontPadding: false, // Eliminar padding extra en Android
+    textAlignVertical: "center", // Centrar verticalmente en Android
   },
   filtroLabelDark: {
     color: "#FFFFFF",
@@ -1063,6 +1192,7 @@ const styles = StyleSheet.create({
   filtroLabelActive: {
     color: "#FFFFFF",
   },
+
   listContent: {
     paddingHorizontal: 16,
     paddingBottom: 20,
@@ -1241,13 +1371,6 @@ const styles = StyleSheet.create({
   closeButton: {
     padding: 4,
   },
-  periodoOptions: {
-    padding: 20,
-    gap: 12,
-    alignItems: "center",
-    justifyContent: "center",
-    minHeight: 150,
-  },
   filterActions: {
     paddingHorizontal: 20,
   },
@@ -1273,14 +1396,6 @@ const styles = StyleSheet.create({
     fontFamily: "Poppins_500Medium",
     alignSelf: "flex-start",
   },
-  datePicker: {
-    backgroundColor: "#F1F5F9",
-    borderRadius: 10,
-    width: "100%",
-  },
-  datePickerDark: {
-    backgroundColor: "#2c2c2e",
-  },
   spacer: {
     height: Platform.OS === "ios" ? 30 : 20,
   },
@@ -1292,4 +1407,59 @@ const styles = StyleSheet.create({
   textMutedDark: {
     color: "#888",
   },
+
+    dateButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#F1F5F9",
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: "#E5E7EB",
+    width: "100%",
+    justifyContent: "center",
+    gap: 8,
+  },
+  dateButtonDark: {
+    backgroundColor: "#2c2c2e",
+    borderColor: "#333",
+  },
+  dateButtonText: {
+    fontSize: 16,
+    color: "#1E293B",
+    fontFamily: "Poppins_500Medium",
+  },
+  
+  // 🔹 NUEVO: Botón de confirmación para iOS
+  confirmButton: {
+    backgroundColor: "#539DF3",
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    borderRadius: 12,
+    marginTop: 16,
+    alignItems: "center",
+  },
+  confirmButtonText: {
+    color: "#FFFFFF",
+    fontSize: 16,
+    fontFamily: "Poppins_600SemiBold",
+  },
+
+  periodoOptions: {
+    padding: 20,
+    gap: 12,
+    alignItems: "center",
+    justifyContent: "center",
+    minHeight: Platform.OS === "ios" ? 300 : 200, // Ajustar altura según plataforma
+  },
+  datePicker: {
+    width: "100%",
+    backgroundColor: Platform.OS === "ios" ? "#F1F5F9" : "transparent",
+    borderRadius: Platform.OS === "ios" ? 10 : 0,
+  },
+  datePickerDark: {
+    backgroundColor: Platform.OS === "ios" ? "#2c2c2e" : "transparent",
+  },
+
 });

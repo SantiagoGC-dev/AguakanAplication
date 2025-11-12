@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import {
   StyleSheet,
+  Text,
   View,
   ScrollView,
   TouchableOpacity,
@@ -71,7 +72,7 @@ interface Usuario {
 }
 
 // Configuración de API
-const API_BASE_URL = "http://172.20.10.11:3000/api";
+const API_BASE_URL = "http://10.149.121.216:3000/api";
 
 // Darle formato a la fecha
 function formatDate(dateString: string) {
@@ -319,16 +320,16 @@ export default function HomeScreen() {
               </View>
               <View>
                 <View style={styles.welcomeContainer}>
-                  <ThemedText type="title" style={[styles.welcomeText, isDark && styles.textDark]}>
-                    ¡Hola!{" "}
-                  </ThemedText>
-                  <ThemedText type="title" style={[styles.userNameText, isDark && styles.textDark]}>
-                    {userName}
-                  </ThemedText>
+<Text style={[styles.welcomeText, isDark && styles.textDark]}>
+  ¡Hola!{" "}
+</Text>
+<Text style={[styles.userNameText, isDark && styles.textDark]}>
+  {userName}
+</Text>
                 </View>
-                <ThemedText type="subtitle" style={[styles.subtitleText, isDark && styles.textMutedDark]}>
+                <Text style={[styles.subtitleText, isDark && styles.textMutedDark]}>
                   {userRole}
-                </ThemedText>
+                </Text>
               </View>
             </View>
             <TouchableOpacity
@@ -433,13 +434,13 @@ export default function HomeScreen() {
           <View style={styles.sectionHeader}>
             <View style={styles.sectionTitleContainer}>
               <Ionicons name="flask-outline" size={20} color="#4B9CD3" />
-              <ThemedText type="subtitle" style={[styles.sectionTitle, isDark && styles.textDark]}>
-                Productos en Uso
-              </ThemedText>
+<Text style={[styles.sectionTitle, isDark && styles.textDark]}>
+  Productos en Uso
+</Text>
             </View>
             {productosEnUso.length > 0 && (
               <TouchableOpacity onPress={handleVerMasProductos}>
-                <ThemedText style={styles.seeAllText}>Ver más</ThemedText>
+                <Text style={styles.seeAllText}>Ver más</Text>
               </TouchableOpacity>
             )}
           </View>
@@ -513,22 +514,24 @@ export default function HomeScreen() {
       >
         <View style={styles.modalContainer}>
           <View style={[styles.modalContent, isDark && styles.modalContentDark]}>
-            <View style={[styles.modalHeader, isDark && styles.modalHeaderDark]}>
-              <View>
-                <ThemedText type="subtitle" style={[styles.modalTitle, isDark && styles.textDark]}>
-                  Productos que requieren atención
-                </ThemedText>
-                <ThemedText style={[styles.modalSubtitle, isDark && styles.textMutedDark]}>
-                  Selecciona para ir a sus detalles!
-                </ThemedText>
-              </View>
-              <TouchableOpacity
-                onPress={() => setModalNotificacionesVisible(false)}
-                style={styles.closeButton}
-              >
-                <Ionicons name="close" size={24} color={isDark ? "#fff" : "#666"} />
-              </TouchableOpacity>
-            </View>
+<View style={[styles.modalHeader, isDark && styles.modalHeaderDark]}>
+  <View style={styles.modalHeaderContent}>
+    <View style={styles.modalTitleContainer}>
+      <Text style={[styles.modalTitle, isDark && styles.textDark]}>
+        Productos que requieren atención
+      </Text>
+      <ThemedText style={[styles.modalSubtitle, isDark && styles.textMutedDark]}>
+        Selecciona para ir a sus detalles!
+      </ThemedText>
+    </View>
+    <TouchableOpacity
+      onPress={() => setModalNotificacionesVisible(false)}
+      style={styles.closeButton}
+    >
+      <Ionicons name="close" size={24} color={isDark ? "#fff" : "#666"} />
+    </TouchableOpacity>
+  </View>
+</View>
 
             <ScrollView style={styles.modalScrollContent}>
               {/* Productos próximos a caducar */}
@@ -677,11 +680,11 @@ function SummaryCard({
       <ThemedText type="title" style={[styles.cardValue, { color }]}>
         {value}
       </ThemedText>
-      <ThemedText type="defaultSemiBold" style={[styles.cardTitle, isDark && styles.textDark]}>
-        {title}
-      </ThemedText>
+<Text style={[styles.cardTitle, isDark && styles.textDark]}>
+  {title}
+</Text>
       {subtitle && (
-        <ThemedText style={[styles.cardSubtitle, isDark && styles.textMutedDark]}>{subtitle}</ThemedText>
+        <Text style={[styles.cardSubtitle, isDark && styles.textMutedDark]}>{subtitle}</Text>
       )}
     </View>
   );
@@ -913,7 +916,7 @@ const styles = StyleSheet.create({
   container: {
     paddingHorizontal: 20,
     paddingBottom: 40,
-    paddingTop: 60,
+    paddingTop: 50,
   },
   headerContainer: {
     marginBottom: 24,
@@ -965,6 +968,7 @@ const styles = StyleSheet.create({
   },
   subtitleText: {
     fontSize: 14,
+    marginTop: -5,
     color: "#5a6575ff",
     fontFamily: "Poppins_400Regular",
   },
@@ -1330,17 +1334,24 @@ const styles = StyleSheet.create({
   modalContentDark: {
     backgroundColor: "#1c1c1e",
   },
-  modalHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "flex-start",
-    padding: 24,
-    borderBottomWidth: 1,
-    borderBottomColor: "#E2E8F0",
-  },
+modalHeader: {
+  padding: 24,
+  borderBottomWidth: 1,
+  borderBottomColor: "#E2E8F0",
+},
   modalHeaderDark: {
     borderBottomColor: "#333",
   },
+    modalHeaderContent: {
+  flexDirection: "row",
+  justifyContent: "space-between",
+  alignItems: "flex-start",
+  width: "100%",
+},
+modalTitleContainer: {
+  flex: 1,
+  marginRight: 16, // Espacio entre el título y el botón de cerrar
+},
   modalTitle: {
     fontSize: 18,
     color: "#000000ff",
@@ -1352,9 +1363,10 @@ const styles = StyleSheet.create({
     color: "#4a5663ff",
     fontFamily: "Poppins_400Regular",
   },
-  closeButton: {
-    padding: 4,
-  },
+closeButton: {
+  padding: 4,
+  marginTop: -4, // Ajuste para alinear con el título
+},
   modalScrollContent: {
     padding: 24,
   },
