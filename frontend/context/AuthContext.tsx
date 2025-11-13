@@ -1,4 +1,4 @@
-import React, { useState, useEffect, createContext, useContext } from 'react';
+import React, { useState, useEffect, createContext, useContext, useCallback } from 'react';
 import { Alert } from 'react-native';
 import { useRouter, usePathname } from 'expo-router';
 import { storage } from '../utils/storage'; // Ajusta la ruta si es necesario
@@ -20,6 +20,7 @@ interface AuthContextData {
   isLoading: boolean;
   login: (correo: string, password: string) => Promise<{ success: boolean; error?: string }>;
   logout: () => Promise<void>;
+  refreshAuthUser: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextData>({} as AuthContextData);
@@ -27,7 +28,7 @@ const AuthContext = createContext<AuthContextData>({} as AuthContextData);
 // 10H en milisegundos
 const EXPIRATION_TIME = 9 * 60 * 60 * 1000; 
 // 🔥 TU IP CORRECTA
-const API_BASE_URL = "http://10.149.121.216:3000";
+const API_BASE_URL = "http://192.168.167.253:3000";
 
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
@@ -121,10 +122,44 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     }
   };
 
-  const logout = async () => {
+  const logout = useCallback(async () => {
     await storage.clearAuth();
     setUser(null);
-  };
+  },[]);
+
+const refreshAuthUser = useCallback(async () => {
+    const token = await storage.getToken();
+    if (!token) {
+      return;
+    }
+
+    try {
+      // ✅ USA /api/perfil (basado en tu controlador)
+      const response = await fetch(`${API_BASE_URL}/api/perfil`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}` 
+        },
+      });
+
+      const data = await response.json();
+
+      // ✅ AJUSTADO para que coincida con tu controlador (data.data)
+      if (response.ok && data.data) {
+        setUser(data.data);
+        await storage.saveUser(data.data);
+        console.log('[Context] Datos del usuario refrescados.');
+      } else if (response.status === 401 || response.status === 403) {
+        console.log('[Context] Token inválido. Cerrando sesión.');
+        await logout();
+      } else {
+        console.warn('[Context] No se pudo refrescar el usuario:', data.error);
+      }
+    } catch (error) {
+      console.error('[Context] Error de red al refrescar:', error);
+    }
+  }, [logout]);
 
   return (
     <AuthContext.Provider
@@ -134,6 +169,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         isLoading,
         login,
         logout,
+        refreshAuthUser,
       }}
     >
       {children}

@@ -26,7 +26,7 @@ import { useAuth } from "@/context/AuthContext";
 import api from "@/utils/api";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 
-const API_ROOT_URL = "http://10.149.121.216:3000";
+const API_ROOT_URL = "http://192.168.167.253:3000";
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get("window");
 
@@ -1406,7 +1406,7 @@ const [productResponse, historyResponse, trendResponse] = await Promise.all([
       >
         <KeyboardAvoidingView
           style={styles.modalOverlay}
-          behavior={Platform.OS === "ios" ? "padding" : "height"}
+          behavior={Platform.OS === "ios" ? "padding" : "padding"} // ✅ La solución
         >
           <TouchableOpacity
             style={styles.modalOverlay}
@@ -2014,7 +2014,6 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 24,
     fontFamily: "Poppins_700Bold",
-    fontWeight: "bold",
     color: "#1E293B",
     textAlign: "center",
     marginBottom: 4,
@@ -2046,7 +2045,6 @@ const styles = StyleSheet.create({
     color: "#334155",
     fontSize: 12,
     fontFamily: "Poppins_400Regular",
-    fontWeight: "600",
   },
 
   mainActionsContainer: {
@@ -2078,7 +2076,6 @@ const styles = StyleSheet.create({
   },
   mainButtonText: {
     color: "white",
-    fontWeight: "bold",
     fontSize: 14,
     fontFamily: "Poppins_700Bold",
   },
@@ -2111,7 +2108,6 @@ const styles = StyleSheet.create({
   cardTitle: {
     fontSize: 16,
     fontFamily: "Poppins_700Bold",
-    fontWeight: "bold",
     color: "#1E293B",
     marginLeft: 8,
   },
@@ -2132,7 +2128,6 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontFamily: "Poppins_500Medium",
     color: "#334155",
-    fontWeight: "500",
   },
 
   infoGrid: {
@@ -2153,7 +2148,6 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontFamily: "Poppins_500Medium",
     color: "#1E293B",
-    fontWeight: "600",
   },
   stockValue: {
     color: "#539DF3",
@@ -2180,13 +2174,11 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontFamily: "Poppins_500Medium",
     color: "#1E293B",
-    fontWeight: "500",
   },
   laboratorioValue: {
     fontSize: 14,
     fontFamily: "Poppins_500Medium",
     color: "#1E293B",
-    fontWeight: "500",
     flex: 1,
     flexWrap: "wrap",
     textAlign: "right",
@@ -2212,7 +2204,6 @@ const styles = StyleSheet.create({
   warningTitle: {
     fontSize: 14,
     fontFamily: "Poppins_700Bold",
-    fontWeight: "bold",
     marginBottom: 2,
   },
   warningMessage: {
@@ -2243,7 +2234,6 @@ const styles = StyleSheet.create({
   historialTitle: {
     fontSize: 14,
     fontFamily: "Poppins_500Medium",
-    fontWeight: "bold",
     color: "#333",
   },
   historialSubtitle: {
@@ -2301,13 +2291,13 @@ const styles = StyleSheet.create({
   modalTitle: {
     fontSize: 20,
     fontFamily: "Poppins_700Bold",
-    fontWeight: "bold",
     color: "white",
   },
   closeButton: {
     padding: 4,
   },
   modalScroll: {
+    flex: 1,
   },
   modalScrollContent: {
     padding: 20,
@@ -2333,7 +2323,6 @@ const styles = StyleSheet.create({
     color: "#64748B",
     fontSize: 16,
     fontFamily: "Poppins_400Regular",
-    fontWeight: "600",
   },
   emptyStateSubtext: {
     marginTop: 8,
@@ -2372,7 +2361,6 @@ const styles = StyleSheet.create({
   docName: {
     fontSize: 14,
     fontFamily: "Poppins_700Bold",
-    fontWeight: "600",
     color: "#1E293B",
   },
   docMeta: {
@@ -2410,7 +2398,6 @@ const styles = StyleSheet.create({
   },
   uploadButtonText: {
     color: "#000000ff",
-    fontWeight: "bold",
     fontFamily: "Poppins_500Medium",
     fontSize: 16,
   },
@@ -2431,7 +2418,6 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 16,
     fontFamily: "Poppins_500Medium",
-    fontWeight: "600",
     color: "#1E293B",
     marginBottom: 16,
     paddingBottom: 8,
@@ -2444,7 +2430,6 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 14,
     fontFamily: "Poppins_400Regular",
-    fontWeight: "500",
     color: "#374151",
     marginBottom: 8,
   },
@@ -2501,7 +2486,6 @@ const styles = StyleSheet.create({
   },
   selectOptionTextActive: {
     color: "white",
-    fontWeight: "bold",
   },
   radioOption: {
     flexDirection: "row",
@@ -2547,7 +2531,6 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   stockCount: {
-    fontWeight: "bold",
     color: "#539DF3",
   },
   saveButton: {
@@ -2561,7 +2544,6 @@ const styles = StyleSheet.create({
   },
   saveButtonText: {
     color: "#000000ff",
-    fontWeight: "bold",
     fontFamily: "Poppins_500Medium",
     fontSize: 16,
   },
@@ -2576,7 +2558,6 @@ const styles = StyleSheet.create({
   },
   reportButtonText: {
     color: "black",
-    fontWeight: "bold",
     fontFamily: "Poppins_500Medium",
     fontSize: 16,
   },

@@ -162,7 +162,6 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 38,
-    fontWeight: '800',
     color: '#1e293b',
     marginBottom: 6,
     fontFamily: 'Poppins_700Bold',
@@ -201,7 +200,6 @@ const styles = StyleSheet.create({
   },
   label: {
     fontSize: 15,
-    fontWeight: '600',
     marginBottom: 8,
     color: '#334155',
     fontFamily: 'Poppins_500Medium',
@@ -253,7 +251,6 @@ const styles = StyleSheet.create({
   buttonText: {
     color: '#fff',
     fontSize: 17,
-    fontWeight: '700',
     fontFamily: 'Poppins_700Bold',
     letterSpacing: 0.5,
   },

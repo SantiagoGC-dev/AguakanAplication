@@ -368,28 +368,28 @@ export default function BitacoraScreen() {
                 <Ionicons name={icon as any} size={20} color={color} />
               </View>
               <View style={styles.itemInfo}>
-                <ThemedText style={[styles.descripcionCompleta, isDark && styles.textMutedDark]}>
-                  <ThemedText type="defaultSemiBold" style={[styles.usuario, isDark && styles.textDark]}>
+                <Text style={[styles.descripcionCompleta, isDark && styles.textMutedDark]}>
+                  <Text style={[styles.usuario, isDark && styles.textDark]}>
                     {item.usuario}
-                  </ThemedText>
+                  </Text>
+
+                  <Text style={[styles.accion, isDark && styles.textMutedDark]}> {accion} </Text>
                   
-                  <ThemedText style={[styles.accion, isDark && styles.textMutedDark]}> {accion} </ThemedText>
-                  
-                  <ThemedText
-                    type="defaultSemiBold"
+                  <Text
+                    
                     style={[styles.productoNombre, isDark && styles.textDark]}
                   >
                     {item.producto}
-                  </ThemedText>
-                </ThemedText>
+                  </Text>
+                </Text>
                 {item.descripcion_adicional && (
-                  <ThemedText style={[styles.detalleAdicional, isDark && styles.textMutedDark]}>
+                  <Text style={[styles.detalleAdicional, isDark && styles.textMutedDark]}>
                     {item.descripcion_adicional}
-                  </ThemedText>
+                  </Text>
                 )}
-                <ThemedText style={[styles.fecha, isDark && styles.textMutedDark]}>
+                <Text style={[styles.fecha, isDark && styles.textMutedDark]}>
                   {formatFecha(item.fecha)}
-                </ThemedText>
+                </Text>
               </View>
             </TouchableOpacity>
           );
@@ -890,7 +890,7 @@ itemDark: {
     flex: 1,
   },
   descripcionCompleta: {
-    fontSize: 14,
+    fontSize: 16,
     color: "#475569",
     lineHeight: 20,
     fontFamily: "Poppins_400Regular",
@@ -909,7 +909,7 @@ itemDark: {
   },
   detalleAdicional: {
     fontSize: 12,
-    color: "#64748B",
+    color: "#55606fff",
     fontStyle: "italic",
     marginTop: 2,
     fontFamily: "Poppins_400Regular",
@@ -1035,14 +1035,12 @@ itemDark: {
     fontFamily: "Poppins_400Regular",
     fontSize: 14,
     color: "#666",
-    fontWeight: "500",
   },
   filterOptionTextDark: {
     color: "#888",
   },
   filterOptionTextActive: {
     color: "#fff",
-    fontWeight: "600",
   },
 
   // Filter Actions
@@ -1082,7 +1080,6 @@ itemDark: {
     elevation: 4,
   },
   resetBtnText: {
-    fontWeight: "600",
     color: "#666",
     fontSize: 16,
     fontFamily: "Poppins_500Medium",
@@ -1092,7 +1089,6 @@ itemDark: {
   },
   applyBtnText: {
     color: "#fff",
-    fontWeight: "600",
     fontSize: 15,
     fontFamily: "Poppins_700Bold",
   },
@@ -1174,7 +1170,6 @@ itemDark: {
   },
   dropdownOptionTextActive: {
     color: "#539DF3",
-    fontWeight: "500",
   },
 
   // Text Colors

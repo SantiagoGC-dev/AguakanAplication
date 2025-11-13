@@ -12,10 +12,18 @@ export const obtenerPerfil = async (req, res) => {
       });
     }
 
-    res.json({
-      success: true,
-      data: usuario
-    });
+res.json({
+      success: true,
+      data: {
+        id: usuario.id_usuario,
+        correo: usuario.correo,
+        primer_nombre: usuario.primer_nombre,
+        apellido_paterno: usuario.apellido_paterno,
+        apellido_materno: usuario.apellido_materno,
+        rol: usuario.id_rol, // <-- ¡LA CORRECCIÓN CLAVE!
+        estatus: usuario.id_estatus_usuario
+      }
+    });
   } catch (error) {
     console.error('Error al obtener perfil:', error);
     res.status(500).json({ 

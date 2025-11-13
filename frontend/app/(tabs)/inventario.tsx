@@ -30,7 +30,7 @@ const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
 
 
 //Configuración de la API y Tipos
-const API_BASE_URL = "http://10.149.121.216:3000";
+const API_BASE_URL = "http://192.168.167.253:3000";
 
 interface FilterOption {
   label: string;
@@ -1593,7 +1593,7 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     alignItems: "flex-start",
     marginBottom: 16,
-    paddingTop: 8,
+    paddingTop: 1,
   },
   headerTextContainer: {
     flex: 1,
@@ -1601,14 +1601,13 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 28,
     fontFamily: "Poppins_700Bold",
-    color: "#000000",
+    color: "#000000ff",
     marginBottom: 2,
   },
   subtitle: {
     fontSize: 14,
     fontFamily: "Poppins_400Regular",
     color: "#454545",
-    fontWeight: "400",
   },
   filtrosActivosBadge: {
     flexDirection: "row",
@@ -1623,7 +1622,6 @@ const styles = StyleSheet.create({
   filtrosActivosText: {
     color: "#fff",
     fontSize: 12,
-    fontWeight: "500",
     marginRight: 6,
   },
 
@@ -1709,7 +1707,6 @@ const styles = StyleSheet.create({
     fontFamily: "Poppins_500Medium",
     fontSize: 14,
     color: "#fff",
-    fontWeight: "600",
   },
 
   // List Items
@@ -1754,7 +1751,6 @@ rowDark: {
   rowTitle: {
     fontSize: 16,
     fontFamily: "Poppins_500Medium",
-    fontWeight: "600",
     color: "#1a1a1a",
     marginBottom: 4,
   },
@@ -1762,7 +1758,6 @@ rowDark: {
     fontSize: 14,
     fontFamily: "Poppins_400Regular",
     color: "#666",
-    fontWeight: "400",
   },
   rowStatusContainer: {
     flexDirection: "row",
@@ -1775,7 +1770,6 @@ rowDark: {
     marginRight: 8,
   },
   rowStatus: {
-    fontWeight: "600",
     fontSize: 12,
     fontFamily: "Poppins_500Medium",
   },
@@ -1805,14 +1799,12 @@ rowDark: {
     fontSize: 12,
     fontFamily: "Poppins_400Regular",
     color: "#666",
-    fontWeight: "500",
     marginBottom: 4,
   },
   detailValue: {
     fontSize: 14,
     fontFamily: "Poppins_500Medium",
     color: "#1a1a1a",
-    fontWeight: "600",
   },
   detailExtra: {
     marginBottom: 12,
@@ -1839,7 +1831,6 @@ rowDark: {
   },
   detailButtonText: {
     color: "#539DF3",
-    fontWeight: "600",
     fontSize: 14,
     fontFamily: "Poppins_700Bold",
   },
@@ -1885,7 +1876,6 @@ modalContent: {
   modalTitle: {
     fontFamily: "Poppins_700Bold",
     fontSize: 20,
-    fontWeight: "700",
     color: "#1a1a1a",
   },
 
@@ -1970,7 +1960,6 @@ modalContent: {
   addTypeText: {
     fontFamily: "Poppins_500Medium",
     fontSize: 14,
-    fontWeight: "600",
     color: "#666",
   },
   addTypeTextDark: {
@@ -2017,7 +2006,6 @@ scrollSpacer: {
   filterCardTitle: {
     fontFamily: "Poppins_500Medium",
     fontSize: 16,
-    fontWeight: "600",
     color: "#1a1a1a",
     marginBottom: 16,
   },
@@ -2046,14 +2034,12 @@ scrollSpacer: {
     fontFamily: "Poppins_400Regular",
     fontSize: 14,
     color: "#666",
-    fontWeight: "500",
   },
   filterOptionTextDark: {
     color: "#888",
   },
   filterOptionTextActive: {
     color: "#fff",
-    fontWeight: "600",
   },
 
   // Buttons - CORREGIDOS PARA SER MÁS COMPACTOS
@@ -2087,7 +2073,6 @@ scrollSpacer: {
     borderColor: "#333",
   },
   cancelBtnText: {
-    fontWeight: "600",
     color: "#666",
     fontSize: 15, // Ligeramente más pequeño
     fontFamily: "Poppins_500Medium",
@@ -2109,7 +2094,6 @@ scrollSpacer: {
     borderColor: "#333",
   },
   resetBtnText: {
-    fontWeight: "600",
     color: "#666",
     fontSize: 15,
     fontFamily: "Poppins_500Medium",
@@ -2129,7 +2113,6 @@ scrollSpacer: {
   },
   applyBtnText: {
     color: "#fff",
-    fontWeight: "600",
     fontSize: 15,
     fontFamily: "Poppins_500Medium",
   },
@@ -2148,7 +2131,6 @@ scrollSpacer: {
     fontFamily: "Poppins_500Medium",
     fontSize: 18,
     color: "#666",
-    fontWeight: "600",
     textAlign: "center",
     marginBottom: 8,
   },
@@ -2165,7 +2147,6 @@ scrollSpacer: {
     fontSize: 12,
     color: "#666",
     marginBottom: 8,
-    fontWeight: "500",
     fontFamily: "Poppins_500Medium",
   },
   optionsRow: {
@@ -2191,7 +2172,6 @@ scrollSpacer: {
   optionChipText: {
     fontSize: 14,
     color: "#666",
-    fontWeight: "500",
     fontFamily: "Poppins_500Medium",
   },
   optionChipTextDark: {
@@ -2260,7 +2240,6 @@ scrollSpacer: {
   },
   datePickerTitle: {
     fontSize: 16,
-    fontWeight: "600",
     color: "#333",
     textAlign: "center",
     fontFamily: "Poppins_600SemiBold",
@@ -2298,12 +2277,10 @@ scrollSpacer: {
   },
   datePickerButtonTextCancel: {
     color: "#6c757d",
-    fontWeight: "600",
     fontFamily: "Poppins_600SemiBold",
   },
   datePickerButtonTextConfirm: {
     color: "#fff",
-    fontWeight: "600",
     fontFamily: "Poppins_600SemiBold",
   },
   androidCloseButton: {
@@ -2315,7 +2292,6 @@ scrollSpacer: {
   },
   androidCloseButtonText: {
     color: "#fff",
-    fontWeight: "600",
     fontFamily: "Poppins_600SemiBold",
   },
   loadingContainer: {
@@ -2347,7 +2323,6 @@ scrollSpacer: {
   },
   refreshButtonText: {
     color: "#539DF3",
-    fontWeight: "600",
     fontSize: 14,
     fontFamily: "Poppins_500Medium",
   },

@@ -209,10 +209,10 @@ const TendenciaStockChart: React.FC<TendenciaStockChartProps> = ({
 const styles = StyleSheet.create({
   scrollContainer: { flex: 1 },
   container: {
-    backgroundColor: "#FFFFFF",
+    backgroundColor: "#ffffffff",
     borderRadius: 20,
-    padding: 18,
-    margin: 14,
+    padding: 16,
+    margin: 1,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.07,

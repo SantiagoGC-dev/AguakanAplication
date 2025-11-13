@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useCallback } from "react";
 import {
   View,
   Text,
@@ -13,12 +13,12 @@ import {
 } from "react-native";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { useAuth } from "@/context/AuthContext";
-import { Link, useRouter } from "expo-router";
+import { Link, useRouter, useFocusEffect } from "expo-router";
 import api from "@/utils/api";
 import { Ionicons } from "@expo/vector-icons";
 
 export default function PerfilScreen() {
-  const { user, logout } = useAuth();
+  const { user, logout, refreshAuthUser } = useAuth();
   const colorScheme = useColorScheme();
   const isDark = colorScheme === "dark";
   const router = useRouter();
@@ -34,6 +34,25 @@ export default function PerfilScreen() {
   const [correo, setCorreo] = useState(user?.correo || "");
   const [passActual, setPassActual] = useState("");
   const [passNueva, setPassNueva] = useState("");
+
+  useFocusEffect(
+    useCallback(() => {
+      console.log("LOG: Pantalla de Perfil en foco, refrescando datos...");
+      
+      // Llama a la función de tu contexto para refrescar al usuario
+      if (refreshAuthUser) {
+        refreshAuthUser();
+      }
+      
+      // Sincroniza los estados del formulario con la info
+      // más reciente del contexto (por si el usuario canceló la edición)
+      setNombre(user?.primer_nombre || "");
+      setApPaterno(user?.apellido_paterno || "");
+      setApMaterno(user?.apellido_materno || "");
+      setCorreo(user?.correo || "");
+
+    }, [refreshAuthUser]) // Dependencias
+  );
 
   // --- Lógica del Perfil ---
   const handleLogout = () => {
@@ -99,6 +118,9 @@ export default function PerfilScreen() {
 
       if (response.data.success) {
         Alert.alert("Éxito", "Perfil actualizado correctamente.");
+        if (refreshAuthUser) {
+          refreshAuthUser();
+        }
         setModalVisible(false);
       }
     } catch (error: any) {
@@ -135,7 +157,7 @@ export default function PerfilScreen() {
               <Text style={[styles.userRole, isDark && styles.textMutedDark]}>
                 {user?.rol === 1 ? "Administrador" : "Laboratorista"}
               </Text>
-              <Text style={[styles.userEmail, isDark && styles.textMutedDark]}>
+              <Text style={[styles.userEmail, isDark && styles.userEmail]}>
                 {user?.correo}
               </Text>
             </View>
@@ -512,10 +534,11 @@ const styles = StyleSheet.create({
   header: {
     padding: 20,
     paddingTop: 50,
+    paddingBottom: 1,
     backgroundColor: "#F8FAFC"
   },
   headerDark: {
-    backgroundColor: "#1c1c1e",
+    backgroundColor: "#000000ff",
     borderBottomColor: "#333",
   },
   headerTitle: {
@@ -862,7 +885,7 @@ modalCard: {
     color: "#fff",
   },
   textMutedDark: {
-    color: "#888",
+    color: "#539DF3",
   },
 
   // Footer (commented)
