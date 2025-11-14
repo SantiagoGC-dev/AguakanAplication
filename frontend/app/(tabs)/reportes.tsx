@@ -1085,7 +1085,6 @@ const styles = StyleSheet.create({
     gap: 6,
     borderWidth: 1,
     borderColor: "#E5E7EB",
-    paddingHorizontal: 12,
   },
   exportButtonBigDark: {
     backgroundColor: "#2c2c2e",
@@ -1137,13 +1136,13 @@ filtrosContainer: {
     justifyContent: "space-between", // Distribuir espacio uniformemente
   },
  filtroCard: {
-    minWidth: (screenWidth - 48) / 4, // Calculado basado en pantalla
-    maxWidth: (screenWidth - 48) / 4, // Evitar que crezcan demasiado
+    minWidth: (screenWidth -1) / 5, // Calculado basado en pantalla
+    maxWidth: (screenWidth -1) / 5, // Evitar que crezcan demasiado
     alignItems: "center",
     backgroundColor: "#FFFFFF",
     borderRadius: 12,
-    padding: 8, // Reducido padding
-    gap: 4,
+    padding: 2, // Reducido padding
+    gap: 2,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
@@ -1166,7 +1165,7 @@ filtrosContainer: {
   },
 filtroNumber: {
     fontSize: 14, // Reducido ligeramente
-    color: "#1E293B",
+    color: "#CCCCCC",
     fontFamily: "Poppins_700Bold",
     lineHeight: 16, // Controlar altura de línea
   },
@@ -1178,7 +1177,7 @@ filtroNumber: {
   },
   filtroLabel: {
     fontSize: 10,
-    color: "#000000ff",
+    color: "#ffffffff",
     fontFamily: "Poppins_700Bold",
     textAlign: "center",
     lineHeight: 12, // Controlar altura de línea

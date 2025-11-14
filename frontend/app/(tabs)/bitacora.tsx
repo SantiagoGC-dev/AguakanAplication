@@ -763,7 +763,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#000",
   },
   headerTitle: {
-    fontSize: 25,
+    fontSize: 24,
     color: "#000000ff",
     fontFamily: "Poppins_700Bold",
   },

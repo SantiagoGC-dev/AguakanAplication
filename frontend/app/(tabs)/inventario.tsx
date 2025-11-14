@@ -1577,7 +1577,7 @@ const styles = StyleSheet.create({
   safe: { 
     flex: 1, 
     backgroundColor: "#f8fafc",
-    marginBottom: -90,
+    marginBottom: -50,
   },
   safeDark: { backgroundColor: "#000" },
   container: { 
