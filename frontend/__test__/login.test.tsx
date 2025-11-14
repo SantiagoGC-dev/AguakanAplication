@@ -4,7 +4,7 @@ import React from 'react';
 // waitFor: Nos ayuda a esperar por acciones que no son instantáneas
 import { render, fireEvent, waitFor } from '@testing-library/react-native';
 import { Alert } from 'react-native';
-import LoginScreen from './login'; // 1. Importa la pantalla que quieres probar
+import LoginScreen from '../app/login'; // 1. Importa la pantalla que quieres probar
 import { useAuth } from '../context/AuthContext'; // 2. Importa el hook que vamos a simular
 
 // 3. ¡LA MAGIA! (Mocking)

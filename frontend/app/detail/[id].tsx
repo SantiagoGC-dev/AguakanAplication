@@ -26,7 +26,7 @@ import { useAuth } from "@/context/AuthContext";
 import api from "@/utils/api";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 
-const API_ROOT_URL = "http://192.168.167.253:3000";
+const API_ROOT_URL = "http://10.149.121.216:3000";
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get("window");
 

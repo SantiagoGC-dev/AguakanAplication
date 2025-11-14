@@ -30,7 +30,7 @@ const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
 
 
 //Configuración de la API y Tipos
-const API_BASE_URL = "http://192.168.167.253:3000";
+const API_BASE_URL = "http://10.149.121.216:3000";
 
 interface FilterOption {
   label: string;
