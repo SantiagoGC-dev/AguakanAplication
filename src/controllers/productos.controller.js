@@ -289,7 +289,6 @@ export const createProducto = async (req, res) => {
       caducidad,
     } = req.body;
 
-    // ✅ DEBUG: Verificar todos los datos recibidos
     console.log("📦 DATOS RECIBIDOS EN CREATE:", {
       nombre,
       marca,
@@ -345,7 +344,7 @@ export const createProducto = async (req, res) => {
         insertId: reactivoResult.insertId,
       });
     } else if (id_tipo_producto == 2) {
-      // EQUIPO - LÓGICA MEJORADA
+      // EQUIPO
       console.log("🔄 Creando equipo con datos:", {
         id_agk,
         modelo,
@@ -376,7 +375,7 @@ export const createProducto = async (req, res) => {
         insertId: equipoResult.insertId,
       });
 
-      // ✅ VERIFICACIÓN POST-CREACIÓN
+      // VERIFICACIÓN POST-CREACIÓN
       const [verificacionEquipo] = await connection.query(
         `SELECT eq.*, l.nombre as lab_nombre 
          FROM Equipo eq 
@@ -403,7 +402,6 @@ export const createProducto = async (req, res) => {
 
     await connection.commit();
 
-    // ✅ LLAMADA CORRECTA: Llama a la actualización de estatus DESPUÉS de confirmar la transacción.
     updateProductosEstatus().catch((err) =>
       console.error("Error en actualización de estatus post-creación:", err)
     );
@@ -451,7 +449,6 @@ export const updateProducto = async (req, res) => {
       caducidad,
     } = req.body;
 
-    // ✅ DEBUG MEJORADO
     console.log("📅 ACTUALIZACIÓN - DATOS RECIBIDOS:", {
       productoId: id,
       id_tipo_producto,
@@ -497,7 +494,6 @@ export const updateProducto = async (req, res) => {
       affectedRows: productoResult.affectedRows,
     });
 
-    // ✅ SOLUCIÓN CORREGIDA: Usar UPDATE/INSERT explícito
     if (id_tipo_producto == 1) {
       console.log("🔄 Actualizando reactivo...", { id, caducidad });
 
@@ -508,7 +504,7 @@ export const updateProducto = async (req, res) => {
       );
 
       if (existing.length > 0) {
-        // ✅ ACTUALIZAR si existe
+        // ACTUALIZAR si existe
         const [updateResult] = await connection.query(
           `UPDATE Reactivo 
            SET presentacion = ?, caducidad = ?, cantidad_ingresada = ?
@@ -521,7 +517,7 @@ export const updateProducto = async (req, res) => {
           caducidadActualizada: caducidad,
         });
       } else {
-        // ✅ INSERTAR si no existe
+        // INSERTAR si no existe
         const [insertResult] = await connection.query(
           `INSERT INTO Reactivo (id_producto, presentacion, caducidad, cantidad_ingresada)
            VALUES (?, ?, ?, ?)`,
@@ -532,7 +528,7 @@ export const updateProducto = async (req, res) => {
         });
       }
 
-      // ✅ VERIFICAR que se actualizó correctamente
+      // VERIFICAR que se actualizó correctamente
       const [verificacion] = await connection.query(
         "SELECT caducidad FROM Reactivo WHERE id_producto = ?",
         [id]
@@ -545,7 +541,7 @@ export const updateProducto = async (req, res) => {
         [id]
       );
 
-      // ✅ DEBUG DETALLADO
+      // DEBUG DETALLADO
       console.log("🔍 DEBUG EQUIPO - ANTES DE ACTUALIZAR:", {
         productoId: id,
         existeEquipo: existingEquipo.length > 0,
@@ -561,7 +557,7 @@ export const updateProducto = async (req, res) => {
         },
       });
 
-      // ✅ FORZAR INSERCIÓN si no existe el equipo
+      // FORZAR INSERCIÓN si no existe el equipo
       if (existingEquipo.length === 0) {
         console.log("🆕 INSERTANDO NUEVO REGISTRO EN EQUIPO...");
         const [insertResult] = await connection.query(
@@ -583,7 +579,7 @@ export const updateProducto = async (req, res) => {
           insertId: insertResult.insertId,
         });
       } else {
-        // ✅ ACTUALIZAR equipo existente
+        // ACTUALIZAR equipo existente
         const [updateResult] = await connection.query(
           `UPDATE Equipo 
            SET id_agk = ?, modelo = ?, numero_serie = ?, rango_medicion = ?, 
@@ -606,7 +602,7 @@ export const updateProducto = async (req, res) => {
         });
       }
 
-      // ✅ VERIFICACIÓN POST-ACTUALIZACIÓN
+      // VERIFICACIÓN POST-ACTUALIZACIÓN
       const [verificacionEquipo] = await connection.query(
         `SELECT eq.*, l.nombre as lab_nombre, l.ubicacion as lab_ubicacion 
          FROM Equipo eq 
@@ -619,7 +615,7 @@ export const updateProducto = async (req, res) => {
 
     await connection.commit();
 
-    // ✅ ACTUALIZAR ESTATUS INMEDIATAMENTE
+    // ACTUALIZAR ESTATUS INMEDIATAMENTE
     await updateProductosEstatus();
 
     // Devuelve el producto actualizado para no hacer otra consulta a la BD
@@ -687,7 +683,7 @@ export const updateProductoImagen = async (req, res) => {
     }
 
     // Construir la URL completa de la imagen
-    const imageUrl = `http://10.149.121.216:3000/uploads/${req.file.filename}`;
+    const imageUrl = `http://192.168.0.166:3000/uploads/${req.file.filename}`;
 
     console.log("🖼️ URL COMPLETA que se guardará:", imageUrl);
 
@@ -725,8 +721,6 @@ export const updateProductoImagen = async (req, res) => {
 export const getProductoStockTrend = async (req, res) => {
   try {
     const { id } = req.params;
-
-    // ✅ CONSULTA CORREGIDA - Compatible con todas las versiones de MySQL
     const [rows] = await pool.query(
       `SELECT 
           m.fecha AS x,

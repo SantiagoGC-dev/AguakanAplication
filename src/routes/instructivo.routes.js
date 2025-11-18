@@ -1,4 +1,3 @@
-// routes/instructivo.routes.js
 import express from 'express';
 import {
   uploadInstructivo,

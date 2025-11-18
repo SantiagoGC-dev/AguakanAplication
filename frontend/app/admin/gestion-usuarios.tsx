@@ -22,7 +22,7 @@ import { Ionicons } from "@expo/vector-icons";
 export default function GestionUsuariosScreen() {
   const colorScheme = useColorScheme();
   const isDark = colorScheme === "dark";
-  
+
   const [users, setUsers] = useState<any[]>([]);
   const [roles, setRoles] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -37,10 +37,10 @@ export default function GestionUsuariosScreen() {
   const [correo, setCorreo] = useState("");
   const [password, setPassword] = useState("");
   const [primerNombre, setPrimerNombre] = useState("");
-  const [apPaterno, setApPaterno] = useState(""); 
-  const [apMaterno, setApMaterno] = useState(""); 
-  const [idRol, setIdRol] = useState(2); 
-  const [idEstatus, setIdEstatus] = useState(1); 
+  const [apPaterno, setApPaterno] = useState("");
+  const [apMaterno, setApMaterno] = useState("");
+  const [idRol, setIdRol] = useState(2);
+  const [idEstatus, setIdEstatus] = useState(1);
 
   // Estados de los estatus
   const [estatuses, setEstatuses] = useState<any[]>([]);
@@ -58,7 +58,7 @@ export default function GestionUsuariosScreen() {
       const [usersRes, rolesRes, estatusRes] = await Promise.all([
         api.get("/usuarios"),
         api.get("/usuarios/roles"),
-        api.get("/usuarios/estatus"), 
+        api.get("/usuarios/estatus"),
       ]);
 
       setUsers(usersRes.data.data);
@@ -77,27 +77,28 @@ export default function GestionUsuariosScreen() {
       );
     } catch (error) {
       Alert.alert("Error", "No se pudieron cargar los datos");
-      console.error("Error en fetchData:", error); 
+      console.error("Error en fetchData:", error);
     } finally {
       setLoading(false);
     }
   };
 
-const handleCambiarEstadoUsuario = async (userId: number, userName: string, esActivo: boolean) => {
-  swipeableRefs.current.get(userId)?.close();
-  
-  const accion = esActivo ? "Desactivar" : "Activar";
-  const mensaje = esActivo 
-    ? `¿Estás seguro de que quieres desactivar a ${userName}? El usuario perderá acceso a la aplicación.`
-    : `¿Estás seguro de que quieres activar a ${userName}? El usuario recuperará acceso a la aplicación.`;
+  const handleCambiarEstadoUsuario = async (
+    userId: number,
+    userName: string,
+    esActivo: boolean
+  ) => {
+    swipeableRefs.current.get(userId)?.close();
 
-  Alert.alert(
-    `${accion} Usuario`,
-    mensaje,
-    [
+    const accion = esActivo ? "Desactivar" : "Activar";
+    const mensaje = esActivo
+      ? `¿Estás seguro de que quieres desactivar a ${userName}? El usuario perderá acceso a la aplicación.`
+      : `¿Estás seguro de que quieres activar a ${userName}? El usuario recuperará acceso a la aplicación.`;
+
+    Alert.alert(`${accion} Usuario`, mensaje, [
       {
         text: "Cancelar",
-        style: "cancel"
+        style: "cancel",
       },
       {
         text: accion,
@@ -105,122 +106,139 @@ const handleCambiarEstadoUsuario = async (userId: number, userName: string, esAc
         onPress: async () => {
           try {
             setDeletingId(userId);
-            
+
             if (esActivo) {
               // Desactivar usuario
               await api.delete(`/usuarios/${userId}`);
               Alert.alert("Éxito", "Usuario desactivado correctamente");
             } else {
-              // Reactivar usuario  
+              // Reactivar usuario
               await api.put(`/usuarios/${userId}/reactivar`);
               Alert.alert("Éxito", "Usuario reactivado correctamente");
             }
-            
+
             // Recargar la lista completa para ver el cambio de estatus
             await fetchData();
-            
           } catch (error: any) {
-            const errorMsg = error.response?.data?.error || `No se pudo ${accion.toLowerCase()} el usuario`;
+            const errorMsg =
+              error.response?.data?.error ||
+              `No se pudo ${accion.toLowerCase()} el usuario`;
             Alert.alert("Error", errorMsg);
           } finally {
             setDeletingId(null);
           }
-        }
-      }
-    ]
-  );
-};
+        },
+      },
+    ]);
+  };
 
   // Render del swipeable para eliminar
-const renderRightActions = (progress: any, dragX: any, item: any) => {
-  const esActivo = item.id_estatus_usuario === 1;
-  const accion = esActivo ? "Desactivar" : "Activar";
-  const color = esActivo ? "#DC2626" : "#16A34A"; // Rojo para desactivar, Verde para activar
-  const icono = esActivo ? "person-remove" : "person-add";
+  const renderRightActions = (progress: any, dragX: any, item: any) => {
+    const esActivo = item.id_estatus_usuario === 1;
+    const accion = esActivo ? "Desactivar" : "Activar";
+    const color = esActivo ? "#DC2626" : "#16A34A";
+    const icono = esActivo ? "person-remove" : "person-add";
 
-  const scale = dragX.interpolate({
-    inputRange: [-100, 0],
-    outputRange: [1, 0],
-    extrapolate: 'clamp',
-  });
+    const scale = dragX.interpolate({
+      inputRange: [-100, 0],
+      outputRange: [1, 0],
+      extrapolate: "clamp",
+    });
 
-  return (
-    <TouchableOpacity
-      style={[styles.deleteAction, deletingId === item.id_usuario && styles.deleteActionDisabled, { backgroundColor: color }]}
-      onPress={() => handleCambiarEstadoUsuario(item.id_usuario, `${item.primer_nombre} ${item.apellido_paterno}`, esActivo)}
-      disabled={deletingId === item.id_usuario}
-    >
-      <Animated.View style={{ transform: [{ scale }] }}>
-        {deletingId === item.id_usuario ? (
-          <View style={styles.deletingContainer}>
-            <Ionicons name="refresh" size={20} color="white" />
-          </View>
-        ) : (
-          <View style={styles.deleteContainer}>
-            <Ionicons name={icono} size={24} color="white" />
-            <Text style={styles.deleteActionText}>{accion}</Text>
-          </View>
-        )}
-      </Animated.View>
-    </TouchableOpacity>
-  );
-};
+    return (
+      <TouchableOpacity
+        style={[
+          styles.deleteAction,
+          deletingId === item.id_usuario && styles.deleteActionDisabled,
+          { backgroundColor: color },
+        ]}
+        onPress={() =>
+          handleCambiarEstadoUsuario(
+            item.id_usuario,
+            `${item.primer_nombre} ${item.apellido_paterno}`,
+            esActivo
+          )
+        }
+        disabled={deletingId === item.id_usuario}
+      >
+        <Animated.View style={{ transform: [{ scale }] }}>
+          {deletingId === item.id_usuario ? (
+            <View style={styles.deletingContainer}>
+              <Ionicons name="refresh" size={20} color="white" />
+            </View>
+          ) : (
+            <View style={styles.deleteContainer}>
+              <Ionicons name={icono} size={24} color="white" />
+              <Text style={styles.deleteActionText}>{accion}</Text>
+            </View>
+          )}
+        </Animated.View>
+      </TouchableOpacity>
+    );
+  };
 
-const renderItem = ({ item }: { item: any }) => (
-  <Swipeable
-    ref={(ref) => {
-      if (ref) {
-        swipeableRefs.current.set(item.id_usuario, ref);
-      } else {
-        swipeableRefs.current.delete(item.id_usuario);
+  const renderItem = ({ item }: { item: any }) => (
+    <Swipeable
+      ref={(ref) => {
+        if (ref) {
+          swipeableRefs.current.set(item.id_usuario, ref);
+        } else {
+          swipeableRefs.current.delete(item.id_usuario);
+        }
+      }}
+      renderRightActions={(progress, dragX) =>
+        renderRightActions(progress, dragX, item)
       }
-    }}
-    renderRightActions={(progress, dragX) => renderRightActions(progress, dragX, item)}
-    rightThreshold={40}
-    overshootRight={false}
-  >
-    <View style={[styles.itemContainer, isDark && styles.itemContainerDark]}>
-      <View style={styles.itemContent}>
-        <Text style={[styles.itemTitle, isDark && styles.textDark]}>
-          {item.primer_nombre} {item.apellido_paterno}
-          {/* 🔥 ELIMINADO: El texto "(Inactivo)" */}
-        </Text>
-        <Text style={[styles.itemText, isDark && styles.textMutedDark]}>
-          {item.correo}
-        </Text>
-        <View style={styles.itemBadges}>
-          <View style={[
-            styles.badge, 
-            item.id_rol === 1 ? styles.badgeAdmin : styles.badgeUser
-          ]}>
-            <Text style={styles.badgeText}>
-              {item.nombre_rol}
-            </Text>
-          </View>
-          <View style={[
-            styles.badge, 
-            // 🔥 MEJORAR colores para estatus
-            item.id_estatus_usuario === 1 ? styles.badgeActive : styles.badgeInactive
-          ]}>
-            <Text style={[
-              styles.badgeText,
-              // 🔥 AGREGAR color de texto según estatus
-              item.id_estatus_usuario === 1 ? styles.badgeTextActive : styles.badgeTextInactive
-            ]}>
-              {item.id_estatus_usuario === 1 ? "Activo" : "Inactivo"}
-            </Text>
+      rightThreshold={40}
+      overshootRight={false}
+    >
+      <View style={[styles.itemContainer, isDark && styles.itemContainerDark]}>
+        <View style={styles.itemContent}>
+          <Text style={[styles.itemTitle, isDark && styles.textDark]}>
+            {item.primer_nombre} {item.apellido_paterno}
+          </Text>
+          <Text style={[styles.itemText, isDark && styles.textMutedDark]}>
+            {item.correo}
+          </Text>
+          <View style={styles.itemBadges}>
+            <View
+              style={[
+                styles.badge,
+                item.id_rol === 1 ? styles.badgeAdmin : styles.badgeUser,
+              ]}
+            >
+              <Text style={styles.badgeText}>{item.nombre_rol}</Text>
+            </View>
+            <View
+              style={[
+                styles.badge,
+                item.id_estatus_usuario === 1
+                  ? styles.badgeActive
+                  : styles.badgeInactive,
+              ]}
+            >
+              <Text
+                style={[
+                  styles.badgeText,
+                  item.id_estatus_usuario === 1
+                    ? styles.badgeTextActive
+                    : styles.badgeTextInactive,
+                ]}
+              >
+                {item.id_estatus_usuario === 1 ? "Activo" : "Inactivo"}
+              </Text>
+            </View>
           </View>
         </View>
+        <TouchableOpacity
+          style={styles.editButton}
+          onPress={() => openModal(item)}
+        >
+          <Ionicons name="create" size={20} color="#539DF3" />
+        </TouchableOpacity>
       </View>
-      <TouchableOpacity
-        style={styles.editButton}
-        onPress={() => openModal(item)}
-      >
-        <Ionicons name="create" size={20} color="#539DF3" />
-      </TouchableOpacity>
-    </View>
-  </Swipeable>
-);
+    </Swipeable>
+  );
   const openModal = (user: any = null) => {
     if (user) {
       // --- Editando Usuario ---
@@ -232,7 +250,7 @@ const renderItem = ({ item }: { item: any }) => (
       setApMaterno(user.apellido_materno || "");
       setIdRol(user.id_rol);
       setIdEstatus(user.id_estatus_usuario);
-      setPassword(""); 
+      setPassword("");
     } else {
       // --- Creando Usuario ---
       setIsEditing(false);
@@ -242,8 +260,8 @@ const renderItem = ({ item }: { item: any }) => (
       setApPaterno("");
       setApMaterno("");
       setPassword("");
-      setIdRol(2); 
-      setIdEstatus(1); 
+      setIdRol(2);
+      setIdEstatus(1);
     }
     setModalVisible(true);
   };
@@ -271,7 +289,7 @@ const renderItem = ({ item }: { item: any }) => (
           apellido_materno: apMaterno,
           id_rol: idRol,
           id_estatus_usuario: idEstatus,
-          password: password || undefined, 
+          password: password || undefined,
         };
         await api.put(`/usuarios/${currentUser.id_usuario}`, data);
         Alert.alert("Éxito", "Usuario actualizado");
@@ -298,37 +316,35 @@ const renderItem = ({ item }: { item: any }) => (
     }
   };
 
-
-
   return (
     <View style={[styles.container, isDark && styles.containerDark]}>
       <Stack.Screen options={{ title: "Gestión de Usuarios" }} />
-      
+
       {/* Header */}
-<View style={[styles.header, isDark && styles.headerDark]}>
-  <TouchableOpacity
-    onPress={() => router.back()} // Esto regresa a la pantalla anterior
-    style={styles.backButton}
-  >
-    <Ionicons
-      name="chevron-back"
-      size={24}
-      color={isDark ? "#fff" : "#000"}
-    />
-    <Text style={[styles.backText, isDark && styles.textDark]}>
-      Atrás
-    </Text>
-  </TouchableOpacity>
-  <Text style={[styles.headerTitle, isDark && styles.textDark]}>
-    Usuarios
-  </Text>
-  <View style={styles.headerPlaceholder} />
-</View>
+      <View style={[styles.header, isDark && styles.headerDark]}>
+        <TouchableOpacity
+          onPress={() => router.back()}
+          style={styles.backButton}
+        >
+          <Ionicons
+            name="chevron-back"
+            size={24}
+            color={isDark ? "#fff" : "#000"}
+          />
+          <Text style={[styles.backText, isDark && styles.textDark]}>
+            Atrás
+          </Text>
+        </TouchableOpacity>
+        <Text style={[styles.headerTitle, isDark && styles.textDark]}>
+          Usuarios
+        </Text>
+        <View style={styles.headerPlaceholder} />
+      </View>
 
       <ScrollView style={styles.content}>
         {/* Botón Crear Usuario */}
-        <TouchableOpacity 
-          style={[styles.createButton, isDark && styles.createButtonDark]} 
+        <TouchableOpacity
+          style={[styles.createButton, isDark && styles.createButtonDark]}
           onPress={() => openModal()}
         >
           <Ionicons name="person-add" size={22} color="#539DF3" />
@@ -342,11 +358,9 @@ const renderItem = ({ item }: { item: any }) => (
           <Text style={[styles.sectionTitle, isDark && styles.textDark]}>
             Usuarios Registrados
           </Text>
-          
+
           {users.map((item) => (
-            <View key={item.id_usuario.toString()}>
-              {renderItem({ item })}
-            </View>
+            <View key={item.id_usuario.toString()}>{renderItem({ item })}</View>
           ))}
         </View>
       </ScrollView>
@@ -356,9 +370,10 @@ const renderItem = ({ item }: { item: any }) => (
         visible={modalVisible}
         animationType="slide"
         onRequestClose={() => setModalVisible(false)}
+        statusBarTranslucent={true}
       >
         <KeyboardAvoidingView
-          behavior={Platform.OS === "ios" ? "padding" : "height"}
+          behavior={Platform.OS === "ios" ? "padding" : undefined}
           style={{ flex: 1 }}
         >
           <View style={[styles.modalHeader, isDark && styles.modalHeaderDark]}>
@@ -385,30 +400,28 @@ const renderItem = ({ item }: { item: any }) => (
             style={[styles.modalContent, isDark && styles.modalContentDark]}
             showsVerticalScrollIndicator={false}
             contentContainerStyle={styles.modalScrollContent}
+            keyboardShouldPersistTaps="handled"
+            keyboardDismissMode="on-drag"
           >
             {/* Tarjeta de Información Personal */}
             <View style={[styles.modalCard, isDark && styles.modalCardDark]}>
               <View style={styles.cardHeader}>
-                <Ionicons
-                  name="person-circle"
-                  size={22}
-                  color="#539DF3"
-                />
+                <Ionicons name="person-circle" size={22} color="#539DF3" />
                 <Text style={[styles.cardTitle, isDark && styles.textDark]}>
                   Información Personal
                 </Text>
               </View>
-              
+
               <View style={styles.formRow}>
                 <View style={styles.inputGroupHalf}>
                   <Text style={[styles.label, isDark && styles.labelDark]}>
-                    Primer Nombre *
+                    Nombres *
                   </Text>
                   <TextInput
                     style={[styles.input, isDark && styles.inputDark]}
                     value={primerNombre}
                     onChangeText={setPrimerNombre}
-                    placeholder="Ingresa el nombre"
+                    placeholder="Nombre"
                     placeholderTextColor={isDark ? "#666" : "#999"}
                   />
                 </View>
@@ -444,7 +457,9 @@ const renderItem = ({ item }: { item: any }) => (
                 <Text style={[styles.label, isDark && styles.labelDark]}>
                   Correo Electrónico *
                 </Text>
-                <View style={[styles.inputWithIcon, isDark && styles.inputDark]}>
+                <View
+                  style={[styles.inputWithIcon, isDark && styles.inputDark]}
+                >
                   <Ionicons
                     name="mail"
                     size={18}
@@ -452,7 +467,11 @@ const renderItem = ({ item }: { item: any }) => (
                     style={styles.inputIcon}
                   />
                   <TextInput
-                    style={[styles.input, styles.inputWithIconField, isDark && styles.inputDark]}
+                    style={[
+                      styles.input,
+                      styles.inputWithIconField,
+                      isDark && styles.inputDark,
+                    ]}
                     value={correo}
                     onChangeText={setCorreo}
                     keyboardType="email-address"
@@ -467,28 +486,27 @@ const renderItem = ({ item }: { item: any }) => (
             {/* Tarjeta de Contraseña */}
             <View style={[styles.modalCard, isDark && styles.modalCardDark]}>
               <View style={styles.cardHeader}>
-                <Ionicons
-                  name="lock-closed"
-                  size={22}
-                  color="#539DF3"
-                />
+                <Ionicons name="lock-closed" size={22} color="#539DF3" />
                 <Text style={[styles.cardTitle, isDark && styles.textDark]}>
                   Contraseña
                 </Text>
               </View>
-              
-              <Text style={[styles.cardSubtitle, isDark && styles.textMutedDark]}>
-                {isEditing 
-                  ? "Deja en blanco para no cambiar la contraseña" 
-                  : "Establece la contraseña inicial del usuario"
-                }
+
+              <Text
+                style={[styles.cardSubtitle, isDark && styles.textMutedDark]}
+              >
+                {isEditing
+                  ? "Deja en blanco para no cambiar la contraseña"
+                  : "Establece la contraseña inicial del usuario"}
               </Text>
 
               <View style={styles.inputGroup}>
                 <Text style={[styles.label, isDark && styles.labelDark]}>
                   {isEditing ? "Nueva Contraseña" : "Contraseña *"}
                 </Text>
-                <View style={[styles.inputWithIcon, isDark && styles.inputDark]}>
+                <View
+                  style={[styles.inputWithIcon, isDark && styles.inputDark]}
+                >
                   <Ionicons
                     name="key"
                     size={18}
@@ -496,7 +514,11 @@ const renderItem = ({ item }: { item: any }) => (
                     style={styles.inputIcon}
                   />
                   <TextInput
-                    style={[styles.input, styles.inputWithIconField, isDark && styles.inputDark]}
+                    style={[
+                      styles.input,
+                      styles.inputWithIconField,
+                      isDark && styles.inputDark,
+                    ]}
                     value={password}
                     onChangeText={setPassword}
                     secureTextEntry
@@ -510,11 +532,7 @@ const renderItem = ({ item }: { item: any }) => (
             {/* Tarjeta de Rol y Estatus */}
             <View style={[styles.modalCard, isDark && styles.modalCardDark]}>
               <View style={styles.cardHeader}>
-                <Ionicons
-                  name="settings"
-                  size={22}
-                  color="#539DF3"
-                />
+                <Ionicons name="settings" size={22} color="#539DF3" />
                 <Text style={[styles.cardTitle, isDark && styles.textDark]}>
                   Configuración
                 </Text>
@@ -576,7 +594,9 @@ const renderItem = ({ item }: { item: any }) => (
                 style={[styles.cancelButton, isDark && styles.cancelButtonDark]}
                 onPress={() => setModalVisible(false)}
               >
-                <Text style={[styles.cancelButtonText, isDark && styles.textDark]}>
+                <Text
+                  style={[styles.cancelButtonText, isDark && styles.textDark]}
+                >
                   Cancelar
                 </Text>
               </TouchableOpacity>
@@ -600,8 +620,6 @@ const styles = StyleSheet.create({
     flex: 1,
     padding: 20,
   },
-
-  // Header
   header: {
     flexDirection: "row",
     alignItems: "center",
@@ -622,25 +640,23 @@ const styles = StyleSheet.create({
     padding: 8,
     marginLeft: -8,
   },
-    backText: {
+  backText: {
     fontSize: 16,
     fontFamily: "Poppins_500Medium",
     color: "#539DF3",
     marginLeft: 4,
   },
-    headerPlaceholder: {
-    width: 90, // Mismo ancho que el botón de atrás para balance
+  headerPlaceholder: {
+    width: 90,
   },
   headerTitle: {
-    fontSize: 22, 
+    fontSize: 22,
     fontFamily: "Poppins_700Bold",
     color: "#111",
     textAlign: "center",
     flex: 1,
     marginHorizontal: 10,
   },
-
-  // Create Button
   createButton: {
     flexDirection: "row",
     alignItems: "center",
@@ -661,8 +677,6 @@ const styles = StyleSheet.create({
     fontFamily: "Poppins_500Medium",
     color: "#111",
   },
-
-  // List Section
   listSection: {
     marginBottom: 24,
   },
@@ -673,8 +687,6 @@ const styles = StyleSheet.create({
     marginBottom: 12,
     marginLeft: 4,
   },
-
-  // Item Container
   itemContainer: {
     flexDirection: "row",
     alignItems: "center",
@@ -723,13 +735,9 @@ const styles = StyleSheet.create({
     borderColor: "#539DF3",
     borderWidth: 1,
   },
-
-  // Edit Button
   editButton: {
     padding: 8,
   },
-
-  // Modal Header
   modalHeader: {
     flexDirection: "row",
     alignItems: "center",
@@ -769,8 +777,6 @@ const styles = StyleSheet.create({
     fontFamily: "Poppins_700Bold",
     color: "#111",
   },
-
-  // Modal Content
   modalContent: {
     flex: 1,
     backgroundColor: "#f8f9fa",
@@ -782,8 +788,6 @@ const styles = StyleSheet.create({
   modalScrollContent: {
     paddingBottom: 30,
   },
-
-  // Modal Cards
   modalCard: {
     backgroundColor: "#fff",
     padding: 20,
@@ -819,8 +823,6 @@ const styles = StyleSheet.create({
     marginBottom: 16,
     lineHeight: 20,
   },
-
-  // Form Layout
   formRow: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -832,8 +834,6 @@ const styles = StyleSheet.create({
   inputGroup: {
     marginBottom: 20,
   },
-
-  // Inputs
   label: {
     fontSize: 14,
     fontFamily: "Poppins_500Medium",
@@ -874,8 +874,6 @@ const styles = StyleSheet.create({
   inputIcon: {
     marginLeft: 16,
   },
-
-  // Filter Options
   filterOptions: {
     flexDirection: "row",
     flexWrap: "wrap",
@@ -901,8 +899,6 @@ const styles = StyleSheet.create({
     color: "#fff",
     fontFamily: "Poppins_700Bold",
   },
-
-  // Modal Actions
   modalActions: {
     marginTop: 10,
   },
@@ -951,8 +947,6 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontFamily: "Poppins_500Medium",
   },
-
-  // Text Colors
   textDark: {
     color: "#fff",
   },
@@ -985,15 +979,13 @@ const styles = StyleSheet.create({
     fontFamily: "Poppins_500Medium",
     marginTop: 4,
   },
-  
-  // Cambiar colores de badges para estatus
   badgeActive: {
-    backgroundColor: "#DCFCE7", // Verde más suave
+    backgroundColor: "#DCFCE7",
     borderWidth: 1,
     borderColor: "#22C55E",
   },
   badgeInactive: {
-    backgroundColor: "#FEE2E2", // Rojo más suave
+    backgroundColor: "#FEE2E2",
     borderWidth: 1,
     borderColor: "#EF4444",
   },
@@ -1001,11 +993,11 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontFamily: "Poppins_500Medium",
   },
-  // 🔥 AGREGAR colores de texto para estatus
+
   badgeTextActive: {
-    color: "#166534", // Verde oscuro
+    color: "#166534",
   },
   badgeTextInactive: {
-    color: "#991B1B", // Rojo oscuro
+    color: "#991B1B",
   },
 });

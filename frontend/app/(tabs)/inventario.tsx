@@ -26,11 +26,10 @@ import { useFocusEffect } from "@react-navigation/native";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 
 // Obtener dimensiones de la pantalla
-const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
-
+const { width: screenWidth, height: screenHeight } = Dimensions.get("window");
 
 //Configuración de la API y Tipos
-const API_BASE_URL = "http://10.149.121.216:3000";
+const API_BASE_URL = "http://192.168.0.166:3000";
 
 interface FilterOption {
   label: string;
@@ -89,7 +88,6 @@ const calcularDiasHastaCaducidad = (caducidad: string): number | null => {
 const getEstatusColor = (producto: any): string => {
   const idEstatus = producto.id_estatus_producto;
 
-  // ✅ USAR SOLO LOS ESTATUS DE LA BASE DE DATOS - NO CALCULAR
   switch (idEstatus) {
     case 1:
       return "#28a745"; // Disponible
@@ -110,7 +108,7 @@ const getEstatusColor = (producto: any): string => {
   }
 };
 
-// Función para obtener texto de estatus - VERSIÓN UNIFICADA
+// Función para obtener texto de estatus
 const getEstatusText = (producto: any): string => {
   return producto.estatus || producto.nombre_estatus || "Disponible";
 };
@@ -136,13 +134,11 @@ const FormField = ({
     if (selectedDate) {
       setTempDate(selectedDate);
 
-      // En iOS, no aplicar inmediatamente, esperar a que el usuario confirme
       if (Platform.OS === "android") {
         applyDate(selectedDate);
       }
     }
 
-    // Si el usuario cancela en Android
     if (Platform.OS === "android" && event.type === "dismissed") {
       setShowPicker(false);
     }
@@ -181,19 +177,34 @@ const FormField = ({
 
   if (isDate) {
     return (
-      <View style={[styles.formFieldContainer, isDark && styles.formFieldContainerDark]}>
+      <View
+        style={[
+          styles.formFieldContainer,
+          isDark && styles.formFieldContainerDark,
+        ]}
+      >
         <TouchableOpacity
           onPress={showDatePicker}
           style={styles.dateTouchableArea}
         >
-          <Text style={[value ? styles.dateText : styles.datePlaceholder, isDark && styles.textDark]}>
+          <Text
+            style={[
+              value ? styles.dateText : styles.datePlaceholder,
+              isDark && styles.textDark,
+            ]}
+          >
             {value ? `Caducidad: ${value}` : label}
           </Text>
           <Icon name="calendar-today" size={20} color="#539DF3" />
         </TouchableOpacity>
 
         {showPicker && (
-          <View style={[styles.datePickerContainer, isDark && styles.datePickerContainerDark]}>
+          <View
+            style={[
+              styles.datePickerContainer,
+              isDark && styles.datePickerContainerDark,
+            ]}
+          >
             {/* Header del DatePicker */}
             <View style={styles.datePickerHeader}>
               <Text style={[styles.datePickerTitle, isDark && styles.textDark]}>
@@ -222,7 +233,12 @@ const FormField = ({
                     isDark && styles.datePickerButtonCancelDark,
                   ]}
                 >
-                  <Text style={[styles.datePickerButtonTextCancel, isDark && styles.textDark]}>
+                  <Text
+                    style={[
+                      styles.datePickerButtonTextCancel,
+                      isDark && styles.textDark,
+                    ]}
+                  >
                     Cancelar
                   </Text>
                 </TouchableOpacity>
@@ -256,7 +272,12 @@ const FormField = ({
   }
 
   return (
-    <View style={[styles.formFieldContainer, isDark && styles.formFieldContainerDark]}>
+    <View
+      style={[
+        styles.formFieldContainer,
+        isDark && styles.formFieldContainerDark,
+      ]}
+    >
       <TextInput
         style={[styles.formInput, isDark && styles.formInputDark]}
         placeholder={label}
@@ -283,7 +304,9 @@ const FormSelect = ({
   options: any[];
   isDark: boolean;
 }) => (
-  <View style={[styles.formFieldContainer, isDark && styles.formFieldContainerDark]}>
+  <View
+    style={[styles.formFieldContainer, isDark && styles.formFieldContainerDark]}
+  >
     <Text style={[styles.selectLabel, isDark && styles.textDark]}>{label}</Text>
     <ScrollView horizontal showsHorizontalScrollIndicator={false}>
       <View style={styles.optionsRow}>
@@ -327,7 +350,9 @@ const FormSelectLaboratorio = ({
   options: any[];
   isDark: boolean;
 }) => (
-  <View style={[styles.formFieldContainer, isDark && styles.formFieldContainerDark]}>
+  <View
+    style={[styles.formFieldContainer, isDark && styles.formFieldContainerDark]}
+  >
     <Text style={[styles.selectLabel, isDark && styles.textDark]}>{label}</Text>
     <ScrollView horizontal showsHorizontalScrollIndicator={false}>
       <View style={styles.optionsRow}>
@@ -383,7 +408,10 @@ const ProductoItem = React.memo<ProductoItemProps>(
             <View
               style={[
                 styles.statusBadge,
-                { backgroundColor: getEstatusColor(item) + (isDark ? "30" : "20") },
+                {
+                  backgroundColor:
+                    getEstatusColor(item) + (isDark ? "30" : "20"),
+                },
               ]}
             >
               <Text
@@ -407,7 +435,9 @@ const ProductoItem = React.memo<ProductoItemProps>(
           <View style={[styles.rowDetails, isDark && styles.rowDetailsDark]}>
             <View style={styles.detailsGrid}>
               <View style={styles.detailItem}>
-                <Text style={[styles.detailLabel, isDark && styles.textMutedDark]}>
+                <Text
+                  style={[styles.detailLabel, isDark && styles.textMutedDark]}
+                >
                   Lote
                 </Text>
                 <Text style={[styles.detailValue, isDark && styles.textDark]}>
@@ -415,7 +445,9 @@ const ProductoItem = React.memo<ProductoItemProps>(
                 </Text>
               </View>
               <View style={styles.detailItem}>
-                <Text style={[styles.detailLabel, isDark && styles.textMutedDark]}>
+                <Text
+                  style={[styles.detailLabel, isDark && styles.textMutedDark]}
+                >
                   Stock
                 </Text>
                 <Text style={[styles.detailValue, isDark && styles.textDark]}>
@@ -423,7 +455,9 @@ const ProductoItem = React.memo<ProductoItemProps>(
                 </Text>
               </View>
               <View style={styles.detailItem}>
-                <Text style={[styles.detailLabel, isDark && styles.textMutedDark]}>
+                <Text
+                  style={[styles.detailLabel, isDark && styles.textMutedDark]}
+                >
                   Prioridad
                 </Text>
                 <Text style={[styles.detailValue, isDark && styles.textDark]}>
@@ -434,8 +468,12 @@ const ProductoItem = React.memo<ProductoItemProps>(
 
             {/* Información adicional para reactivos */}
             {item.id_tipo_producto === 1 && item.caducidad && (
-              <View style={[styles.detailExtra, isDark && styles.detailExtraDark]}>
-                <Text style={[styles.detailLabel, isDark && styles.textMutedDark]}>
+              <View
+                style={[styles.detailExtra, isDark && styles.detailExtraDark]}
+              >
+                <Text
+                  style={[styles.detailLabel, isDark && styles.textMutedDark]}
+                >
                   Caducidad
                 </Text>
                 <Text style={[styles.detailValue, isDark && styles.textDark]}>
@@ -483,20 +521,18 @@ const ProductoItem = React.memo<ProductoItemProps>(
 export default function InventarioScreen() {
   const colorScheme = useColorScheme();
   const isDark = colorScheme === "dark";
-  
   const [productos, setProductos] = useState<any[]>([]);
   const [busqueda, setBusqueda] = useState("");
-  const [busquedaTerm, setBusquedaTerm] = useState(""); // PARA DEBOUNCE
+  const [busquedaTerm, setBusquedaTerm] = useState("");
   const [expandedId, setExpandedId] = useState<number | null>(null);
   const [cargandoInicial, setCargandoInicial] = useState(true);
   const router = useRouter();
   const { filter } = useLocalSearchParams<{ filter?: string }>();
-
-  // --- NUEVOS ESTADOS DE PAGINACIÓN ---
+  // Estados para paginación
   const [page, setPage] = useState(1);
   const [loadingMore, setLoadingMore] = useState(false);
   const [hasMore, setHasMore] = useState(true);
-  const PAGE_LIMIT = 20; // Debe coincidir con el 'limit' del backend
+  const PAGE_LIMIT = 20;
 
   // Estado y opciones para ordenamiento
   const [orden, setOrden] = useState("antiguos");
@@ -754,7 +790,6 @@ export default function InventarioScreen() {
 
   useFocusEffect(
     React.useCallback(() => {
-
       if (filter === "en-uso") {
         return;
       }
@@ -766,7 +801,7 @@ export default function InventarioScreen() {
       // Si no hay filtro "en-uso" Y la lista está vacía,
       // carga los productos normalmente (página 1).
       fetchProducts(1, true, null); // null = sin override
-    }, [filter, productos.length]) 
+    }, [filter, productos.length])
   );
 
   // Debounce para búsqueda
@@ -782,7 +817,7 @@ export default function InventarioScreen() {
   useEffect(() => {
     console.log("Filter parameter:", filter);
     if (filter === "en-uso") {
-      const statusEnUso = "5"; 
+      const statusEnUso = "5";
       // 1. Actualizar el estado para que la UI sea consistente
       setEstatusFiltro(statusEnUso);
       setFiltrosAplicados(true);
@@ -802,7 +837,7 @@ export default function InventarioScreen() {
         id_tipo_producto: tipoInfo.id_tipo_producto,
         id_laboratorio: laboratorios[0]?.id_laboratorio || 1,
         id_estatus_producto: 1,
-        id_prioridad: "2", 
+        id_prioridad: "2",
       });
     }
   }, [selectedProductType, tiposDisponibles, laboratorios]);
@@ -810,7 +845,7 @@ export default function InventarioScreen() {
   // useEffect: Detecta cambios en CUALQUIER filtro y recarga la lista
   useEffect(() => {
     if (!cargandoInicial) {
-      fetchProducts(1, true); 
+      fetchProducts(1, true);
     }
   }, [
     busquedaTerm,
@@ -840,115 +875,115 @@ export default function InventarioScreen() {
     setFormState((prev: any) => ({ ...prev, [fieldName]: parsedValue }));
   };
 
-const handleSaveNewProduct = async () => {
-  if (guardandoProducto) return;
-  setGuardandoProducto(true);
+  const handleSaveNewProduct = async () => {
+    if (guardandoProducto) return;
+    setGuardandoProducto(true);
 
-  const tipoInfo = tiposDisponibles.find(
-    (t) => t.nombre_tipo === selectedProductType
-  );
+    const tipoInfo = tiposDisponibles.find(
+      (t) => t.nombre_tipo === selectedProductType
+    );
 
-  if (!tipoInfo) {
-    Alert.alert("Error", "Tipo de producto no seleccionado o no encontrado.");
-    setGuardandoProducto(false); // ← AÑADIR ESTO
-    return;
-  }
+    if (!tipoInfo) {
+      Alert.alert("Error", "Tipo de producto no seleccionado o no encontrado.");
+      setGuardandoProducto(false);
+      return;
+    }
 
-  const isReactivo = tipoInfo.nombre_tipo === "Reactivo";
-  const isMaterial = tipoInfo.nombre_tipo === "Material";
-  const isEquipo = tipoInfo.nombre_tipo === "Equipo";
+    const isReactivo = tipoInfo.nombre_tipo === "Reactivo";
+    const isMaterial = tipoInfo.nombre_tipo === "Material";
+    const isEquipo = tipoInfo.nombre_tipo === "Equipo";
 
-  const existencia = isReactivo
-    ? formState.cantidad_ingresada_reactivo
-    : isMaterial
-    ? formState.cantidad_ingresada_material
-    : isEquipo
-    ? 1
-    : formState.existencia_actual;
+    const existencia = isReactivo
+      ? formState.cantidad_ingresada_reactivo
+      : isMaterial
+      ? formState.cantidad_ingresada_material
+      : isEquipo
+      ? 1
+      : formState.existencia_actual;
 
-  const dataToSend = {
-    ...formState,
-    id_tipo_producto: tipoInfo.id_tipo_producto,
-    existencia_actual: Number(existencia) || (isEquipo ? 1 : 0),
-    lote: formState.lote || null,
-    imagen: formState.imagen || null,
-    id_laboratorio:
-      formState.id_laboratorio || laboratorios[0]?.id_laboratorio || 1,
-    id_estatus_producto: 1,
-    stock_minimo: formState.stock_minimo || 0,
-    id_prioridad: formState.id_prioridad || "2",
+    const dataToSend = {
+      ...formState,
+      id_tipo_producto: tipoInfo.id_tipo_producto,
+      existencia_actual: Number(existencia) || (isEquipo ? 1 : 0),
+      lote: formState.lote || null,
+      imagen: formState.imagen || null,
+      id_laboratorio:
+        formState.id_laboratorio || laboratorios[0]?.id_laboratorio || 1,
+      id_estatus_producto: 1,
+      stock_minimo: formState.stock_minimo || 0,
+      id_prioridad: formState.id_prioridad || "2",
+    };
+
+    // Validaciones básicas por tipo de producto
+    if (isEquipo) {
+      if (!dataToSend.nombre || !dataToSend.marca || !dataToSend.modelo) {
+        Alert.alert(
+          "Error",
+          "Por favor, complete los campos obligatorios (Nombre, Marca, Modelo)."
+        );
+        setGuardandoProducto(false);
+        return;
+      }
+    } else if (isReactivo) {
+      if (
+        !dataToSend.nombre ||
+        !dataToSend.marca ||
+        !dataToSend.cantidad_ingresada_reactivo
+      ) {
+        Alert.alert(
+          "Error",
+          "Por favor, complete los campos obligatorios (Nombre, Marca, Cantidad a ingresar)."
+        );
+        setGuardandoProducto(false);
+        return;
+      }
+    } else if (isMaterial) {
+      if (
+        !dataToSend.nombre ||
+        !dataToSend.marca ||
+        !dataToSend.cantidad_ingresada_material
+      ) {
+        Alert.alert(
+          "Error",
+          "Por favor, complete los campos obligatorios (Nombre, Marca, Cantidad a ingresar)."
+        );
+        setGuardandoProducto(false);
+        return;
+      }
+    }
+
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/productos`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(dataToSend),
+      });
+
+      const result = await response.json();
+
+      if (response.ok) {
+        Alert.alert(
+          "Éxito",
+          `Producto "${dataToSend.nombre}" (${tipoInfo.nombre_tipo}) creado con éxito!`
+        );
+        setShowAddModal(false);
+        setFormState({});
+        fetchProducts();
+      } else {
+        Alert.alert(
+          "Error",
+          `Error al guardar: ${result.error || "Verifique los campos."}`
+        );
+      }
+    } catch (error) {
+      Alert.alert("Error", "Hubo un error de conexión al servidor.");
+      console.error(error);
+    } finally {
+      setGuardandoProducto(false);
+    }
   };
-
-  // Validaciones básicas por tipo de producto
-  if (isEquipo) {
-    if (!dataToSend.nombre || !dataToSend.marca || !dataToSend.modelo) {
-      Alert.alert(
-        "Error",
-        "Por favor, complete los campos obligatorios (Nombre, Marca, Modelo)."
-      );
-      setGuardandoProducto(false); // ← AÑADIR ESTO
-      return;
-    }
-  } else if (isReactivo) {
-    if (
-      !dataToSend.nombre ||
-      !dataToSend.marca ||
-      !dataToSend.cantidad_ingresada_reactivo
-    ) {
-      Alert.alert(
-        "Error",
-        "Por favor, complete los campos obligatorios (Nombre, Marca, Cantidad a ingresar)."
-      );
-      setGuardandoProducto(false); // ← AÑADIR ESTO
-      return;
-    }
-  } else if (isMaterial) {
-    if (
-      !dataToSend.nombre ||
-      !dataToSend.marca ||
-      !dataToSend.cantidad_ingresada_material
-    ) {
-      Alert.alert(
-        "Error",
-        "Por favor, complete los campos obligatorios (Nombre, Marca, Cantidad a ingresar)."
-      );
-      setGuardandoProducto(false); // ← AÑADIR ESTO
-      return;
-    }
-  }
-
-  try {
-    const response = await fetch(`${API_BASE_URL}/api/productos`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(dataToSend),
-    });
-
-    const result = await response.json();
-
-    if (response.ok) {
-      Alert.alert(
-        "Éxito",
-        `Producto "${dataToSend.nombre}" (${tipoInfo.nombre_tipo}) creado con éxito!`
-      );
-      setShowAddModal(false);
-      setFormState({});
-      fetchProducts(); // Recargar la lista
-    } else {
-      Alert.alert(
-        "Error",
-        `Error al guardar: ${result.error || "Verifique los campos."}`
-      );
-    }
-  } catch (error) {
-    Alert.alert("Error", "Hubo un error de conexión al servidor.");
-    console.error(error);
-  } finally {
-    setGuardandoProducto(false); // ← ESTO SIEMPRE SE EJECUTA
-  }
-};
 
   const renderProductForm = () => {
     if (tiposDisponibles.length === 0) return null;
@@ -982,8 +1017,6 @@ const handleSaveNewProduct = async () => {
             <FormField {...commonProps("id_agk", "ID AGK")} />
             <FormField {...commonProps("marca", "Marca*")} />
             <FormField {...commonProps("modelo", "Modelo*")} />
-
-            {/* PRIORIDAD - CORREGIDO */}
             <FormSelect
               label="Prioridad"
               value={formState.id_prioridad}
@@ -991,7 +1024,6 @@ const handleSaveNewProduct = async () => {
               options={prioridadOptions}
               isDark={isDark}
             />
-
             <FormField {...commonProps("numero_serie", "No. de serie")} />
             <FormField
               {...commonProps("rango_medicion", "Rango de medición")}
@@ -1001,7 +1033,6 @@ const handleSaveNewProduct = async () => {
               {...commonProps("intervalo_trabajo", "Intervalo de trabajo")}
             />
 
-            {/* LABORATORIO - CORREGIDO */}
             <FormSelectLaboratorio
               label="Ubicación (Laboratorio)"
               value={formState.id_laboratorio}
@@ -1021,8 +1052,6 @@ const handleSaveNewProduct = async () => {
             <FormField {...commonProps("nombre", "Nombre*")} />
             <FormField {...commonProps("marca", "Marca*")} />
             <FormField {...commonProps("lote", "Lote")} />
-
-            {/* PRIORIDAD - CORREGIDO */}
             <FormSelect
               label="Prioridad"
               value={formState.id_prioridad}
@@ -1057,8 +1086,6 @@ const handleSaveNewProduct = async () => {
             <FormField {...commonProps("nombre", "Nombre*")} />
             <FormField {...commonProps("marca", "Marca*")} />
             <FormField {...commonProps("lote", "Lote")} />
-
-            {/* PRIORIDAD - CORREGIDO */}
             <FormSelect
               label="Prioridad"
               value={formState.id_prioridad}
@@ -1082,7 +1109,10 @@ const handleSaveNewProduct = async () => {
         );
       default:
         return (
-          <Text key="defaultForm" style={[styles.emptyStateText, isDark && styles.textMutedDark]}>
+          <Text
+            key="defaultForm"
+            style={[styles.emptyStateText, isDark && styles.textMutedDark]}
+          >
             Selecciona un tipo para empezar.
           </Text>
         );
@@ -1113,14 +1143,13 @@ const handleSaveNewProduct = async () => {
     setTipoProductoFiltro("todos");
     setPrioridad("todos");
     setEstatusFiltro("todos");
-    setOrden("antiguos"); 
-    setBusqueda(""); 
+    setOrden("antiguos");
+    setBusqueda("");
 
     setFiltrosAplicados(false);
 
     // 2. Limpiar el filtro de la URL
     router.setParams({ filter: undefined });
-
   };
 
   const handleLoadMore = () => {
@@ -1128,7 +1157,7 @@ const handleSaveNewProduct = async () => {
     if (!loadingMore && hasMore) {
       const nextPage = page + 1;
       setPage(nextPage);
-      fetchProducts(nextPage, false); 
+      fetchProducts(nextPage, false);
     }
   };
 
@@ -1147,8 +1176,12 @@ const handleSaveNewProduct = async () => {
         {/* Header */}
         <View style={styles.header}>
           <View>
-            <Text style={[styles.title, isDark && styles.textDark]}>Inventario</Text>
-            <Text style={[styles.subtitle, isDark && styles.textMutedDark]}>Todos tus productos</Text>
+            <Text style={[styles.title, isDark && styles.textDark]}>
+              Inventario
+            </Text>
+            <Text style={[styles.subtitle, isDark && styles.textMutedDark]}>
+              Todos tus productos
+            </Text>
           </View>
           {filtrosAplicados && (
             <TouchableOpacity
@@ -1163,7 +1196,12 @@ const handleSaveNewProduct = async () => {
 
         {/* Barra de búsqueda y acciones */}
         <View style={styles.topBar}>
-          <View style={[styles.searchContainer, isDark && styles.searchContainerDark]}>
+          <View
+            style={[
+              styles.searchContainer,
+              isDark && styles.searchContainerDark,
+            ]}
+          >
             <Icon
               name="search"
               size={20}
@@ -1189,7 +1227,7 @@ const handleSaveNewProduct = async () => {
             <Icon
               name="filter-list"
               size={20}
-              color={filtrosAplicados ? "#fff" : (isDark ? "#888" : "#666")}
+              color={filtrosAplicados ? "#fff" : isDark ? "#888" : "#666"}
             />
           </TouchableOpacity>
           <TouchableOpacity
@@ -1202,10 +1240,12 @@ const handleSaveNewProduct = async () => {
         </View>
 
         {/* Loading inicial */}
-        {cargandoInicial && productos.length === 0 ? ( 
+        {cargandoInicial && productos.length === 0 ? (
           <View style={styles.loadingContainer}>
             <ActivityIndicator size="large" color="#539DF3" />
-            <Text style={[styles.loadingText, isDark && styles.textMutedDark]}>Cargando productos...</Text>
+            <Text style={[styles.loadingText, isDark && styles.textMutedDark]}>
+              Cargando productos...
+            </Text>
           </View>
         ) : (
           /* Lista de Productos CON PULLDOWN REFRESH */
@@ -1247,14 +1287,27 @@ const handleSaveNewProduct = async () => {
             )}
             ListEmptyComponent={
               !cargandoInicial ? (
-                <View style={[styles.emptyState, isDark && styles.emptyStateDark]}>
-                  <Icon name="inventory" size={60} color={isDark ? "#333" : "#ccc"} />
-                  <Text style={[styles.emptyStateTitle, isDark && styles.textDark]}>
+                <View
+                  style={[styles.emptyState, isDark && styles.emptyStateDark]}
+                >
+                  <Icon
+                    name="inventory"
+                    size={60}
+                    color={isDark ? "#333" : "#ccc"}
+                  />
+                  <Text
+                    style={[styles.emptyStateTitle, isDark && styles.textDark]}
+                  >
                     {filtrosAplicados
                       ? "No se encontraron resultados"
                       : "No hay productos"}
                   </Text>
-                  <Text style={[styles.emptyStateText, isDark && styles.textMutedDark]}>
+                  <Text
+                    style={[
+                      styles.emptyStateText,
+                      isDark && styles.textMutedDark,
+                    ]}
+                  >
                     {filtrosAplicados
                       ? "Intenta con otros filtros"
                       : "Comienza agregando tu primer producto"}
@@ -1262,7 +1315,10 @@ const handleSaveNewProduct = async () => {
 
                   {/* Botón de refresh en empty state */}
                   <TouchableOpacity
-                    style={[styles.refreshButton, isDark && styles.refreshButtonDark]}
+                    style={[
+                      styles.refreshButton,
+                      isDark && styles.refreshButtonDark,
+                    ]}
                     onPress={onRefresh}
                   >
                     <Icon name="refresh" size={20} color="#539DF3" />
@@ -1274,124 +1330,169 @@ const handleSaveNewProduct = async () => {
           />
         )}
 
-        {/* Modal de Añadir Producto - CORREGIDO PARA ANDROID */}
-<Modal visible={showAddModal} animationType="slide" transparent>
-  <TouchableOpacity
-    style={styles.modalOverlay}
-    activeOpacity={1}
-    onPress={() => Keyboard.dismiss()}
-  >
-    <View style={[styles.modalContent, isDark && styles.modalContentDark]}>
-      <View style={[styles.modalHeader, isDark && styles.modalHeaderDark]}>
-        <Text style={[styles.modalTitle, isDark && styles.textDark]}>Nuevo producto</Text>
-<TouchableOpacity
-  style={styles.closeButton}
-  onPress={() => {
-    setShowAddModal(false);
-    setGuardandoProducto(false); // ← AÑADIR ESTO
-  }}
-> 
-          <Icon name="close" size={24} color={isDark ? "#fff" : "#666"} />
-        </TouchableOpacity>
-      </View>
-
-      {/* Selector de Tipo de Producto */}
-      <View style={[styles.addTypeSelector, isDark && styles.addTypeSelectorDark]}>
-        {tiposDisponibles.map((tipo) => (
+        <Modal visible={showAddModal} animationType="slide" transparent>
           <TouchableOpacity
-            key={tipo.id_tipo_producto}
-            style={[
-              styles.addTypeButton,
-              isDark && styles.addTypeButtonDark,
-              selectedProductType === tipo.nombre_tipo &&
-                styles.addTypeButtonActive,
-            ]}
-            onPress={() => setSelectedProductType(tipo.nombre_tipo)}
+            style={styles.modalOverlay}
+            activeOpacity={1}
+            onPress={() => Keyboard.dismiss()}
           >
-            <Text
-              style={[
-                styles.addTypeText,
-                isDark && styles.addTypeTextDark,
-                selectedProductType === tipo.nombre_tipo &&
-                  styles.addTypeTextActive,
-              ]}
+            <View
+              style={[styles.modalContent, isDark && styles.modalContentDark]}
             >
-              {tipo.nombre_tipo}
-            </Text>
+              <View
+                style={[styles.modalHeader, isDark && styles.modalHeaderDark]}
+              >
+                <Text style={[styles.modalTitle, isDark && styles.textDark]}>
+                  Nuevo producto
+                </Text>
+                <TouchableOpacity
+                  style={styles.closeButton}
+                  onPress={() => {
+                    setShowAddModal(false);
+                    setGuardandoProducto(false);
+                  }}
+                >
+                  <Icon
+                    name="close"
+                    size={24}
+                    color={isDark ? "#fff" : "#666"}
+                  />
+                </TouchableOpacity>
+              </View>
+
+              {/* Selector de Tipo de Producto */}
+              <View
+                style={[
+                  styles.addTypeSelector,
+                  isDark && styles.addTypeSelectorDark,
+                ]}
+              >
+                {tiposDisponibles.map((tipo) => (
+                  <TouchableOpacity
+                    key={tipo.id_tipo_producto}
+                    style={[
+                      styles.addTypeButton,
+                      isDark && styles.addTypeButtonDark,
+                      selectedProductType === tipo.nombre_tipo &&
+                        styles.addTypeButtonActive,
+                    ]}
+                    onPress={() => setSelectedProductType(tipo.nombre_tipo)}
+                  >
+                    <Text
+                      style={[
+                        styles.addTypeText,
+                        isDark && styles.addTypeTextDark,
+                        selectedProductType === tipo.nombre_tipo &&
+                          styles.addTypeTextActive,
+                      ]}
+                    >
+                      {tipo.nombre_tipo}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+
+              {/* ScrollView optimizado para Android */}
+              <ScrollView
+                style={styles.addScroll}
+                showsVerticalScrollIndicator={true}
+                contentContainerStyle={styles.scrollContent}
+                keyboardShouldPersistTaps="handled"
+                keyboardDismissMode="interactive" // Mejor comportamiento para Android
+                nestedScrollEnabled={true} // Importante para Android
+                overScrollMode="always" // Mejor feedback visual
+                bounces={true} // Efecto de rebote
+                decelerationRate="normal" // Velocidad de desaceleración
+                scrollEventThrottle={16} // Mejor rendimiento
+                removeClippedSubviews={false} // Prop, no estilo — evita error de tipos
+              >
+                {renderProductForm()}
+                <Text
+                  style={[styles.requiredNote, isDark && styles.textMutedDark]}
+                >
+                  * Campos obligatorios
+                </Text>
+
+                {/* Espacio extra al final para facilitar el scroll */}
+                <View style={styles.scrollSpacer} />
+              </ScrollView>
+
+              {/* Botones de acción */}
+              <View style={[styles.buttonRow, isDark && styles.buttonRowDark]}>
+                <Pressable
+                  style={[styles.cancelBtn, isDark && styles.cancelBtnDark]}
+                  onPress={() => {
+                    setShowAddModal(false);
+                    setGuardandoProducto(false);
+                  }}
+                >
+                  <Text
+                    style={[styles.cancelBtnText, isDark && styles.textDark]}
+                  >
+                    Cancelar
+                  </Text>
+                </Pressable>
+
+                <Pressable
+                  style={[
+                    styles.applyBtn,
+                    guardandoProducto && styles.applyBtnDisabled,
+                  ]}
+                  onPress={handleSaveNewProduct}
+                  disabled={guardandoProducto}
+                >
+                  {guardandoProducto ? (
+                    <ActivityIndicator size="small" color="#fff" />
+                  ) : (
+                    <Text style={styles.applyBtnText}>Guardar Producto</Text>
+                  )}
+                </Pressable>
+              </View>
+            </View>
           </TouchableOpacity>
-        ))}
-      </View>
-
-      {/* ScrollView optimizado para Android */}
-<ScrollView
-  style={styles.addScroll}
-  showsVerticalScrollIndicator={true}
-  contentContainerStyle={styles.scrollContent}
-  keyboardShouldPersistTaps="handled"
-  keyboardDismissMode="interactive" // Mejor comportamiento para Android
-  nestedScrollEnabled={true} // Importante para Android
-  overScrollMode="always" // Mejor feedback visual
-  bounces={true} // Efecto de rebote
-  decelerationRate="normal" // Velocidad de desaceleración
-  scrollEventThrottle={16} // Mejor rendimiento
-  removeClippedSubviews={false} // Prop, no estilo — evita error de tipos
->
-  {renderProductForm()}
-  <Text style={[styles.requiredNote, isDark && styles.textMutedDark]}>* Campos obligatorios</Text>
-  
-  {/* Espacio extra al final para facilitar el scroll */}
-  <View style={styles.scrollSpacer} />
-</ScrollView>
-
-      {/* Botones de acción */}
-      <View style={[styles.buttonRow, isDark && styles.buttonRowDark]}>
-<Pressable
-  style={[styles.cancelBtn, isDark && styles.cancelBtnDark]}
-  onPress={() => {
-    setShowAddModal(false);
-    setGuardandoProducto(false); // ← AÑADIR ESTO
-  }}
->
-          <Text style={[styles.cancelBtnText, isDark && styles.textDark]}>Cancelar</Text>
-        </Pressable>
-
-        <Pressable
-          style={[styles.applyBtn, guardandoProducto && styles.applyBtnDisabled]}
-          onPress={handleSaveNewProduct}
-          disabled={guardandoProducto}
-        >
-          {guardandoProducto ? (
-            <ActivityIndicator size="small" color="#fff" />
-          ) : (
-            <Text style={styles.applyBtnText}>Guardar Producto</Text>
-          )}
-        </Pressable>
-      </View>
-    </View>
-  </TouchableOpacity>
-</Modal>
+        </Modal>
 
         {/* Modal de Filtros */}
         <Modal visible={showFilters} animationType="slide" transparent>
           <View style={styles.modalOverlay}>
-            <View style={[styles.modalContent, isDark && styles.modalContentDark, styles.filterModalContent]}>
-              <View style={[styles.modalHeader, isDark && styles.modalHeaderDark]}>
-                <Text style={[styles.modalTitle, isDark && styles.textDark]}>Filtros</Text>
+            <View
+              style={[
+                styles.modalContent,
+                isDark && styles.modalContentDark,
+                styles.filterModalContent,
+              ]}
+            >
+              <View
+                style={[styles.modalHeader, isDark && styles.modalHeaderDark]}
+              >
+                <Text style={[styles.modalTitle, isDark && styles.textDark]}>
+                  Filtros
+                </Text>
                 <TouchableOpacity
                   style={styles.closeButton}
                   onPress={() => setShowFilters(false)}
                 >
-                  <Icon name="close" size={24} color={isDark ? "#fff" : "#666"} />
+                  <Icon
+                    name="close"
+                    size={24}
+                    color={isDark ? "#fff" : "#666"}
+                  />
                 </TouchableOpacity>
               </View>
 
-                <ScrollView 
+              <ScrollView
                 style={styles.filtersScroll}
                 contentContainerStyle={styles.filtersScrollContent}
-                >
+              >
                 {/* Nuevo Filtro: Ordenamiento */}
-                <View style={[styles.filterCard, isDark && styles.filterCardDark]}>
-                  <Text style={[styles.filterCardTitle, isDark && styles.textDark]}>Ordenar por</Text>
+                <View
+                  style={[styles.filterCard, isDark && styles.filterCardDark]}
+                >
+                  <Text
+                    style={[styles.filterCardTitle, isDark && styles.textDark]}
+                  >
+                    Ordenar por
+                  </Text>
                   <View style={styles.filterOptions}>
                     {ordenOptions.map((option) => (
                       <TouchableOpacity
@@ -1417,8 +1518,12 @@ const handleSaveNewProduct = async () => {
                     ))}
                   </View>
                 </View>
-                <View style={[styles.filterCard, isDark && styles.filterCardDark]}>
-                  <Text style={[styles.filterCardTitle, isDark && styles.textDark]}>
+                <View
+                  style={[styles.filterCard, isDark && styles.filterCardDark]}
+                >
+                  <Text
+                    style={[styles.filterCardTitle, isDark && styles.textDark]}
+                  >
                     Selección de periodo
                   </Text>
                   <View style={styles.filterOptions}>
@@ -1447,8 +1552,14 @@ const handleSaveNewProduct = async () => {
                   </View>
                 </View>
 
-                <View style={[styles.filterCard, isDark && styles.filterCardDark]}>
-                  <Text style={[styles.filterCardTitle, isDark && styles.textDark]}>Tipo de Producto</Text>
+                <View
+                  style={[styles.filterCard, isDark && styles.filterCardDark]}
+                >
+                  <Text
+                    style={[styles.filterCardTitle, isDark && styles.textDark]}
+                  >
+                    Tipo de Producto
+                  </Text>
                   <View style={styles.filterOptions}>
                     <TouchableOpacity
                       style={[
@@ -1499,8 +1610,14 @@ const handleSaveNewProduct = async () => {
                   </View>
                 </View>
 
-                <View style={[styles.filterCard, isDark && styles.filterCardDark]}>
-                  <Text style={[styles.filterCardTitle, isDark && styles.textDark]}>Prioridad</Text>
+                <View
+                  style={[styles.filterCard, isDark && styles.filterCardDark]}
+                >
+                  <Text
+                    style={[styles.filterCardTitle, isDark && styles.textDark]}
+                  >
+                    Prioridad
+                  </Text>
                   <View style={styles.filterOptions}>
                     {prioridadOptions.map((option) => (
                       <TouchableOpacity
@@ -1527,8 +1644,14 @@ const handleSaveNewProduct = async () => {
                     ))}
                   </View>
                 </View>
-                <View style={[styles.filterCard, isDark && styles.filterCardDark]}>
-                  <Text style={[styles.filterCardTitle, isDark && styles.textDark]}>Estatus</Text>
+                <View
+                  style={[styles.filterCard, isDark && styles.filterCardDark]}
+                >
+                  <Text
+                    style={[styles.filterCardTitle, isDark && styles.textDark]}
+                  >
+                    Estatus
+                  </Text>
                   <View style={styles.filterOptions}>
                     {estatusOptions.map((option) => (
                       <TouchableOpacity
@@ -1557,9 +1680,21 @@ const handleSaveNewProduct = async () => {
                 </View>
               </ScrollView>
 
-              <View style={[styles.filterActions, isDark && styles.filterActionsDark]}>
-                <Pressable style={[styles.resetBtn, isDark && styles.resetBtnDark]} onPress={resetearFiltros}>
-                  <Text style={[styles.resetBtnText, isDark && styles.textDark]}>Limpiar Filtros</Text>
+              <View
+                style={[
+                  styles.filterActions,
+                  isDark && styles.filterActionsDark,
+                ]}
+              >
+                <Pressable
+                  style={[styles.resetBtn, isDark && styles.resetBtnDark]}
+                  onPress={resetearFiltros}
+                >
+                  <Text
+                    style={[styles.resetBtnText, isDark && styles.textDark]}
+                  >
+                    Limpiar Filtros
+                  </Text>
                 </Pressable>
                 <Pressable style={styles.applyBtn} onPress={aplicarFiltros}>
                   <Text style={styles.applyBtnText}>Aplicar Filtros</Text>
@@ -1574,20 +1709,18 @@ const handleSaveNewProduct = async () => {
 }
 
 const styles = StyleSheet.create({
-  safe: { 
-    flex: 1, 
+  safe: {
+    flex: 1,
     backgroundColor: "#f8fafc",
     marginBottom: -50,
   },
   safeDark: { backgroundColor: "#000" },
-  container: { 
-    flex: 1, 
-    paddingVertical: 8, 
+  container: {
+    flex: 1,
+    paddingVertical: 8,
     paddingHorizontal: 16,
   },
   containerDark: { backgroundColor: "#000" },
-
-  // Header
   header: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -1624,8 +1757,6 @@ const styles = StyleSheet.create({
     fontSize: 12,
     marginRight: 6,
   },
-
-  // Top Bar
   topBar: {
     flexDirection: "row",
     alignItems: "center",
@@ -1652,8 +1783,8 @@ const styles = StyleSheet.create({
     backgroundColor: "#1c1c1e",
     borderColor: "#333",
   },
-  searchIcon: { 
-    marginRight: 8 
+  searchIcon: {
+    marginRight: 8,
   },
   input: {
     flex: 1,
@@ -1663,7 +1794,7 @@ const styles = StyleSheet.create({
     color: "#333",
     minHeight: 48,
     includeFontPadding: false,
-    textAlignVertical: 'center',
+    textAlignVertical: "center",
   },
   inputDark: {
     color: "#fff",
@@ -1708,27 +1839,25 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: "#fff",
   },
-
-  // List Items
-row: {
-  backgroundColor: "#fff",
-  padding: 16,
-  marginBottom: 12,
-  borderRadius: 16,
-  shadowColor: "#000",
-  shadowOffset: { width: 0, height: 1 },
-  shadowOpacity: 0.05,
-  shadowRadius: 4,
-  elevation: 1,
-  borderWidth: 1,
-  borderColor: "#f1f5f9",
-},
-rowDark: {
-  backgroundColor: "#1c1c1e",
-  borderColor: "#333",
-  shadowColor: "#000",
-  shadowOpacity: 0.1,
-},
+  row: {
+    backgroundColor: "#fff",
+    padding: 16,
+    marginBottom: 12,
+    borderRadius: 16,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 1,
+    borderWidth: 1,
+    borderColor: "#f1f5f9",
+  },
+  rowDark: {
+    backgroundColor: "#1c1c1e",
+    borderColor: "#333",
+    shadowColor: "#000",
+    shadowOpacity: 0.1,
+  },
   rowExpanded: {
     backgroundColor: "#fafbfc",
     borderColor: "#539DF3",
@@ -1776,8 +1905,6 @@ rowDark: {
   expandIcon: {
     marginLeft: 4,
   },
-
-  // Row Details
   rowDetails: {
     marginTop: 16,
     paddingTop: 16,
@@ -1834,21 +1961,19 @@ rowDark: {
     fontSize: 14,
     fontFamily: "Poppins_700Bold",
   },
-
-  // Modals - CORREGIDOS PARA SER MÁS ALTOS
   modalOverlay: {
     flex: 1,
     backgroundColor: "rgba(0,0,0,0.5)",
     justifyContent: "flex-end",
   },
-modalContent: {
-  backgroundColor: "#fff",
-  borderTopLeftRadius: 24,
-  borderTopRightRadius: 24,
-  maxHeight: screenHeight * 0.9,
-  minHeight: screenHeight * 0.75,
-  flex: 1, // IMPORTANTE: Esto permite que el modal ocupe el espacio disponible
-},
+  modalContent: {
+    backgroundColor: "#fff",
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    maxHeight: screenHeight * 0.9,
+    minHeight: screenHeight * 0.75,
+    flex: 1,
+  },
   filterModalContent: {
     maxHeight: screenHeight * 0.85,
     minHeight: screenHeight * 0.65,
@@ -1861,7 +1986,7 @@ modalContent: {
     paddingTop: 10,
     flexGrow: 1,
   },
-  
+
   modalHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -1878,8 +2003,6 @@ modalContent: {
     fontSize: 20,
     color: "#1a1a1a",
   },
-
-  // Form Styles
   formFieldContainer: {
     backgroundColor: "#fff",
     borderRadius: 12,
@@ -1924,8 +2047,6 @@ modalContent: {
     justifyContent: "space-between",
     alignItems: "center",
   },
-
-  // Add Type Selector
   addTypeSelector: {
     flexDirection: "row",
     justifyContent: "space-around",
@@ -1947,7 +2068,7 @@ modalContent: {
     borderWidth: 1,
     borderColor: "#e1e5e9",
     minWidth: 80,
-    alignItems: 'center',
+    alignItems: "center",
   },
   addTypeButtonDark: {
     backgroundColor: "#2c2c2e",
@@ -1965,17 +2086,15 @@ modalContent: {
   addTypeTextDark: {
     color: "#888",
   },
-addTypeTextActive: {
-  color: "#fff",
-},
-addScroll: {
-  flex: 1,
-},
-scrollSpacer: {
-  height: 60, // Espacio extra al final para facilitar scrolling
-},
-
-  // Filter Cards
+  addTypeTextActive: {
+    color: "#fff",
+  },
+  addScroll: {
+    flex: 1,
+  },
+  scrollSpacer: {
+    height: 60,
+  },
   filtersScroll: {
     flex: 1,
   },
@@ -2041,8 +2160,6 @@ scrollSpacer: {
   filterOptionTextActive: {
     color: "#fff",
   },
-
-  // Buttons - CORREGIDOS PARA SER MÁS COMPACTOS
   buttonRow: {
     flexDirection: "row",
     padding: 16,
@@ -2050,7 +2167,7 @@ scrollSpacer: {
     borderTopColor: "#f1f5f9",
     gap: 12,
     backgroundColor: "#fff",
-    minHeight: 70, // Reducido de 80
+    minHeight: 70,
   },
   buttonRowDark: {
     backgroundColor: "#1c1c1e",
@@ -2059,14 +2176,14 @@ scrollSpacer: {
   cancelBtn: {
     flex: 1,
     backgroundColor: "#f8fafc",
-    paddingVertical: 12, // Reducido de 16
+    paddingVertical: 12,
     paddingHorizontal: 8,
     alignItems: "center",
     justifyContent: "center",
     borderRadius: 12,
     borderWidth: 1,
     borderColor: "#e1e5e9",
-    minHeight: 44, // Reducido de 50
+    minHeight: 44,
   },
   cancelBtnDark: {
     backgroundColor: "#2c2c2e",
@@ -2074,7 +2191,7 @@ scrollSpacer: {
   },
   cancelBtnText: {
     color: "#666",
-    fontSize: 15, // Ligeramente más pequeño
+    fontSize: 15,
     fontFamily: "Poppins_500Medium",
   },
   resetBtn: {
@@ -2116,8 +2233,6 @@ scrollSpacer: {
     fontSize: 15,
     fontFamily: "Poppins_500Medium",
   },
-
-  // Empty State
   emptyState: {
     alignItems: "center",
     justifyContent: "center",
@@ -2141,8 +2256,6 @@ scrollSpacer: {
     textAlign: "center",
     lineHeight: 20,
   },
-
-  // Form Select
   selectLabel: {
     fontSize: 12,
     color: "#666",
@@ -2180,8 +2293,6 @@ scrollSpacer: {
   optionChipTextSelected: {
     color: "#fff",
   },
-
-  // Filter Actions
   filterActions: {
     flexDirection: "row",
     padding: 16,
@@ -2189,14 +2300,12 @@ scrollSpacer: {
     borderTopColor: "#f1f5f9",
     gap: 12,
     backgroundColor: "#fff",
-    minHeight: 70, // Reducido de 80
+    minHeight: 70,
   },
   filterActionsDark: {
     backgroundColor: "#1c1c1e",
     borderTopColor: "#333",
   },
-
-  // Info Text
   requiredNote: {
     fontSize: 12,
     color: "#666",
@@ -2217,7 +2326,7 @@ scrollSpacer: {
     marginHorizontal: 20,
     fontFamily: "Poppins_400Regular",
   },
-  
+
   datePickerContainer: {
     backgroundColor: "#fff",
     borderRadius: 10,
@@ -2329,8 +2438,6 @@ scrollSpacer: {
   closeButton: {
     padding: 4,
   },
-
-  // Text Colors para Dark Mode
   textDark: {
     color: "#fff",
   },

@@ -1,6 +1,5 @@
 import pool from "../config/db.js";
 
-//
 export const getDashboardStats = async (req, res) => {
   try {
     const [stats] = await pool.query(`
@@ -30,7 +29,6 @@ export const getDashboardStats = async (req, res) => {
         ) as proximosCaducar
     `);
 
-    // Asegurarse de que los valores no sean null
     const result = {
       totalProductos: parseInt(stats[0].totalProductos) || 0,
       productosBajoStock: parseInt(stats[0].productosBajoStock) || 0,
@@ -48,7 +46,6 @@ export const getDashboardStats = async (req, res) => {
   }
 };
 
-//
 export const getProductosEnUso = async (req, res) => {
   try {
     const [productos] = await pool.query(`
@@ -74,7 +71,6 @@ export const getProductosEnUso = async (req, res) => {
   }
 };
 
-//
 export const getMovimientosRecientes = async (req, res) => {
   try {
     const [movimientos] = await pool.query(`
@@ -103,7 +99,6 @@ export const getMovimientosRecientes = async (req, res) => {
   }
 };
 
-//
 export const getAlertasDashboard = async (req, res) => {
   try {
     const [alertas] = await pool.query(`
@@ -156,7 +151,6 @@ export const getAlertasDashboard = async (req, res) => {
   }
 };
 
-//
 export const getDashboardData = async (req, res) => {
   try {
     const [stats, productos, movimientos, alertas] = await Promise.all([

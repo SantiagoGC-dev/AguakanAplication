@@ -2,7 +2,6 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const AUTH_TOKEN_KEY = 'userToken';
 const USER_DATA_KEY = 'userData';
-// 🔥 NUEVA CLAVE
 const SESSION_EXPIRY_KEY = 'sessionExpiry';
 
 export const storage = {
@@ -68,7 +67,6 @@ export const storage = {
     }
   },
 
-  // 🔥 NUEVA FUNCIÓN: Guardar expiración
   async saveSessionExpiry(timestamp: string) {
     try {
       await AsyncStorage.setItem(SESSION_EXPIRY_KEY, timestamp);
@@ -78,7 +76,6 @@ export const storage = {
     }
   },
 
-  // 🔥 NUEVA FUNCIÓN: Obtener expiración
   async getSessionExpiry(): Promise<string | null> {
     try {
       const expiry = await AsyncStorage.getItem(SESSION_EXPIRY_KEY);
@@ -93,7 +90,6 @@ export const storage = {
   // Limpiar sesión
   async clearAuth() {
     try {
-      // 🔥 MODIFICADO: Limpiar también la expiración
       await AsyncStorage.multiRemove([
         AUTH_TOKEN_KEY, 
         USER_DATA_KEY, 

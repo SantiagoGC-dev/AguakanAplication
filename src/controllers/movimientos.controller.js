@@ -48,7 +48,7 @@ export const getHistorialProducto = async (req, res) => {
   }
 };
 
-// 🔹 FUNCIÓN PARA RANGOS DE FECHAS
+//  FUNCIÓN PARA RANGOS DE FECHAS
 const getRangoFechasBackend = (periodo) => {
   const ahora = new Date();
   
@@ -91,9 +91,7 @@ const getRangoFechasBackend = (periodo) => {
   }
 };
 
-/**
- * Obtiene todos los movimientos para la bitácora general CON PAGINACIÓN
- */
+// Obtener movimientos con paginación y filtros
 export const getMovimientos = async (req, res) => {
   try {
     const { 
@@ -200,15 +198,13 @@ export const getMovimientos = async (req, res) => {
   }
 };
 
-/**
- * Registra una salida de inventario (Iniciar Uso, Finalizar Uso, Incidencia).
- */
+// Registrar una salida de inventario
 export const registrarSalida = async (req, res) => {
   const connection = await db.getConnection();
   try {
     await connection.beginTransaction();
 
-    // ✅ CORREGIDO: ID de usuario obtenido del token (middleware)
+    // ID de usuario obtenido del token (middleware)
     const id_usuario_autenticado = req.user.id;
     const {
       id_producto,
@@ -217,7 +213,7 @@ export const registrarSalida = async (req, res) => {
       descripcion_adicional,
     } = req.body;
 
-    // ✅ CORREGIDO: Validación usa el ID autenticado
+    // Validación usa el ID autenticado
     if (!id_producto || !id_usuario_autenticado || !id_motivo_baja) {
       await connection.rollback();
       return res.status(400).json({
@@ -229,7 +225,7 @@ export const registrarSalida = async (req, res) => {
     const motivo = parseInt(id_motivo_baja);
     const cant = parseInt(cantidad) || 1;
 
-    // ... (Validaciones de producto y estatus) ...
+    //(Validaciones de producto y estatus)
     const [productoRows] = await connection.query(
       `SELECT p.*, ep.nombre_estatus as estatus_nombre 
        FROM Producto p 
@@ -306,7 +302,6 @@ export const registrarSalida = async (req, res) => {
     }
 
     // --- Registro del Movimiento ---
-    // ✅ CORREGIDO: Se usa id_usuario_autenticado
     const [movimientoResult] = await connection.query(
       `INSERT INTO Movimiento (id_producto, id_usuario, id_tipo_movimiento, cantidad, fecha, id_motivo_baja, descripcion_adicional)
        VALUES (?, ?, 2, ?, NOW(), ?, ?)`,
@@ -317,7 +312,6 @@ export const registrarSalida = async (req, res) => {
     // --- Manejo de Ciclo de Uso ---
     if (motivo === 1) {
       // INICIAR USO
-      // ✅ CORREGIDO: Se usa id_usuario_autenticado
       await connection.query(
         `INSERT INTO UsoProducto (id_producto, id_usuario, id_movimiento, fecha_inicio) VALUES (?, ?, ?, NOW())`,
         [id_producto, id_usuario_autenticado, nuevoMovimientoId]
@@ -374,15 +368,12 @@ export const registrarSalida = async (req, res) => {
   }
 };
 
-/**
- * Registra una entrada de inventario.
- */
+// Obtener lista de usuarios activos
 export const registrarEntrada = async (req, res) => {
   const connection = await db.getConnection();
   try {
     await connection.beginTransaction();
 
-    // ✅ CORREGIDO: ID de usuario obtenido del token (middleware)
     const id_usuario_autenticado = req.user.id;
 
     // OBTÉN DATOS DEL BODY (IGNORANDO CUALQUIER id_usuario)
@@ -404,7 +395,6 @@ export const registrarEntrada = async (req, res) => {
       [cantidad, id_producto]
     );
 
-    // ✅ CORREGIDO: Se usa id_usuario_autenticado
     const [result] = await connection.query(
       `INSERT INTO Movimiento (id_producto, id_usuario, id_tipo_movimiento, cantidad, fecha, descripcion_adicional)
                VALUES (?, ?, 1, ?, NOW(), ?)`,
@@ -425,22 +415,18 @@ export const registrarEntrada = async (req, res) => {
   }
 };
 
-/**
- * Registra la baja completa de un lote de producto.
- */
+// Registrar una baja de inventario
 export const registrarBaja = async (req, res) => {
   const connection = await db.getConnection();
   try {
     await connection.beginTransaction();
 
-    // ✅ CORREGIDO: ID de usuario obtenido del token (middleware)
     const id_usuario_autenticado = req.user.id;
     
     // OBTÉN DATOS DEL BODY
     const { id_producto, descripcion_adicional } = req.body;
     const id_motivo_baja = 4; // El motivo 'Baja' es fijo para este endpoint
 
-    // ✅ CORREGIDO: Validación usa el ID autenticado
     if (!id_producto || !id_usuario_autenticado || !descripcion_adicional?.trim()) {
       await connection.rollback();
       return res.status(400).json({
@@ -484,7 +470,6 @@ export const registrarBaja = async (req, res) => {
       [id_producto]
     );
 
-    // ✅ CORREGIDO: Se usa id_usuario_autenticado
     const [result] = await connection.query(
       `INSERT INTO Movimiento (id_producto, id_usuario, id_tipo_movimiento, cantidad, fecha, id_motivo_baja, descripcion_adicional)
        VALUES (?, ?, 2, ?, NOW(), ?, ?)`,

@@ -18,10 +18,10 @@ import { useRouter } from "expo-router";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 
 // Configuración de API
-const API_BASE_URL = "http:/10.149.121.216:3000/api";
+const API_BASE_URL = "http:/192.168.0.166:3000/api";
 
 // Obtener dimensiones de pantalla
-const { width: screenWidth } = Dimensions.get('window');
+const { width: screenWidth } = Dimensions.get("window");
 
 // --- Interfaces ---
 interface ProductoGrupo {
@@ -52,7 +52,6 @@ interface Filtros {
   tipoProducto: "todos" | "reactivo" | "material" | "equipo";
 }
 
-
 interface PaginationInfo {
   page: number;
   limit: number;
@@ -65,19 +64,18 @@ export default function ReportesScreen() {
   const router = useRouter();
   const colorScheme = useColorScheme();
   const isDark = colorScheme === "dark";
-  
+
   const [refreshing, setRefreshing] = useState(false);
   const [filtrosVisible, setFiltrosVisible] = useState(false);
   const [loading, setLoading] = useState(true);
 
-  // 🔹 NUEVO: Estados para manejar DatePicker en Android
+  //  Estados para manejar DatePicker en Android
   const [showDatePickerDesde, setShowDatePickerDesde] = useState(false);
   const [showDatePickerHasta, setShowDatePickerHasta] = useState(false);
   const [tempDateDesde, setTempDateDesde] = useState(new Date());
   const [tempDateHasta, setTempDateHasta] = useState(new Date());
 
-
-  // 🔹 OPTIMIZADO: Usar Set en lugar de objeto para mejor performance
+  // Usar Set en lugar de objeto para mejor performance
   const [productosExpandidos, setProductosExpandidos] = useState<Set<string>>(
     new Set()
   );
@@ -134,12 +132,11 @@ export default function ReportesScreen() {
     return productos; // Ya viene filtrado del backend
   }, [productos]);
 
-
-    const handleDateChangeDesde = (event: any, selectedDate?: Date) => {
+  const handleDateChangeDesde = (event: any, selectedDate?: Date) => {
     if (Platform.OS === "android") {
       setShowDatePickerDesde(false);
     }
-    
+
     if (selectedDate) {
       setTempDateDesde(selectedDate);
       // En Android, aplicar inmediatamente
@@ -153,7 +150,7 @@ export default function ReportesScreen() {
     if (Platform.OS === "android") {
       setShowDatePickerHasta(false);
     }
-    
+
     if (selectedDate) {
       setTempDateHasta(selectedDate);
       // En Android, aplicar inmediatamente
@@ -310,7 +307,7 @@ export default function ReportesScreen() {
     setFiltrosVisible(false);
   }, [fechaDesdeTemp, fechaHastaTemp, Platform.OS]);
 
-  // Función para exportación a Excel 
+  // Función para exportación a Excel
   const exportarExcel = async () => {
     try {
       Alert.alert(
@@ -326,7 +323,7 @@ export default function ReportesScreen() {
 
                 const { Linking } = require("react-native");
 
-                // 🔹 USAR PARÁMETROS GET
+                // PARÁMETROS GET
                 const params = new URLSearchParams({
                   tipoProducto: filtros.tipoProducto,
                   fechaDesde: fechaDesdeAplicada.toISOString().split("T")[0],
@@ -416,26 +413,39 @@ export default function ReportesScreen() {
       const { estado, color } = getEstadoStock(item.stockActual);
 
       return (
-        <View style={[styles.productoContainer, isDark && styles.productoContainerDark]}>
+        <View
+          style={[
+            styles.productoContainer,
+            isDark && styles.productoContainerDark,
+          ]}
+        >
           {/* Encabezado del producto */}
           <TouchableOpacity
             style={styles.productoHeader}
             onPress={() => onToggle(item.id)}
           >
             <View style={styles.productoInfo}>
-              <ThemedText style={[styles.productoNombre, isDark && styles.textDark]}>
+              <ThemedText
+                style={[styles.productoNombre, isDark && styles.textDark]}
+              >
                 {item.nombre}
               </ThemedText>
               <View style={styles.productoMeta}>
-                <ThemedText style={[styles.productoTipo, isDark && styles.textMutedDark]}>
+                <ThemedText
+                  style={[styles.productoTipo, isDark && styles.textMutedDark]}
+                >
                   {item.tipo === "reactivo"
                     ? "Reactivo"
                     : item.tipo === "material"
                     ? "Material"
                     : "Equipo"}
                 </ThemedText>
-                <View style={[styles.separator, isDark && styles.separatorDark]} />
-                <ThemedText style={[styles.lotesCount, isDark && styles.textMutedDark]}>
+                <View
+                  style={[styles.separator, isDark && styles.separatorDark]}
+                />
+                <ThemedText
+                  style={[styles.lotesCount, isDark && styles.textMutedDark]}
+                >
                   {item.lotes.length}{" "}
                   {item.lotes.length === 1 ? "lote" : "lotes"}
                 </ThemedText>
@@ -443,7 +453,10 @@ export default function ReportesScreen() {
             </View>
             <View style={styles.productoActions}>
               <View
-                style={[styles.stockBadge, { backgroundColor: isDark ? "#2c2c2e" : "#f6f6f6ff" }]}
+                style={[
+                  styles.stockBadge,
+                  { backgroundColor: isDark ? "#2c2c2e" : "#f6f6f6ff" },
+                ]}
               >
                 <ThemedText style={[styles.stockText, { color: "#539DF3" }]}>
                   {item.stockActual} unidades
@@ -459,52 +472,128 @@ export default function ReportesScreen() {
 
           {/* Detalles expandidos */}
           {isExpanded && (
-            <View style={[styles.lotesContainer, isDark && styles.lotesContainerDark]}>
+            <View
+              style={[
+                styles.lotesContainer,
+                isDark && styles.lotesContainerDark,
+              ]}
+            >
               {/* Header específico por tipo */}
-              <View style={[styles.tableHeader, isDark && styles.tableHeaderDark]}>
+              <View
+                style={[styles.tableHeader, isDark && styles.tableHeaderDark]}
+              >
                 {item.tipo === "reactivo" && (
                   <>
-                    <ThemedText style={[styles.tableHeaderText, isDark && styles.textMutedDark]}>Lote</ThemedText>
-                    <ThemedText style={[styles.tableHeaderText, isDark && styles.textMutedDark]}>
+                    <ThemedText
+                      style={[
+                        styles.tableHeaderText,
+                        isDark && styles.textMutedDark,
+                      ]}
+                    >
+                      Lote
+                    </ThemedText>
+                    <ThemedText
+                      style={[
+                        styles.tableHeaderText,
+                        isDark && styles.textMutedDark,
+                      ]}
+                    >
                       Consumido
                     </ThemedText>
-                    <ThemedText style={[styles.tableHeaderText, isDark && styles.textMutedDark]}>
+                    <ThemedText
+                      style={[
+                        styles.tableHeaderText,
+                        isDark && styles.textMutedDark,
+                      ]}
+                    >
                       Stock
                     </ThemedText>
-                    <ThemedText style={[styles.tableHeaderText, isDark && styles.textMutedDark]}>
+                    <ThemedText
+                      style={[
+                        styles.tableHeaderText,
+                        isDark && styles.textMutedDark,
+                      ]}
+                    >
                       F. Ingreso
                     </ThemedText>
                   </>
                 )}
                 {item.tipo === "material" && (
                   <>
-                    <ThemedText style={[styles.tableHeaderText, isDark && styles.textMutedDark]}>Lote</ThemedText>
-                    <ThemedText style={[styles.tableHeaderText, isDark && styles.textMutedDark]}>
+                    <ThemedText
+                      style={[
+                        styles.tableHeaderText,
+                        isDark && styles.textMutedDark,
+                      ]}
+                    >
+                      Lote
+                    </ThemedText>
+                    <ThemedText
+                      style={[
+                        styles.tableHeaderText,
+                        isDark && styles.textMutedDark,
+                      ]}
+                    >
                       Marca
                     </ThemedText>
-                    <ThemedText style={[styles.tableHeaderText, isDark && styles.textMutedDark]}>
+                    <ThemedText
+                      style={[
+                        styles.tableHeaderText,
+                        isDark && styles.textMutedDark,
+                      ]}
+                    >
                       Stock
                     </ThemedText>
-                    <ThemedText style={[styles.tableHeaderText, isDark && styles.textMutedDark]}>
+                    <ThemedText
+                      style={[
+                        styles.tableHeaderText,
+                        isDark && styles.textMutedDark,
+                      ]}
+                    >
                       F. Ingreso
                     </ThemedText>
                   </>
                 )}
                 {item.tipo === "equipo" && (
                   <>
-                    <ThemedText style={[styles.tableHeaderText, isDark && styles.textMutedDark]}>
+                    <ThemedText
+                      style={[
+                        styles.tableHeaderText,
+                        isDark && styles.textMutedDark,
+                      ]}
+                    >
                       Marca/Modelo
                     </ThemedText>
-                    <ThemedText style={[styles.tableHeaderText, isDark && styles.textMutedDark]}>
+                    <ThemedText
+                      style={[
+                        styles.tableHeaderText,
+                        isDark && styles.textMutedDark,
+                      ]}
+                    >
                       ID AGK
                     </ThemedText>
-                    <ThemedText style={[styles.tableHeaderText, isDark && styles.textMutedDark]}>
+                    <ThemedText
+                      style={[
+                        styles.tableHeaderText,
+                        isDark && styles.textMutedDark,
+                      ]}
+                    >
                       No. Serie
                     </ThemedText>
-                    <ThemedText style={[styles.tableHeaderText, isDark && styles.textMutedDark]}>
+                    <ThemedText
+                      style={[
+                        styles.tableHeaderText,
+                        isDark && styles.textMutedDark,
+                      ]}
+                    >
                       Estatus
                     </ThemedText>
-                    <ThemedText style={[styles.tableHeaderText, isDark && styles.textMutedDark]}>
+                    <ThemedText
+                      style={[
+                        styles.tableHeaderText,
+                        isDark && styles.textMutedDark,
+                      ]}
+                    >
                       F. Ingreso
                     </ThemedText>
                   </>
@@ -512,48 +601,106 @@ export default function ReportesScreen() {
               </View>
               {/* Lotes */}
               {item.lotes.map((lote) => (
-                <View key={lote.id} style={[styles.loteRow, isDark && styles.loteRowDark]}>
+                <View
+                  key={lote.id}
+                  style={[styles.loteRow, isDark && styles.loteRowDark]}
+                >
                   {item.tipo === "reactivo" && (
                     <>
-                      <ThemedText style={[styles.loteText, isDark && styles.textMutedDark]}>
+                      <ThemedText
+                        style={[
+                          styles.loteText,
+                          isDark && styles.textMutedDark,
+                        ]}
+                      >
                         {lote.lote}
                       </ThemedText>
-                      <ThemedText style={[styles.loteText, isDark && styles.textMutedDark]}>
+                      <ThemedText
+                        style={[
+                          styles.loteText,
+                          isDark && styles.textMutedDark,
+                        ]}
+                      >
                         {lote.cantidadConsumida || 0}u
                       </ThemedText>
-                      <ThemedText style={[styles.loteText, isDark && styles.textMutedDark]}>
+                      <ThemedText
+                        style={[
+                          styles.loteText,
+                          isDark && styles.textMutedDark,
+                        ]}
+                      >
                         {lote.stockActual}u
                       </ThemedText>
-                      <ThemedText style={[styles.loteText, isDark && styles.textMutedDark]}>
+                      <ThemedText
+                        style={[
+                          styles.loteText,
+                          isDark && styles.textMutedDark,
+                        ]}
+                      >
                         {lote.fechaIngreso}
                       </ThemedText>
                     </>
                   )}
                   {item.tipo === "material" && (
                     <>
-                      <ThemedText style={[styles.loteText, isDark && styles.textMutedDark]}>
+                      <ThemedText
+                        style={[
+                          styles.loteText,
+                          isDark && styles.textMutedDark,
+                        ]}
+                      >
                         {lote.lote}
                       </ThemedText>
-                      <ThemedText style={[styles.loteText, isDark && styles.textMutedDark]}>
+                      <ThemedText
+                        style={[
+                          styles.loteText,
+                          isDark && styles.textMutedDark,
+                        ]}
+                      >
                         {lote.marca}
                       </ThemedText>
-                      <ThemedText style={[styles.loteText, isDark && styles.textMutedDark]}>
+                      <ThemedText
+                        style={[
+                          styles.loteText,
+                          isDark && styles.textMutedDark,
+                        ]}
+                      >
                         {lote.stockActual}u
                       </ThemedText>
-                      <ThemedText style={[styles.loteText, isDark && styles.textMutedDark]}>
+                      <ThemedText
+                        style={[
+                          styles.loteText,
+                          isDark && styles.textMutedDark,
+                        ]}
+                      >
                         {lote.fechaIngreso}
                       </ThemedText>
                     </>
                   )}
                   {item.tipo === "equipo" && (
                     <>
-                      <ThemedText style={[styles.loteText, isDark && styles.textMutedDark]}>
+                      <ThemedText
+                        style={[
+                          styles.loteText,
+                          isDark && styles.textMutedDark,
+                        ]}
+                      >
                         {lote.marca} / {lote.modelo}
                       </ThemedText>
-                      <ThemedText style={[styles.loteText, isDark && styles.textMutedDark]}>
+                      <ThemedText
+                        style={[
+                          styles.loteText,
+                          isDark && styles.textMutedDark,
+                        ]}
+                      >
                         {lote.idAgk}
                       </ThemedText>
-                      <ThemedText style={[styles.loteText, isDark && styles.textMutedDark]}>
+                      <ThemedText
+                        style={[
+                          styles.loteText,
+                          isDark && styles.textMutedDark,
+                        ]}
+                      >
                         {lote.numeroSerie}
                       </ThemedText>
                       <View
@@ -562,8 +709,12 @@ export default function ReportesScreen() {
                           {
                             backgroundColor:
                               lote.estatus === "activo"
-                                ? isDark ? "#10B98130" : "#10B98115"
-                                : isDark ? "#6B728030" : "#6B728015",
+                                ? isDark
+                                  ? "#10B98130"
+                                  : "#10B98115"
+                                : isDark
+                                ? "#6B728030"
+                                : "#6B728015",
                           },
                         ]}
                       >
@@ -581,7 +732,12 @@ export default function ReportesScreen() {
                           {lote.estatus === "activo" ? "Activo" : "Inactivo"}
                         </ThemedText>
                       </View>
-                      <ThemedText style={[styles.loteText, isDark && styles.textMutedDark]}>
+                      <ThemedText
+                        style={[
+                          styles.loteText,
+                          isDark && styles.textMutedDark,
+                        ]}
+                      >
                         {lote.fechaIngreso}
                       </ThemedText>
                     </>
@@ -595,7 +751,6 @@ export default function ReportesScreen() {
     }
   );
 
-  // OPTIMIZADO: Render item con useCallback
   const renderProductoItem = useCallback(
     ({ item }: { item: ProductoGrupo }) => (
       <ProductoItem
@@ -607,7 +762,6 @@ export default function ReportesScreen() {
     [productosExpandidos, toggleProductoExpandido, isDark]
   );
 
-  // NUEVO: Footer para loading de más datos
   const renderFooter = useCallback(() => {
     if (!pagination.hasMore) return null;
 
@@ -633,16 +787,30 @@ export default function ReportesScreen() {
               style={[styles.filterButton, isDark && styles.filterButtonDark]}
               onPress={() => setFiltrosVisible(true)}
             >
-              <Ionicons name="options-outline" size={20} color={isDark ? "#fff" : "#1E293B"} />
-              <ThemedText style={[styles.filterText, isDark && styles.textDark]}>Filtrar Periodo</ThemedText>
-              <Ionicons name="chevron-down" size={16} color={isDark ? "#fff" : "#1E293B"} />
+              <Ionicons
+                name="options-outline"
+                size={20}
+                color={isDark ? "#fff" : "#1E293B"}
+              />
+              <ThemedText
+                style={[styles.filterText, isDark && styles.textDark]}
+              >
+                Filtrar Periodo
+              </ThemedText>
+              <Ionicons
+                name="chevron-down"
+                size={16}
+                color={isDark ? "#fff" : "#1E293B"}
+              />
             </TouchableOpacity>
           </View>
         </View>
 
         {/* Periodo actual */}
         <View style={styles.periodoContainer}>
-          <ThemedText style={[styles.periodoText, isDark && styles.textMutedDark]}>
+          <ThemedText
+            style={[styles.periodoText, isDark && styles.textMutedDark]}
+          >
             Periodo: {periodoTexto}
           </ThemedText>
         </View>
@@ -650,11 +818,16 @@ export default function ReportesScreen() {
         {/* Botones de exportar */}
         <View style={styles.exportButtons}>
           <TouchableOpacity
-            style={[styles.exportButtonBig, isDark && styles.exportButtonBigDark]}
+            style={[
+              styles.exportButtonBig,
+              isDark && styles.exportButtonBigDark,
+            ]}
             onPress={exportarExcel}
           >
             <Ionicons name="stats-chart-outline" size={20} color="#5CB85C" />
-            <ThemedText style={[styles.exportButtonText, isDark && styles.textDark]}>
+            <ThemedText
+              style={[styles.exportButtonText, isDark && styles.textDark]}
+            >
               Exportar (Excel)
             </ThemedText>
           </TouchableOpacity>
@@ -681,6 +854,7 @@ export default function ReportesScreen() {
           <ThemedText
             style={[
               styles.filtroNumber,
+              isDark && styles.filtroNumberDark,
               filtros.tipoProducto === "todos" && styles.filtroNumberActive,
             ]}
           >
@@ -689,6 +863,7 @@ export default function ReportesScreen() {
           <ThemedText
             style={[
               styles.filtroLabel,
+              isDark && styles.filtroLabelDark,
               filtros.tipoProducto === "todos" && styles.filtroLabelActive,
             ]}
           >
@@ -807,7 +982,9 @@ export default function ReportesScreen() {
   // --- Pantalla de Carga ---
   if (loading && productos.length === 0) {
     return (
-      <View style={[styles.loadingContainer, isDark && styles.loadingContainerDark]}>
+      <View
+        style={[styles.loadingContainer, isDark && styles.loadingContainerDark]}
+      >
         <View style={styles.loadingContent}>
           <Ionicons name="document-text" size={48} color="#4B9CD3" />
           <ThemedText type="title" style={styles.loadingText}>
@@ -839,7 +1016,9 @@ export default function ReportesScreen() {
                 size={48}
                 color={isDark ? "#666" : "#64748B"}
               />
-              <ThemedText style={[styles.emptyStateText, isDark && styles.textMutedDark]}>
+              <ThemedText
+                style={[styles.emptyStateText, isDark && styles.textMutedDark]}
+              >
                 No hay productos para mostrar con los filtros actuales
               </ThemedText>
             </View>
@@ -847,8 +1026,8 @@ export default function ReportesScreen() {
         }
         // --- Props de Scroll y Refresh ---
         refreshControl={
-          <RefreshControl 
-            refreshing={refreshing} 
+          <RefreshControl
+            refreshing={refreshing}
             onRefresh={onRefresh}
             tintColor={isDark ? "#fff" : "#000"}
           />
@@ -871,23 +1050,36 @@ export default function ReportesScreen() {
       {/* Modal de Filtros de Periodo */}
       <Modal visible={filtrosVisible} animationType="slide" transparent>
         <View style={styles.modalOverlay}>
-          <View style={[styles.modalContent, isDark && styles.modalContentDark]}>
-            <View style={[styles.modalHeader, isDark && styles.modalHeaderDark]}>
-              <ThemedText type="title" style={[styles.modalTitle, isDark && styles.textDark]}>
+          <View
+            style={[styles.modalContent, isDark && styles.modalContentDark]}
+          >
+            <View
+              style={[styles.modalHeader, isDark && styles.modalHeaderDark]}
+            >
+              <ThemedText
+                type="title"
+                style={[styles.modalTitle, isDark && styles.textDark]}
+              >
                 Periodo del Reporte
               </ThemedText>
               <TouchableOpacity
                 style={styles.closeButton}
                 onPress={() => setFiltrosVisible(false)}
               >
-                <Ionicons name="close" size={24} color={isDark ? "#fff" : "#666"} />
+                <Ionicons
+                  name="close"
+                  size={24}
+                  color={isDark ? "#fff" : "#666"}
+                />
               </TouchableOpacity>
             </View>
 
             <View style={styles.periodoOptions}>
               {/* Selector de Fecha Desde */}
-              <ThemedText style={[styles.label, isDark && styles.textDark]}>Desde:</ThemedText>
-              
+              <ThemedText style={[styles.label, isDark && styles.textDark]}>
+                Desde:
+              </ThemedText>
+
               {Platform.OS === "ios" ? (
                 // iOS - Picker normal
                 <DateTimePicker
@@ -899,22 +1091,30 @@ export default function ReportesScreen() {
                 />
               ) : (
                 // Android - Botón personalizado
-                <TouchableOpacity 
+                <TouchableOpacity
                   style={[styles.dateButton, isDark && styles.dateButtonDark]}
                   onPress={mostrarDatePickerDesde}
                 >
                   <Ionicons name="calendar" size={20} color="#539DF3" />
-                  <ThemedText style={[styles.dateButtonText, isDark && styles.textDark]}>
+                  <ThemedText
+                    style={[styles.dateButtonText, isDark && styles.textDark]}
+                  >
                     {formatearFecha(fechaDesdeTemp)}
                   </ThemedText>
                 </TouchableOpacity>
               )}
 
               {/* Selector de Fecha Hasta */}
-              <ThemedText style={[styles.label, { marginTop: 16 }, isDark && styles.textDark]}>
+              <ThemedText
+                style={[
+                  styles.label,
+                  { marginTop: 16 },
+                  isDark && styles.textDark,
+                ]}
+              >
                 Hasta:
               </ThemedText>
-              
+
               {Platform.OS === "ios" ? (
                 // iOS - Picker normal
                 <DateTimePicker
@@ -926,12 +1126,14 @@ export default function ReportesScreen() {
                 />
               ) : (
                 // Android - Botón personalizado
-                <TouchableOpacity 
+                <TouchableOpacity
                   style={[styles.dateButton, isDark && styles.dateButtonDark]}
                   onPress={mostrarDatePickerHasta}
                 >
                   <Ionicons name="calendar" size={20} color="#539DF3" />
-                  <ThemedText style={[styles.dateButtonText, isDark && styles.textDark]}>
+                  <ThemedText
+                    style={[styles.dateButtonText, isDark && styles.textDark]}
+                  >
                     {formatearFecha(fechaHastaTemp)}
                   </ThemedText>
                 </TouchableOpacity>
@@ -946,7 +1148,7 @@ export default function ReportesScreen() {
                   onChange={handleDateChangeDesde}
                 />
               )}
-              
+
               {showDatePickerHasta && Platform.OS === "android" && (
                 <DateTimePicker
                   value={tempDateHasta}
@@ -985,7 +1187,6 @@ export default function ReportesScreen() {
     </View>
   );
 }
-
 
 const styles = StyleSheet.create({
   container: {
@@ -1128,20 +1329,20 @@ const styles = StyleSheet.create({
     color: "#64748B",
     fontFamily: "Poppins_500Medium",
   },
-filtrosContainer: {
+  filtrosContainer: {
     flexDirection: "row",
     paddingHorizontal: 1,
     paddingVertical: 12,
     gap: 8,
-    justifyContent: "space-between", // Distribuir espacio uniformemente
+    justifyContent: "space-between",
   },
- filtroCard: {
-    minWidth: (screenWidth -1) / 5, // Calculado basado en pantalla
-    maxWidth: (screenWidth -1) / 5, // Evitar que crezcan demasiado
+  filtroCard: {
+    minWidth: (screenWidth - 1) / 5,
+    maxWidth: (screenWidth - 1) / 5,
     alignItems: "center",
     backgroundColor: "#FFFFFF",
     borderRadius: 12,
-    padding: 2, // Reducido padding
+    padding: 2,
     gap: 2,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
@@ -1150,8 +1351,8 @@ filtrosContainer: {
     elevation: 2,
     borderWidth: 1,
     borderColor: "#F1F5F9",
-    height: 95, // Altura fija
-    justifyContent: "center", // Centrar contenido verticalmente
+    height: 95,
+    justifyContent: "center",
   },
   filtroCardDark: {
     backgroundColor: "#2c2c2e",
@@ -1163,11 +1364,11 @@ filtrosContainer: {
     shadowOpacity: 0.2,
     elevation: 4,
   },
-filtroNumber: {
-    fontSize: 14, // Reducido ligeramente
-    color: "#CCCCCC",
+  filtroNumber: {
+    fontSize: 14,
+    color: "#222222ff",
     fontFamily: "Poppins_700Bold",
-    lineHeight: 16, // Controlar altura de línea
+    lineHeight: 16,
   },
   filtroNumberDark: {
     color: "#CCCCCC",
@@ -1177,16 +1378,16 @@ filtroNumber: {
   },
   filtroLabel: {
     fontSize: 10,
-    color: "#ffffffff",
+    color: "#000000ff",
     fontFamily: "Poppins_700Bold",
     textAlign: "center",
-    lineHeight: 12, // Controlar altura de línea
-    height: 24, // Altura fija para 2 líneas
-    includeFontPadding: false, // Eliminar padding extra en Android
-    textAlignVertical: "center", // Centrar verticalmente en Android
+    lineHeight: 12,
+    height: 24,
+    includeFontPadding: false,
+    textAlignVertical: "center",
   },
   filtroLabelDark: {
-    color: "#FFFFFF",
+    color: "#CCCCCC",
   },
   filtroLabelActive: {
     color: "#FFFFFF",
@@ -1398,8 +1599,6 @@ filtroNumber: {
   spacer: {
     height: Platform.OS === "ios" ? 30 : 20,
   },
-
-  // Text Colors
   textDark: {
     color: "#fff",
   },
@@ -1407,7 +1606,7 @@ filtroNumber: {
     color: "#888",
   },
 
-    dateButton: {
+  dateButton: {
     flexDirection: "row",
     alignItems: "center",
     backgroundColor: "#F1F5F9",
@@ -1429,8 +1628,6 @@ filtroNumber: {
     color: "#1E293B",
     fontFamily: "Poppins_500Medium",
   },
-  
-  // 🔹 NUEVO: Botón de confirmación para iOS
   confirmButton: {
     backgroundColor: "#539DF3",
     paddingHorizontal: 20,
@@ -1450,7 +1647,7 @@ filtroNumber: {
     gap: 12,
     alignItems: "center",
     justifyContent: "center",
-    minHeight: Platform.OS === "ios" ? 300 : 200, // Ajustar altura según plataforma
+    minHeight: Platform.OS === "ios" ? 300 : 200,
   },
   datePicker: {
     width: "100%",
@@ -1460,5 +1657,4 @@ filtroNumber: {
   datePickerDark: {
     backgroundColor: Platform.OS === "ios" ? "#2c2c2e" : "transparent",
   },
-
 });

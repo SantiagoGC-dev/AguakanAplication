@@ -1,22 +1,28 @@
 import db from "../config/db.js";
-import ExcelJS from 'exceljs';
+import ExcelJS from "exceljs";
 
-// 🔹 CACHÉS para optimización
+//  CACHÉS para optimización
 const estadisticasCache = new Map();
 const normalizationCache = new Map();
-const CACHE_DURATION = 5 * 60 * 1000; // 5 minutos
+const CACHE_DURATION = 5 * 60 * 1000; 
 
-// 🔹 Obtiene reportes de productos con paginación
+// Reportes de productos con paginación
 export const getReportesProductos = async (req, res) => {
   try {
-    const { tipoProducto, fechaDesde, fechaHasta, page = 1, limit = 50 } = req.query;
+    const {
+      tipoProducto,
+      fechaDesde,
+      fechaHasta,
+      page = 1,
+      limit = 50,
+    } = req.query;
 
     console.log("📊 Parámetros recibidos en reportes:", {
       tipoProducto,
       fechaDesde,
       fechaHasta,
       page,
-      limit
+      limit,
     });
 
     const pageNum = parseInt(page);
@@ -51,9 +57,12 @@ export const getReportesProductos = async (req, res) => {
       params.push(fechaHasta);
     }
 
-    const whereClause = whereConditions.length > 0 ? `WHERE ${whereConditions.join(" AND ")}` : "";
+    const whereClause =
+      whereConditions.length > 0
+        ? `WHERE ${whereConditions.join(" AND ")}`
+        : "";
 
-    // 🔹 CONSULTA PRINCIPAL CON PAGINACIÓN
+    // Consulta principal con paginación
     const query = `
       SELECT 
         p.id_producto,
@@ -81,7 +90,6 @@ export const getReportesProductos = async (req, res) => {
         eq.intervalo_trabajo,
         l.nombre as laboratorio_nombre,
         
-        -- 🔹 CÁLCULO MEJORADO de cantidad consumida
         (
           SELECT COALESCE(SUM(
             CASE 
@@ -106,7 +114,7 @@ export const getReportesProductos = async (req, res) => {
       LIMIT ? OFFSET ?
     `;
 
-    // 🔹 CONSULTA PARA TOTAL (sin paginación)
+    // Consulta para total (sin paginación)
     const countQuery = `
       SELECT COUNT(*) as total
       FROM Producto p
@@ -114,18 +122,20 @@ export const getReportesProductos = async (req, res) => {
     `;
 
     console.log("🔍 Ejecutando queries de reportes...");
-    
+
     // Ejecutar ambas consultas en paralelo
     const [rows, countRows] = await Promise.all([
       db.query(query, [...params, limitNum, offset]),
-      db.query(countQuery, params)
+      db.query(countQuery, params),
     ]);
 
     const productos = rows[0];
     const total = countRows[0][0].total;
     const totalPages = Math.ceil(total / limitNum);
 
-    console.log(`✅ ${productos.length} productos obtenidos (página ${pageNum} de ${totalPages})`);
+    console.log(
+      `✅ ${productos.length} productos obtenidos (página ${pageNum} de ${totalPages})`
+    );
 
     // Transformar datos
     const productosAgrupados = transformarDatosParaFrontend(productos);
@@ -138,7 +148,7 @@ export const getReportesProductos = async (req, res) => {
         limit: limitNum,
         total,
         totalPages,
-        hasMore: pageNum < totalPages
+        hasMore: pageNum < totalPages,
       },
       total: productosAgrupados.length,
       fechaGeneracion: new Date().toISOString(),
@@ -152,17 +162,17 @@ export const getReportesProductos = async (req, res) => {
   }
 };
 
-// 🔹 Obtiene estadísticas generales con caché
+//  Obtiene estadísticas generales con caché
 export const getEstadisticasReportes = async (req, res) => {
   try {
     const { fechaDesde, fechaHasta } = req.query;
 
     // Crear clave de caché única
     const cacheKey = `stats-${fechaDesde}-${fechaHasta}`;
-    
+
     // Verificar caché
     const cached = estadisticasCache.get(cacheKey);
-    if (cached && (Date.now() - cached.timestamp) < CACHE_DURATION) {
+    if (cached && Date.now() - cached.timestamp < CACHE_DURATION) {
       console.log("📈 Estadísticas servidas desde caché");
       return res.json(cached.data);
     }
@@ -182,9 +192,12 @@ export const getEstadisticasReportes = async (req, res) => {
       params.push(fechaHasta);
     }
 
-    const whereClause = whereConditions.length > 0 ? `WHERE ${whereConditions.join(" AND ")}` : "";
+    const whereClause =
+      whereConditions.length > 0
+        ? `WHERE ${whereConditions.join(" AND ")}`
+        : "";
 
-    // 🔹 CONSULTA OPTIMIZADA - una sola consulta
+    //  CONSULTA OPTIMIZADA - una sola consulta
     const query = `
       SELECT 
         COUNT(*) as total,
@@ -211,7 +224,7 @@ export const getEstadisticasReportes = async (req, res) => {
     // Guardar en caché
     estadisticasCache.set(cacheKey, {
       data: response,
-      timestamp: Date.now()
+      timestamp: Date.now(),
     });
 
     // Limpiar caché antiguo periódicamente
@@ -227,7 +240,7 @@ export const getEstadisticasReportes = async (req, res) => {
   }
 };
 
-// 🔹 Función para limpiar caché antiguo
+// Función para limpiar caché antiguo
 const cleanupOldCache = () => {
   const now = Date.now();
   for (const [key, value] of estadisticasCache.entries()) {
@@ -237,32 +250,32 @@ const cleanupOldCache = () => {
   }
 };
 
-// 🔹 VERSIÓN OPTIMIZADA de normalización con cache
+// Normalización de nombres con caché
 const normalizarNombre = (nombre) => {
-  if (!nombre) return '';
-  
+  if (!nombre) return "";
+
   // Verificar caché primero
   if (normalizationCache.has(nombre)) {
     return normalizationCache.get(nombre);
   }
-  
+
   const normalized = nombre
     .toLowerCase()
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "")
     .trim();
-  
+
   // Guardar en caché (limitar tamaño para evitar memory leaks)
   if (normalizationCache.size > 10000) {
     const firstKey = normalizationCache.keys().next().value;
     normalizationCache.delete(firstKey);
   }
-  
+
   normalizationCache.set(nombre, normalized);
   return normalized;
 };
 
-// 🔹 VERSIÓN OPTIMIZADA de transformación de datos
+// Transformar datos para frontend
 const transformarDatosParaFrontend = (rows) => {
   const productosMap = new Map();
 
@@ -272,23 +285,23 @@ const transformarDatosParaFrontend = (rows) => {
 
   for (let i = 0; i < rows.length; i++) {
     const row = rows[i];
-    
-    // NORMALIZAR el nombre para agrupar correctamente
+
+    // Evitar duplicados por nombre normalizado
     const productoNombreNormalizado = normalizarNombre(row.nombre);
-    
+
     if (!productosMap.has(productoNombreNormalizado)) {
       // Crear producto agrupado
       productosMap.set(productoNombreNormalizado, {
-        id: `group-${productoNombreNormalizado}-${i}`, // Agregar índice para único ID
+        id: `group-${productoNombreNormalizado}-${i}`,
         nombre: row.nombre,
         tipo: getTipoProducto(row.tipo),
         stockActual: 0,
-        lotes: []
+        lotes: [],
       });
     }
 
     const producto = productosMap.get(productoNombreNormalizado);
-    
+
     // Si encontramos un nombre original "mejor" (más completo), actualizarlo
     if (row.nombre.length > producto.nombre.length) {
       producto.nombre = row.nombre;
@@ -296,14 +309,14 @@ const transformarDatosParaFrontend = (rows) => {
 
     // Crear lote individual
     const lote = {
-      id: `${row.id_producto}-${row.lote || '1'}`,
-      lote: row.lote || 'Principal',
+      id: `${row.id_producto}-${row.lote || "1"}`,
+      lote: row.lote || "Principal",
       stockActual: row.stockActual,
       fechaIngreso: formatFecha(row.fecha_ingreso),
       marca: row.marca,
       estatus: getEstatus(row.estatus),
       productoId: row.id_producto,
-      cantidadConsumida: Math.max(0, row.cantidad_consumida || 0)
+      cantidadConsumida: Math.max(0, row.cantidad_consumida || 0),
     };
 
     // Agregar datos específicos por tipo (solo si existen)
@@ -320,7 +333,7 @@ const transformarDatosParaFrontend = (rows) => {
 
     // Agregar lote al producto
     producto.lotes.push(lote);
-    
+
     // SUMAR al stock total del producto agrupado
     producto.stockActual += row.stockActual;
   }
@@ -328,12 +341,12 @@ const transformarDatosParaFrontend = (rows) => {
   return Array.from(productosMap.values());
 };
 
-// 🔹 FUNCIONES OPTIMIZADAS de mapeo
+// FUNCIONES OPTIMIZADAS de mapeo
 const createTipoMapper = () => {
-  const map = { 
-    Reactivo: "reactivo", 
-    Equipo: "equipo", 
-    Material: "material" 
+  const map = {
+    Reactivo: "reactivo",
+    Equipo: "equipo",
+    Material: "material",
   };
   return (tipoBD) => map[tipoBD] || "material";
 };
@@ -348,14 +361,24 @@ const createEstatusMapper = () => {
   return (estatusBD) => map[estatusBD] || "activo";
 };
 
-// 🔹 Función para formatear fecha
+// Función para formatear fecha
 const formatFecha = (fecha) => {
   if (!fecha) return "";
   try {
     const date = new Date(fecha);
     const meses = [
-      "Ene", "Feb", "Mar", "Abr", "May", "Jun",
-      "Jul", "Ago", "Sep", "Oct", "Nov", "Dic",
+      "Ene",
+      "Feb",
+      "Mar",
+      "Abr",
+      "May",
+      "Jun",
+      "Jul",
+      "Ago",
+      "Sep",
+      "Oct",
+      "Nov",
+      "Dic",
     ];
     return `${date.getDate()}/${meses[date.getMonth()]}/${date.getFullYear()}`;
   } catch {
@@ -363,18 +386,23 @@ const formatFecha = (fecha) => {
   }
 };
 
-// 🔹 Exportar a Excel optimizado para grandes volúmenes
+// Exportar a Excel optimizado para grandes volúmenes
 export const exportarExcel = async (req, res) => {
   try {
-    // 🔹 ACEPTAR TANTO POST COMO GET
-    const { tipoProducto, fechaDesde, fechaHasta, batchSize = 1000 } = req.method === 'POST' ? req.body : req.query;
+    // Aceptar tanto POST como GET
+    const {
+      tipoProducto,
+      fechaDesde,
+      fechaHasta,
+      batchSize = 1000,
+    } = req.method === "POST" ? req.body : req.query;
 
     console.log("📤 Exportando Excel optimizado con parámetros:", {
-      tipoProducto: tipoProducto || 'todos',
-      fechaDesde: fechaDesde || 'sin fecha',
-      fechaHasta: fechaHasta || 'sin fecha',
+      tipoProducto: tipoProducto || "todos",
+      fechaDesde: fechaDesde || "sin fecha",
+      fechaHasta: fechaHasta || "sin fecha",
       method: req.method,
-      batchSize
+      batchSize,
     });
 
     let whereConditions = [];
@@ -405,9 +433,12 @@ export const exportarExcel = async (req, res) => {
       params.push(fechaHasta);
     }
 
-    const whereClause = whereConditions.length > 0 ? `WHERE ${whereConditions.join(" AND ")}` : "";
+    const whereClause =
+      whereConditions.length > 0
+        ? `WHERE ${whereConditions.join(" AND ")}`
+        : "";
 
-    // 🔹 CONSULTA PARA CONTAR TOTAL (más rápido)
+    // Consulta para contar total (más rápido)
     const countQuery = `SELECT COUNT(*) as total FROM Producto p ${whereClause}`;
     const [countRows] = await db.query(countQuery, params);
     const total = countRows[0].total;
@@ -416,28 +447,31 @@ export const exportarExcel = async (req, res) => {
 
     // Crear workbook
     const workbook = new ExcelJS.Workbook();
-    const worksheet = workbook.addWorksheet('Reporte de Productos');
+    const worksheet = workbook.addWorksheet("Reporte de Productos");
 
     // Configurar headers de respuesta ANTES de procesar datos
-    const fecha = new Date().toISOString().split('T')[0];
-    const tipo = tipoProducto || 'todos';
+    const fecha = new Date().toISOString().split("T")[0];
+    const tipo = tipoProducto || "todos";
     const fileName = `reporte-inventario-${tipo}-${fecha}.xlsx`;
 
-    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-    res.setHeader('Content-Disposition', `attachment; filename="${fileName}"`);
-    res.setHeader('Cache-Control', 'no-cache');
-    res.setHeader('Pragma', 'no-cache');
+    res.setHeader(
+      "Content-Type",
+      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    );
+    res.setHeader("Content-Disposition", `attachment; filename="${fileName}"`);
+    res.setHeader("Cache-Control", "no-cache");
+    res.setHeader("Pragma", "no-cache");
 
     // Configurar encabezados del Excel
     setupExcelHeaders(worksheet, tipoProducto, fechaDesde, fechaHasta);
 
-    // 🔹 PROCESAR EN LOTES para evitar memory overflow
+    // Procesar en lotes
     const batches = Math.ceil(total / batchSize);
     let processedCount = 0;
 
     for (let batch = 0; batch < batches; batch++) {
       const offset = batch * batchSize;
-      
+
       const query = `
         SELECT 
           p.id_producto,
@@ -491,11 +525,20 @@ export const exportarExcel = async (req, res) => {
       `;
 
       const [rows] = await db.query(query, [...params, batchSize, offset]);
-      
+
       // Procesar y agregar datos del lote actual
-      processedCount += await addBatchToExcel(worksheet, rows, batch, processedCount);
-      
-      console.log(`✅ Procesado lote ${batch + 1}/${batches} (${rows.length} registros, total: ${processedCount})`);
+      processedCount += await addBatchToExcel(
+        worksheet,
+        rows,
+        batch,
+        processedCount
+      );
+
+      console.log(
+        `✅ Procesado lote ${batch + 1}/${batches} (${
+          rows.length
+        } registros, total: ${processedCount})`
+      );
     }
 
     // Ajustar columnas
@@ -503,9 +546,10 @@ export const exportarExcel = async (req, res) => {
 
     // Stream directamente a la respuesta
     await workbook.xlsx.write(res);
-    
-    console.log(`✅ Excel exportado completamente: ${fileName} (${processedCount} registros)`);
 
+    console.log(
+      `✅ Excel exportado completamente: ${fileName} (${processedCount} registros)`
+    );
   } catch (error) {
     console.error("❌ Error en exportarExcel:", error);
     if (!res.headersSent) {
@@ -517,54 +561,63 @@ export const exportarExcel = async (req, res) => {
   }
 };
 
-// 🔹 FUNCIONES AUXILIARES para Excel
+// FUNCIONES AUXILIARES para Excel
 const setupExcelHeaders = (worksheet, tipoProducto, fechaDesde, fechaHasta) => {
   // Estilos
   const headerStyle = {
-    font: { bold: true, color: { argb: 'FFFFFF' } },
-    fill: { type: 'pattern', pattern: 'solid', fgColor: { argb: '4B9CD3' } },
-    alignment: { horizontal: 'center', vertical: 'middle' },
+    font: { bold: true, color: { argb: "FFFFFF" } },
+    fill: { type: "pattern", pattern: "solid", fgColor: { argb: "4B9CD3" } },
+    alignment: { horizontal: "center", vertical: "middle" },
     border: {
-      top: { style: 'thin' },
-      left: { style: 'thin' },
-      bottom: { style: 'thin' },
-      right: { style: 'thin' }
-    }
+      top: { style: "thin" },
+      left: { style: "thin" },
+      bottom: { style: "thin" },
+      right: { style: "thin" },
+    },
   };
 
   const normalStyle = {
     border: {
-      top: { style: 'thin' },
-      left: { style: 'thin' },
-      bottom: { style: 'thin' },
-      right: { style: 'thin' }
-    }
+      top: { style: "thin" },
+      left: { style: "thin" },
+      bottom: { style: "thin" },
+      right: { style: "thin" },
+    },
   };
 
   // Escribir encabezado del reporte
-  worksheet.mergeCells('A1:G1');
-  worksheet.getCell('A1').value = 'REPORTE DE INVENTARIO - SISTEMA DE GESTIÓN';
-  worksheet.getCell('A1').font = { bold: true, size: 16 };
-  worksheet.getCell('A1').alignment = { horizontal: 'center' };
+  worksheet.mergeCells("A1:G1");
+  worksheet.getCell("A1").value = "REPORTE DE INVENTARIO - SISTEMA DE GESTIÓN";
+  worksheet.getCell("A1").font = { bold: true, size: 16 };
+  worksheet.getCell("A1").alignment = { horizontal: "center" };
 
-  worksheet.mergeCells('A2:G2');
-  worksheet.getCell('A2').value = `Fecha de generación: ${new Date().toLocaleDateString()} ${new Date().toLocaleTimeString()}`;
-  worksheet.getCell('A2').alignment = { horizontal: 'center' };
+  worksheet.mergeCells("A2:G2");
+  worksheet.getCell(
+    "A2"
+  ).value = `Fecha de generación: ${new Date().toLocaleDateString()} ${new Date().toLocaleTimeString()}`;
+  worksheet.getCell("A2").alignment = { horizontal: "center" };
 
-  worksheet.mergeCells('A3:G3');
-  let filtrosTexto = `Filtros aplicados: Tipo: ${tipoProducto === 'todos' ? 'Todos' : tipoProducto}`;
+  worksheet.mergeCells("A3:G3");
+  let filtrosTexto = `Filtros aplicados: Tipo: ${
+    tipoProducto === "todos" ? "Todos" : tipoProducto
+  }`;
   if (fechaDesde) filtrosTexto += `, Desde: ${fechaDesde}`;
   if (fechaHasta) filtrosTexto += `, Hasta: ${fechaHasta}`;
-  worksheet.getCell('A3').value = filtrosTexto;
-  worksheet.getCell('A3').alignment = { horizontal: 'center' };
+  worksheet.getCell("A3").value = filtrosTexto;
+  worksheet.getCell("A3").alignment = { horizontal: "center" };
 
   // Espacio
   worksheet.addRow([]);
 
   // Encabezados de la tabla principal
   const headers = [
-    'Producto', 'Tipo', 'Stock Total', 'Lotes', 
-    'Fecha Ingreso', 'Estatus', 'Prioridad'
+    "Producto",
+    "Tipo",
+    "Stock Total",
+    "Lotes",
+    "Fecha Ingreso",
+    "Estatus",
+    "Prioridad",
   ];
 
   const headerRow = worksheet.addRow(headers);
@@ -578,13 +631,14 @@ const addBatchToExcel = async (worksheet, rows, batch, currentRow) => {
   let rowCount = 0;
 
   // Datos principales
-  productosAgrupados.forEach(producto => {
+  productosAgrupados.forEach((producto) => {
     // Obtener el estatus y prioridad del primer lote
     const primerLote = producto.lotes[0];
-    
+
     // Buscar en los datos originales para obtener estatus y prioridad reales
-    const productoOriginal = rows.find(row => 
-      normalizarNombre(row.nombre) === normalizarNombre(producto.nombre)
+    const productoOriginal = rows.find(
+      (row) =>
+        normalizarNombre(row.nombre) === normalizarNombre(producto.nombre)
     );
 
     const row = worksheet.addRow([
@@ -593,8 +647,8 @@ const addBatchToExcel = async (worksheet, rows, batch, currentRow) => {
       producto.stockActual,
       producto.lotes.length,
       formatFechaExcel(primerLote?.fechaIngreso),
-      productoOriginal?.estatus || 'Desconocido',
-      productoOriginal?.prioridad || '-'
+      productoOriginal?.estatus || "Desconocido",
+      productoOriginal?.prioridad || "-",
     ]);
 
     rowCount++;
@@ -607,49 +661,62 @@ const addBatchToExcel = async (worksheet, rows, batch, currentRow) => {
     worksheet.addRow([]);
 
     // DETALLES POR LOTE
-    const detalleHeader = worksheet.addRow(['DETALLES POR LOTE']);
+    const detalleHeader = worksheet.addRow(["DETALLES POR LOTE"]);
     detalleHeader.getCell(1).font = { bold: true, size: 14 };
     worksheet.addRow([]);
 
     // Encabezados de detalles
     const detalleHeaders = [
-      'Producto', 'Lote', 'Stock', 'Consumido', 
-      'Marca', 'F. Ingreso', 'F. Caducidad', 'Días Restantes',
-      'ID AGK', 'Modelo', 'No. Serie', 'Laboratorio'
+      "Producto",
+      "Lote",
+      "Stock",
+      "Consumido",
+      "Marca",
+      "F. Ingreso",
+      "F. Caducidad",
+      "Días Restantes",
+      "ID AGK",
+      "Modelo",
+      "No. Serie",
+      "Laboratorio",
     ];
 
     const detalleHeaderRow = worksheet.addRow(detalleHeaders);
     detalleHeaderRow.eachCell((cell) => {
       cell.style = {
-        font: { bold: true, color: { argb: 'FFFFFF' } },
-        fill: { type: 'pattern', pattern: 'solid', fgColor: { argb: '4B9CD3' } },
-        alignment: { horizontal: 'center', vertical: 'middle' },
+        font: { bold: true, color: { argb: "FFFFFF" } },
+        fill: {
+          type: "pattern",
+          pattern: "solid",
+          fgColor: { argb: "4B9CD3" },
+        },
+        alignment: { horizontal: "center", vertical: "middle" },
         border: {
-          top: { style: 'thin' },
-          left: { style: 'thin' },
-          bottom: { style: 'thin' },
-          right: { style: 'thin' }
-        }
+          top: { style: "thin" },
+          left: { style: "thin" },
+          bottom: { style: "thin" },
+          right: { style: "thin" },
+        },
       };
     });
   }
 
   // Agregar detalles de lotes para este batch
-  productosAgrupados.forEach(producto => {
-    producto.lotes.forEach(lote => {
+  productosAgrupados.forEach((producto) => {
+    producto.lotes.forEach((lote) => {
       const rowData = [
         producto.nombre,
         lote.lote,
         lote.stockActual,
         lote.cantidadConsumida || 0,
-        lote.marca || '-',
+        lote.marca || "-",
         lote.fechaIngreso,
-        lote.fechaCaducidad || '-',
-        lote.diasRestantes || '-',
-        lote.idAgk || '-',
-        lote.modelo || '-',
-        lote.numeroSerie || '-',
-        lote.laboratorio || '-'
+        lote.fechaCaducidad || "-",
+        lote.diasRestantes || "-",
+        lote.idAgk || "-",
+        lote.modelo || "-",
+        lote.numeroSerie || "-",
+        lote.laboratorio || "-",
       ];
 
       const row = worksheet.addRow(rowData);
@@ -664,27 +731,32 @@ const getColumnWidths = () => [
   { width: 30 }, // Producto
   { width: 12 }, // Tipo
   { width: 12 }, // Stock Total
-  { width: 8 },  // Lotes
+  { width: 8 }, // Lotes
   { width: 12 }, // Fecha Ingreso
   { width: 12 }, // Estatus
   { width: 12 }, // Prioridad
-  // Columnas para detalles
-  { width: 15 }, { width: 10 }, { width: 12 }, { width: 12 },
-  { width: 12 }, { width: 15 }, { width: 15 }, { width: 15 }
+  { width: 15 },
+  { width: 10 },
+  { width: 12 },
+  { width: 12 },
+  { width: 12 },
+  { width: 15 },
+  { width: 15 },
+  { width: 15 },
 ];
 
-// 🔹 Función auxiliar para formatear fecha en Excel
+// Función auxiliar para formatear fecha en Excel
 const formatFechaExcel = (fecha) => {
-  if (!fecha) return '';
+  if (!fecha) return "";
   try {
     // Si es string, convertirlo a Date
-    const date = typeof fecha === 'string' ? new Date(fecha) : fecha;
-    return date.toLocaleDateString('es-MX', {
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric'
+    const date = typeof fecha === "string" ? new Date(fecha) : fecha;
+    return date.toLocaleDateString("es-MX", {
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
     });
   } catch {
-    return '';
+    return "";
   }
 };

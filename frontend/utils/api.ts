@@ -1,8 +1,7 @@
-// utils/api.ts
 import axios from 'axios';
 import { storage } from './storage'; 
-// 🔥 Usamos la IP de tu backend
-const API_BASE_URL = "http://10.149.121.216:3000/api";
+// IP local de desarrollo
+const API_BASE_URL = "http://192.168.0.166:3000/api";
 
 const api = axios.create({
   baseURL: API_BASE_URL,
@@ -17,7 +16,6 @@ api.interceptors.request.use(
 
     const token = await storage.getToken();
     if (token) {
-      // Si el token existe, lo añadimos a los headers
       config.headers.Authorization = `Bearer ${token}`;
     }
     return config;
@@ -26,8 +24,5 @@ api.interceptors.request.use(
     return Promise.reject(error);
   }
 );
-
-// (Opcional) Puedes añadir un interceptor de respuesta
-// para manejar errores 401 (token expirado) y forzar un logout.
 
 export default api;

@@ -21,12 +21,16 @@ import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import * as ImagePicker from "expo-image-picker";
 import TendenciaStockChart from "../../components/TendenciaStockChart";
-import { Swipeable } from "react-native-gesture-handler";
+import {
+  Swipeable,
+  GestureHandlerRootView,
+} from "react-native-gesture-handler";
+import { FlatList } from "react-native";
 import { useAuth } from "@/context/AuthContext";
 import api from "@/utils/api";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 
-const API_ROOT_URL = "http://10.149.121.216:3000";
+const API_ROOT_URL = "http://192.168.0.166:3000";
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get("window");
 
@@ -109,7 +113,6 @@ interface Movimiento {
   fecha_fin: string | null;
 }
 
-// ... (Todas tus funciones helper: calcularDiferenciaFechas, calcularDiasHastaCaducidad, etc. no cambian) ...
 function calcularDiferenciaFechas(inicio: string, fin: string): string {
   if (!inicio || !fin) return "N/A";
   try {
@@ -120,7 +123,11 @@ function calcularDiferenciaFechas(inicio: string, fin: string): string {
     }
     const diffMs = fechaFin.getTime() - fechaInicio.getTime();
     if (diffMs < 0) {
-      console.warn("⚠️ Diferencia de fechas negativa:", { inicio, fin, diffMs });
+      console.warn("⚠️ Diferencia de fechas negativa:", {
+        inicio,
+        fin,
+        diffMs,
+      });
       return "N/A";
     }
     const dias = Math.floor(diffMs / (1000 * 60 * 60 * 24));
@@ -154,14 +161,22 @@ const calcularDiasHastaCaducidad = (caducidad: string): number | null => {
 };
 const getEstatusColor = (producto: Producto): string => {
   switch (producto.id_estatus_producto) {
-    case 1: return "#28a745"; // Disponible
-    case 2: return "#6c757d"; // Sin stock
-    case 3: return "#ffc107"; // Bajo stock
-    case 5: return "#007bff"; // En uso
-    case 6: return "#dc3545"; // Baja
-    case 7: return "#6f42c1"; // Caducado
-    case 8: return "#fd7e14"; // Próximo a caducar
-    default: return "#6c757d";
+    case 1:
+      return "#28a745"; // Disponible
+    case 2:
+      return "#6c757d"; // Sin stock
+    case 3:
+      return "#ffc107"; // Bajo stock
+    case 5:
+      return "#007bff"; // En uso
+    case 6:
+      return "#dc3545"; // Baja
+    case 7:
+      return "#6f42c1"; // Caducado
+    case 8:
+      return "#fd7e14"; // Próximo a caducar
+    default:
+      return "#6c757d";
   }
 };
 const getEstatusText = (producto: Producto): string => {
@@ -173,7 +188,7 @@ export default function ProductDetail() {
   const { id } = useLocalSearchParams();
   const colorScheme = useColorScheme();
   const isDark = colorScheme === "dark";
-  
+
   const [producto, setProducto] = useState<Producto | null>(null);
   const [loading, setLoading] = useState(true);
   const [editModalVisible, setEditModalVisible] = useState(false);
@@ -247,7 +262,6 @@ export default function ProductDetail() {
     return fecha.split("T")[0];
   };
 
-  // ✅ CORREGIDO: fetchOpcionesSelect usa api.get y manejo de errores de Axios
   const fetchOpcionesSelect = async () => {
     // Cargar Prioridades
     try {
@@ -313,7 +327,6 @@ export default function ProductDetail() {
     }
   };
 
-  // ✅ CORREGIDO: fetchMotivosBaja usa api.get y manejo de errores de Axios
   const fetchMotivosBaja = async () => {
     try {
       setLoadingMovimientos(true);
@@ -337,7 +350,6 @@ export default function ProductDetail() {
     setReportModalVisible(true);
   };
 
-  // ✅ CORREGIDO: fetchDocumentos usa api.get y la URL raíz
   const fetchDocumentos = async () => {
     if (!producto) return;
     try {
@@ -345,9 +357,7 @@ export default function ProductDetail() {
         "📂 Cargando documentos para producto:",
         producto.id_producto
       );
-      const res = await api.get(
-        `/documentos/producto/${producto.id_producto}`
-      );
+      const res = await api.get(`/documentos/producto/${producto.id_producto}`);
       const data = res.data;
       console.log("📄 Documentos cargados:", data);
 
@@ -355,7 +365,7 @@ export default function ProductDetail() {
         id_documento: doc.id_documento,
         nombre: doc.nombre_archivo,
         tipo: doc.id_tipo_documento === 1 ? "certificado" : "hds",
-        url: `${API_ROOT_URL}/uploads/${doc.nombre_archivo}`, // ✅ Usa la URL raíz
+        url: `${API_ROOT_URL}/uploads/${doc.nombre_archivo}`,
         fecha_subida: doc.fecha_subida,
         id_tipo_documento: doc.id_tipo_documento,
         nombre_archivo: doc.nombre_archivo,
@@ -370,7 +380,6 @@ export default function ProductDetail() {
     }
   };
 
-  // ✅ CORREGIDO: handleUploadDocument usa api.post
   const handleUploadDocument = async (tipo: "certificado" | "hds") => {
     if (!producto) {
       Alert.alert("Error", "No hay producto seleccionado");
@@ -388,7 +397,7 @@ export default function ProductDetail() {
         setUploading(false);
         return;
       }
-      
+
       const file = result.assets[0];
       if (file.mimeType !== "application/pdf") {
         Alert.alert("Error", "Solo se permiten archivos PDF");
@@ -412,8 +421,7 @@ export default function ProductDetail() {
       const uploadUrl = `/documentos/upload/${producto.id_producto}/${idTipoDocumento}`;
 
       console.log("📡 Enviando documento al servidor...", uploadUrl);
-      
-      // ✅ Usa api.post con headers para multipart
+
       const response = await api.post(uploadUrl, formData, {
         headers: {
           "Content-Type": "multipart/form-data",
@@ -422,10 +430,13 @@ export default function ProductDetail() {
 
       console.log("✅ Documento subido exitosamente:", response.data);
       Alert.alert("Éxito", "Documento PDF subido correctamente");
-      await fetchDocumentos(); // Recargar lista
+      await fetchDocumentos();
       setDocumentModalVisible(false);
     } catch (error: any) {
-      console.error("❌ Error subiendo documento:", error.response?.data || error.message);
+      console.error(
+        "❌ Error subiendo documento:",
+        error.response?.data || error.message
+      );
       Alert.alert(
         "Error",
         "No se pudo subir el documento. Verifica tu conexión."
@@ -435,7 +446,6 @@ export default function ProductDetail() {
     }
   };
 
-  // ✅ CORREGIDO: handleDeleteDocument usa api.delete
   const handleDeleteDocument = async (documento: Documento) => {
     if (!documento.id_documento) {
       Alert.alert("Error", "No se puede eliminar este documento");
@@ -454,7 +464,7 @@ export default function ProductDetail() {
               console.log("🗑️ Eliminando documento:", documento.id_documento);
               await api.delete(`/documentos/${documento.id_documento}`);
               Alert.alert("Éxito", "Documento eliminado correctamente");
-              await fetchDocumentos(); // Recargar lista
+              await fetchDocumentos();
             } catch (error: any) {
               console.error(
                 "❌ Error eliminando documento:",
@@ -468,14 +478,12 @@ export default function ProductDetail() {
     );
   };
 
-  // ❗ SIN CAMBIOS: handleViewDocument usa fetch a una URL externa (está bien)
   const handleViewDocument = async (documento: Documento) => {
     try {
       if (!documento.url) {
         Alert.alert("Error", "El documento no tiene URL válida");
         return;
       }
-      // Esta prueba HEAD con fetch está bien, es una URL pública de 'uploads'
       const testResponse = await fetch(documento.url, { method: "HEAD" });
       if (!testResponse.ok) {
         Alert.alert(
@@ -507,11 +515,9 @@ export default function ProductDetail() {
     }
   };
 
-  // ✅ CORREGIDO: handleSaveEdit usa api.put y manejo de errores de Axios
   const handleSaveEdit = async () => {
     if (!producto) return;
     try {
-      // ... (Toda tu lógica para preparar 'datosCompletos' sigue igual)
       const datosBasicos: ProductoEdicion = {
         nombre: editForm.nombre,
         marca: editForm.marca,
@@ -557,27 +563,27 @@ export default function ProductDetail() {
             : null,
         };
       }
-      
+
       console.log("🔄 ENVIANDO DATOS COMPLETOS AL BACKEND:", datosCompletos);
-      
-      // ✅ CORREGIDO: Usa api.put y ruta relativa
-      await api.put(
-        `/productos/${producto.id_producto}`,
-        datosCompletos // El body es el segundo argumento
-      );
+
+      await api.put(`/productos/${producto.id_producto}`, datosCompletos);
 
       Alert.alert("Éxito", "Producto actualizado correctamente");
       setEditModalVisible(false);
       await refreshProductData();
     } catch (error: any) {
-      // ✅ CORREGIDO: Manejo de errores de Axios
-      console.error("❌ Error del backend:", error.response?.data || error.message);
-      Alert.alert("Error", error.response?.data?.error || "No se pudo actualizar");
+      console.error(
+        "❌ Error del backend:",
+        error.response?.data || error.message
+      );
+      Alert.alert(
+        "Error",
+        error.response?.data?.error || "No se pudo actualizar"
+      );
     }
   };
 
   const handleReportBaja = async () => {
-    // ... (Toda tu lógica de validación interna no cambia) ...
     if (!producto || !reportForm.id_motivo_baja) {
       return Alert.alert("Error", "Debes seleccionar un motivo.");
     }
@@ -662,14 +668,13 @@ export default function ProductDetail() {
     );
   };
 
-  // ✅ CORREGIDO: executeBaja usa api.post y manejo de errores de Axios
   const executeBaja = async () => {
     if (!producto) return;
     try {
       setLoadingMovimientos(true);
-      
+
       // El 'id_usuario' se obtiene del token en el backend.
-      const response = await api.post('/movimientos/bajas', {
+      const response = await api.post("/movimientos/bajas", {
         id_producto: producto.id_producto,
         descripcion_adicional: reportForm.descripcion_adicional,
       });
@@ -683,14 +688,19 @@ export default function ProductDetail() {
       });
       await refreshProductData();
     } catch (error: any) {
-      console.error("Error reportando baja:", error.response?.data || error.message);
-      Alert.alert("Error", error.response?.data?.error || "No se pudo registrar la baja");
+      console.error(
+        "Error reportando baja:",
+        error.response?.data || error.message
+      );
+      Alert.alert(
+        "Error",
+        error.response?.data?.error || "No se pudo registrar la baja"
+      );
     } finally {
       setLoadingMovimientos(false);
     }
   };
 
-  // ✅ CORREGIDO: executeSalida usa api.post y manejo de errores de Axios
   const executeSalida = async () => {
     if (!producto) return;
     try {
@@ -701,10 +711,10 @@ export default function ProductDetail() {
       );
 
       // El 'id_usuario' se obtiene del token en el backend.
-      const response = await api.post('/movimientos/salidas', {
+      const response = await api.post("/movimientos/salidas", {
         id_producto: producto.id_producto,
         cantidad: parseInt(reportForm.cantidad) || 1,
-        id_motivo_baja: parseInt(reportForm.id_motivo_baja), 
+        id_motivo_baja: parseInt(reportForm.id_motivo_baja),
         descripcion_adicional: reportForm.descripcion_adicional || null,
       });
 
@@ -717,7 +727,10 @@ export default function ProductDetail() {
       });
       await refreshProductData();
     } catch (error: any) {
-      console.error("❌ Error reportando salida:", error.response?.data || error.message);
+      console.error(
+        "❌ Error reportando salida:",
+        error.response?.data || error.message
+      );
       Alert.alert(
         "Error",
         error.response?.data?.error || "No se pudo reportar la salida"
@@ -727,7 +740,6 @@ export default function ProductDetail() {
     }
   };
 
-  // ✅ CORREGIDO: handleEditImage usa api.post
   const handleEditImage = async () => {
     if (!producto) return;
     try {
@@ -759,13 +771,12 @@ export default function ProductDetail() {
 
       console.log("🔄 Subiendo imagen...");
 
-      // ✅ Usa api.post con headers para multipart
       const response = await api.post(
-        `/productos/${producto.id_producto}/imagen`, 
-        formData, 
+        `/productos/${producto.id_producto}/imagen`,
+        formData,
         {
           headers: {
-            'Content-Type': 'multipart/form-data',
+            "Content-Type": "multipart/form-data",
           },
         }
       );
@@ -773,16 +784,17 @@ export default function ProductDetail() {
       console.log("📡 Status:", response.status);
       Alert.alert("Éxito", "Imagen actualizada correctamente");
       await refreshProductData();
-      
     } catch (error: any) {
       console.error("❌ Error:", error.response?.data || error.message);
-      Alert.alert("Error", error.response?.data?.error || "No se pudo subir la imagen");
+      Alert.alert(
+        "Error",
+        error.response?.data?.error || "No se pudo subir la imagen"
+      );
     } finally {
-      setLoading(false); // Asegúrate de que esto esté aquí
+      setLoading(false);
     }
   };
 
-  // ✅ CORREGIDO: refreshProductData usa api.get y manejo de errores de Axios
   const refreshProductData = async () => {
     if (!id) return;
 
@@ -792,16 +804,17 @@ export default function ProductDetail() {
       console.log("🔄🔄🔄 RECARGANDO DATOS - INICIO");
 
       // Hacer peticiones en paralelo con api.get
-const [productResponse, historyResponse, trendResponse] = await Promise.all([
-  api.get(`/productos/${id}?t=${Date.now()}`),
-  api.get(`/movimientos/historial/${id}?t=${Date.now()}`),
-  api.get(`/productos/${id}/tendencia?t=${Date.now()}`),
-]);
+      const [productResponse, historyResponse, trendResponse] =
+        await Promise.all([
+          api.get(`/productos/${id}?t=${Date.now()}`),
+          api.get(`/movimientos/historial/${id}?t=${Date.now()}`),
+          api.get(`/productos/${id}/tendencia?t=${Date.now()}`),
+        ]);
 
       // Con Axios, la respuesta está en .data
       const productData = productResponse.data;
       const historyData = historyResponse.data;
-      const trendData = trendResponse.data; 
+      const trendData = trendResponse.data;
 
       // DEBUG CRÍTICO
       console.log("📥 DATOS RECIBIDOS DEL BACKEND:", {
@@ -846,10 +859,12 @@ const [productResponse, historyResponse, trendResponse] = await Promise.all([
         console.log("📝 FORMULARIO ACTUALIZADO:", editFormData);
         setEditForm(editFormData);
       }
-      console.log("✅✅✅ RECARGANDO DATOS - COMPLETADO");
+      console.log("✅ RECARGANDO DATOS - COMPLETADO");
     } catch (error: any) {
-      // ✅ Manejo de errores de Axios
-      console.error("❌ Error recargando datos:", error.response?.data || error.message);
+      console.error(
+        "❌ Error recargando datos:",
+        error.response?.data || error.message
+      );
       Alert.alert("Error", "No se pudo actualizar la información.");
     } finally {
       setLoading(false);
@@ -868,7 +883,9 @@ const [productResponse, historyResponse, trendResponse] = await Promise.all([
     return (
       <View style={[styles.center, isDark && styles.centerDark]}>
         <ActivityIndicator size="large" color="#539DF3" />
-        <Text style={[styles.loadingText, isDark && styles.textDark]}>Cargando producto...</Text>
+        <Text style={[styles.loadingText, isDark && styles.textDark]}>
+          Cargando producto...
+        </Text>
       </View>
     );
   }
@@ -876,7 +893,9 @@ const [productResponse, historyResponse, trendResponse] = await Promise.all([
   if (!producto) {
     return (
       <View style={[styles.center, isDark && styles.centerDark]}>
-        <Text style={[styles.noProductText, isDark && styles.textDark]}>No se encontró el producto</Text>
+        <Text style={[styles.noProductText, isDark && styles.textDark]}>
+          No se encontró el producto
+        </Text>
       </View>
     );
   }
@@ -896,7 +915,6 @@ const [productResponse, historyResponse, trendResponse] = await Promise.all([
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
-        {/* === NUEVO HEADER REDISEÑADO === */}
         <View style={[styles.header, isDark && styles.headerDark]}>
           <Image
             source={
@@ -915,29 +933,52 @@ const [productResponse, historyResponse, trendResponse] = await Promise.all([
         </View>
 
         <View style={styles.headerContent}>
-          <Text style={[styles.title, isDark && styles.textDark]}>{producto.nombre}</Text>
-          <Text style={[styles.subtitle, isDark && styles.textMutedDark]}>{producto.tipo}</Text>
-          <View style={[styles.statusContainer, isDark && styles.statusContainerDark]}>
+          <Text style={[styles.title, isDark && styles.textDark]}>
+            {producto.nombre}
+          </Text>
+          <Text style={[styles.subtitle, isDark && styles.textMutedDark]}>
+            {producto.tipo}
+          </Text>
+          <View
+            style={[
+              styles.statusContainer,
+              isDark && styles.statusContainerDark,
+            ]}
+          >
             <View
               style={[
                 styles.statusDot,
                 { backgroundColor: getEstatusColor(producto) },
               ]}
             />
-            <Text style={[styles.statusText, isDark && styles.textDark]}>{getEstatusText(producto)}</Text>
+            <Text style={[styles.statusText, isDark && styles.textDark]}>
+              {getEstatusText(producto)}
+            </Text>
           </View>
         </View>
-
-        {/* === NUEVOS BOTONES DE ACCIÓN INTEGRADOS === */}
         <View style={styles.mainActionsContainer}>
-          {/* Mostrar botón de editar SOLO si el usuario es administrador (rol === 1) */}
+          {/* Mostrar botón de editar SOLO si el usuario es administrador*/}
           {user?.rol === 1 && (
             <TouchableOpacity
-              style={[styles.mainButton, styles.secondaryButton, isDark && styles.secondaryButtonDark]}
+              style={[
+                styles.mainButton,
+                styles.secondaryButton,
+                isDark && styles.secondaryButtonDark,
+              ]}
               onPress={() => setEditModalVisible(true)}
             >
-              <Ionicons name="create-outline" size={20} color={isDark ? "#fff" : "#000000ff"} />
-              <Text style={[styles.mainButtonText, styles.secondaryButtonText, isDark && styles.textDark]}>
+              <Ionicons
+                name="create-outline"
+                size={20}
+                color={isDark ? "#fff" : "#000000ff"}
+              />
+              <Text
+                style={[
+                  styles.mainButtonText,
+                  styles.secondaryButtonText,
+                  isDark && styles.textDark,
+                ]}
+              >
                 Editar
               </Text>
             </TouchableOpacity>
@@ -966,7 +1007,16 @@ const [productResponse, historyResponse, trendResponse] = await Promise.all([
                 style={[
                   styles.warningCard,
                   isDark && styles.warningCardDark,
-                  { backgroundColor: dias < 0 ? (isDark ? "#2c1c1c" : "#FEF2F2") : (isDark ? "#2c281c" : "#FFFBEB") },
+                  {
+                    backgroundColor:
+                      dias < 0
+                        ? isDark
+                          ? "#2c1c1c"
+                          : "#FEF2F2"
+                        : isDark
+                        ? "#2c281c"
+                        : "#FFFBEB",
+                  },
                 ]}
               >
                 <Ionicons
@@ -983,7 +1033,12 @@ const [productResponse, historyResponse, trendResponse] = await Promise.all([
                   >
                     {dias < 0 ? "PRODUCTO CADUCADO" : "PRÓXIMO A CADUCAR"}
                   </Text>
-                  <Text style={[styles.warningMessage, isDark && styles.textMutedDark]}>
+                  <Text
+                    style={[
+                      styles.warningMessage,
+                      isDark && styles.textMutedDark,
+                    ]}
+                  >
                     {dias < 0
                       ? "Este producto ha caducado"
                       : dias === 0
@@ -1003,36 +1058,62 @@ const [productResponse, historyResponse, trendResponse] = await Promise.all([
               size={24}
               color={isDark ? "#fff" : "#000000ff"}
             />
-            <Text style={[styles.cardTitle, isDark && styles.textDark]}>Información General</Text>
+            <Text style={[styles.cardTitle, isDark && styles.textDark]}>
+              Información General
+            </Text>
           </View>
           <View style={styles.infoGrid}>
             <View style={styles.infoItem}>
-              <Text style={[styles.infoLabel, isDark && styles.textMutedDark]}>Marca</Text>
-              <Text style={[styles.infoValue, isDark && styles.textDark]}>{producto.marca}</Text>
+              <Text style={[styles.infoLabel, isDark && styles.textMutedDark]}>
+                Marca
+              </Text>
+              <Text style={[styles.infoValue, isDark && styles.textDark]}>
+                {producto.marca}
+              </Text>
             </View>
             <View style={styles.infoItem}>
-              <Text style={[styles.infoLabel, isDark && styles.textMutedDark]}>Lote</Text>
-              <Text style={[styles.infoValue, isDark && styles.textDark]}>{producto.lote || "N/A"}</Text>
+              <Text style={[styles.infoLabel, isDark && styles.textMutedDark]}>
+                Lote
+              </Text>
+              <Text style={[styles.infoValue, isDark && styles.textDark]}>
+                {producto.lote || "N/A"}
+              </Text>
             </View>
             <View style={styles.infoItem}>
-              <Text style={[styles.infoLabel, isDark && styles.textMutedDark]}>Fecha Ingreso</Text>
+              <Text style={[styles.infoLabel, isDark && styles.textMutedDark]}>
+                Fecha Ingreso
+              </Text>
               <Text style={[styles.infoValue, isDark && styles.textDark]}>
                 {formatFecha(producto.fecha_ingreso)}
               </Text>
             </View>
             <View style={styles.infoItem}>
-              <Text style={[styles.infoLabel, isDark && styles.textMutedDark]}>Prioridad</Text>
-              <Text style={[styles.infoValue, isDark && styles.textDark]}>{producto.prioridad}</Text>
+              <Text style={[styles.infoLabel, isDark && styles.textMutedDark]}>
+                Prioridad
+              </Text>
+              <Text style={[styles.infoValue, isDark && styles.textDark]}>
+                {producto.prioridad}
+              </Text>
             </View>
             <View style={styles.infoItem}>
-              <Text style={[styles.infoLabel, isDark && styles.textMutedDark]}>Stock Mínimo</Text>
+              <Text style={[styles.infoLabel, isDark && styles.textMutedDark]}>
+                Stock Mínimo
+              </Text>
               <Text style={[styles.infoValue, isDark && styles.textDark]}>
                 {producto.stock_minimo} unidades
               </Text>
             </View>
             <View style={styles.infoItem}>
-              <Text style={[styles.infoLabel, isDark && styles.textMutedDark]}>Stock Actual</Text>
-              <Text style={[styles.infoValue, styles.stockValue, isDark && styles.textDark]}>
+              <Text style={[styles.infoLabel, isDark && styles.textMutedDark]}>
+                Stock Actual
+              </Text>
+              <Text
+                style={[
+                  styles.infoValue,
+                  styles.stockValue,
+                  isDark && styles.textDark,
+                ]}
+              >
                 {producto.existencia_actual} unidades
               </Text>
             </View>
@@ -1043,18 +1124,32 @@ const [productResponse, historyResponse, trendResponse] = await Promise.all([
         {producto.id_tipo_producto === 1 && (
           <View style={[styles.card, isDark && styles.cardDark]}>
             <View style={styles.cardHeader}>
-              <Ionicons name="flask-outline" size={24} color={isDark ? "#fff" : "#000000ff"} />
-              <Text style={[styles.cardTitle, isDark && styles.textDark]}>Detalles del Reactivo</Text>
+              <Ionicons
+                name="flask-outline"
+                size={24}
+                color={isDark ? "#fff" : "#000000ff"}
+              />
+              <Text style={[styles.cardTitle, isDark && styles.textDark]}>
+                Detalles del Reactivo
+              </Text>
             </View>
             <View style={styles.detailsGrid}>
               <View style={styles.detailItem}>
-                <Text style={[styles.detailLabel, isDark && styles.textMutedDark]}>Presentación</Text>
+                <Text
+                  style={[styles.detailLabel, isDark && styles.textMutedDark]}
+                >
+                  Presentación
+                </Text>
                 <Text style={[styles.detailValue, isDark && styles.textDark]}>
                   {producto.presentacion || "N/A"}
                 </Text>
               </View>
               <View style={styles.detailItem}>
-                <Text style={[styles.detailLabel, isDark && styles.textMutedDark]}>Caducidad</Text>
+                <Text
+                  style={[styles.detailLabel, isDark && styles.textMutedDark]}
+                >
+                  Caducidad
+                </Text>
                 <Text style={[styles.detailValue, isDark && styles.textDark]}>
                   {producto.caducidad ? formatFecha(producto.caducidad) : "N/A"}
                 </Text>
@@ -1071,43 +1166,73 @@ const [productResponse, historyResponse, trendResponse] = await Promise.all([
                 size={24}
                 color={isDark ? "#fff" : "#000000ff"}
               />
-              <Text style={[styles.cardTitle, isDark && styles.textDark]}>Detalles del Equipo</Text>
+              <Text style={[styles.cardTitle, isDark && styles.textDark]}>
+                Detalles del Equipo
+              </Text>
             </View>
             <View style={styles.detailsGrid}>
               <View style={styles.detailItem}>
-                <Text style={[styles.detailLabel, isDark && styles.textMutedDark]}>ID AGK</Text>
+                <Text
+                  style={[styles.detailLabel, isDark && styles.textMutedDark]}
+                >
+                  ID AGK
+                </Text>
                 <Text style={[styles.detailValue, isDark && styles.textDark]}>
                   {producto.id_agk || "N/A"}
                 </Text>
               </View>
               <View style={styles.detailItem}>
-                <Text style={[styles.detailLabel, isDark && styles.textMutedDark]}>Modelo</Text>
+                <Text
+                  style={[styles.detailLabel, isDark && styles.textMutedDark]}
+                >
+                  Modelo
+                </Text>
                 <Text style={[styles.detailValue, isDark && styles.textDark]}>
                   {producto.modelo || "N/A"}
                 </Text>
               </View>
               <View style={styles.detailItem}>
-                <Text style={[styles.detailLabel, isDark && styles.textMutedDark]}>Número de Serie</Text>
+                <Text
+                  style={[styles.detailLabel, isDark && styles.textMutedDark]}
+                >
+                  Número de Serie
+                </Text>
                 <Text style={[styles.detailValue, isDark && styles.textDark]}>
                   {producto.numero_serie || "N/A"}
                 </Text>
               </View>
               <View style={styles.detailItem}>
-                <Text style={[styles.detailLabel, isDark && styles.textMutedDark]}>Rango de Medición</Text>
+                <Text
+                  style={[styles.detailLabel, isDark && styles.textMutedDark]}
+                >
+                  Rango de Medición
+                </Text>
                 <Text style={[styles.detailValue, isDark && styles.textDark]}>
                   {producto.rango_medicion || "N/A"}
                 </Text>
               </View>
               <View style={styles.detailItem}>
-                <Text style={[styles.detailLabel, isDark && styles.textMutedDark]}>Resolución</Text>
+                <Text
+                  style={[styles.detailLabel, isDark && styles.textMutedDark]}
+                >
+                  Resolución
+                </Text>
                 <Text style={[styles.detailValue, isDark && styles.textDark]}>
                   {producto.resolucion || "N/A"}
                 </Text>
               </View>
               <View style={styles.detailItem}>
-                <Text style={[styles.detailLabel, isDark && styles.textMutedDark]}>Laboratorio</Text>
                 <Text
-                  style={[styles.detailValue, styles.laboratorioValue, isDark && styles.textDark]}
+                  style={[styles.detailLabel, isDark && styles.textMutedDark]}
+                >
+                  Laboratorio
+                </Text>
+                <Text
+                  style={[
+                    styles.detailValue,
+                    styles.laboratorioValue,
+                    isDark && styles.textDark,
+                  ]}
                   numberOfLines={2}
                   ellipsizeMode="tail"
                 >
@@ -1119,7 +1244,7 @@ const [productResponse, historyResponse, trendResponse] = await Promise.all([
           </View>
         )}
 
-        {/* === NUEVA SECCIÓN DE DOCUMENTOS SIMPLIFICADA === */}
+        {/* SECCIÓN DE DOCUMENTOS */}
         {producto.id_tipo_producto === 1 && (
           <View style={[styles.card, isDark && styles.cardDark]}>
             <View style={styles.cardHeader}>
@@ -1128,7 +1253,9 @@ const [productResponse, historyResponse, trendResponse] = await Promise.all([
                 size={24}
                 color={isDark ? "#fff" : "#000000ff"}
               />
-              <Text style={[styles.cardTitle, isDark && styles.textDark]}>Archivos</Text>
+              <Text style={[styles.cardTitle, isDark && styles.textDark]}>
+                Archivos
+              </Text>
             </View>
             <TouchableOpacity
               style={[styles.documentLink, isDark && styles.documentLinkDark]}
@@ -1139,8 +1266,16 @@ const [productResponse, historyResponse, trendResponse] = await Promise.all([
                 size={22}
                 color={isDark ? "#fff" : "#1E293B"}
               />
-              <Text style={[styles.documentLinkText, isDark && styles.textDark]}>Certificados</Text>
-              <Ionicons name="chevron-forward" size={20} color={isDark ? "#888" : "#94A3B8"} />
+              <Text
+                style={[styles.documentLinkText, isDark && styles.textDark]}
+              >
+                Certificados
+              </Text>
+              <Ionicons
+                name="chevron-forward"
+                size={20}
+                color={isDark ? "#888" : "#94A3B8"}
+              />
             </TouchableOpacity>
             <TouchableOpacity
               style={[styles.documentLink, isDark && styles.documentLinkDark]}
@@ -1151,10 +1286,16 @@ const [productResponse, historyResponse, trendResponse] = await Promise.all([
                 size={22}
                 color={isDark ? "#fff" : "#1E293B"}
               />
-              <Text style={[styles.documentLinkText, isDark && styles.textDark]}>
+              <Text
+                style={[styles.documentLinkText, isDark && styles.textDark]}
+              >
                 Hojas de Seguridad (HDS)
               </Text>
-              <Ionicons name="chevron-forward" size={20} color={isDark ? "#888" : "#94A3B8"} />
+              <Ionicons
+                name="chevron-forward"
+                size={20}
+                color={isDark ? "#888" : "#94A3B8"}
+              />
             </TouchableOpacity>
           </View>
         )}
@@ -1162,8 +1303,14 @@ const [productResponse, historyResponse, trendResponse] = await Promise.all([
         {/* Historial de movimientos */}
         <View style={[styles.card, isDark && styles.cardDark]}>
           <View style={styles.cardHeader}>
-            <Ionicons name="shuffle" size={24} color={isDark ? "#fff" : "#000000ff"} />
-            <Text style={[styles.cardTitle, isDark && styles.textDark]}>Control de Movimientos</Text>
+            <Ionicons
+              name="shuffle"
+              size={24}
+              color={isDark ? "#fff" : "#000000ff"}
+            />
+            <Text style={[styles.cardTitle, isDark && styles.textDark]}>
+              Control de Movimientos
+            </Text>
           </View>
           {cargandoHistorial ? (
             <ActivityIndicator
@@ -1177,7 +1324,13 @@ const [productResponse, historyResponse, trendResponse] = await Promise.all([
               nestedScrollEnabled={true}
             >
               {historial.map((mov) => (
-                <View key={mov.id_movimiento} style={[styles.historialItem, isDark && styles.historialItemDark]}>
+                <View
+                  key={mov.id_movimiento}
+                  style={[
+                    styles.historialItem,
+                    isDark && styles.historialItemDark,
+                  ]}
+                >
                   <View style={styles.historialIcon}>
                     <Ionicons
                       name={
@@ -1210,13 +1363,20 @@ const [productResponse, historyResponse, trendResponse] = await Promise.all([
                     />
                   </View>
                   <View style={styles.historialContent}>
-                    <Text style={[styles.historialTitle, isDark && styles.textDark]}>
+                    <Text
+                      style={[styles.historialTitle, isDark && styles.textDark]}
+                    >
                       {mov.tipo_movimiento === "Entrada"
                         ? "Entrada"
                         : mov.motivo_baja || mov.tipo_movimiento}{" "}
                       ({mov.cantidad} Uds.)
                     </Text>
-                    <Text style={[styles.historialSubtitle, isDark && styles.textMutedDark]}>
+                    <Text
+                      style={[
+                        styles.historialSubtitle,
+                        isDark && styles.textMutedDark,
+                      ]}
+                    >
                       {new Date(mov.fecha).toLocaleString("es-MX")} por{" "}
                       {mov.responsable}
                     </Text>
@@ -1225,8 +1385,12 @@ const [productResponse, historyResponse, trendResponse] = await Promise.all([
                     {mov.motivo_baja === "Finalizar uso" &&
                       mov.fecha_inicio &&
                       mov.fecha_fin && (
-                        <Text style={[styles.historialDescription,
-                        isDark && styles.historialdescriptionDark]}>
+                        <Text
+                          style={[
+                            styles.historialDescription,
+                            isDark && styles.historialdescriptionDark,
+                          ]}
+                        >
                           ⏱️ Duración de uso:{" "}
                           {calcularDiferenciaFechas(
                             mov.fecha_inicio,
@@ -1237,8 +1401,12 @@ const [productResponse, historyResponse, trendResponse] = await Promise.all([
 
                     {/* Mostrar nota para TODOS los movimientos que tengan descripción */}
                     {mov.descripcion_adicional && (
-                      <Text style={[styles.historialDescription,
-                       isDark && styles.historialdescriptionDark]}>
+                      <Text
+                        style={[
+                          styles.historialDescription,
+                          isDark && styles.historialdescriptionDark,
+                        ]}
+                      >
                         📝 Nota: {mov.descripcion_adicional}
                       </Text>
                     )}
@@ -1247,7 +1415,9 @@ const [productResponse, historyResponse, trendResponse] = await Promise.all([
               ))}
             </ScrollView>
           ) : (
-            <Text style={[styles.noHistorialText, isDark && styles.textMutedDark]}>
+            <Text
+              style={[styles.noHistorialText, isDark && styles.textMutedDark]}
+            >
               No hay movimientos registrados.
             </Text>
           )}
@@ -1257,8 +1427,14 @@ const [productResponse, historyResponse, trendResponse] = await Promise.all([
         {producto.id_tipo_producto === 1 && datosGrafica.length > 1 && (
           <View style={[styles.card, isDark && styles.cardDark]}>
             <View style={styles.cardHeader}>
-              <Ionicons name="trending-up" size={24} color={isDark ? "#fff" : "#000000ff"} />
-              <Text style={[styles.cardTitle, isDark && styles.textDark]}>Tendencia de Stock</Text>
+              <Ionicons
+                name="trending-up"
+                size={24}
+                color={isDark ? "#fff" : "#000000ff"}
+              />
+              <Text style={[styles.cardTitle, isDark && styles.textDark]}>
+                Tendencia de Stock
+              </Text>
             </View>
             <TendenciaStockChart
               datos={datosGrafica}
@@ -1273,9 +1449,13 @@ const [productResponse, historyResponse, trendResponse] = await Promise.all([
         visible={documentModalVisible}
         animationType="slide"
         transparent={true}
+        statusBarTranslucent
       >
         <View style={styles.modalOverlay}>
-          <View style={[styles.modalContent, isDark && styles.modalContentDark]}>
+          <View
+            style={[styles.modalContent, isDark && styles.modalContentDark]}
+          >
+            {/* Header del Modal */}
             <LinearGradient
               colors={["#87bcf8ff", "#539DF3"]}
               style={styles.modalHeader}
@@ -1292,23 +1472,47 @@ const [productResponse, historyResponse, trendResponse] = await Promise.all([
                 <Ionicons name="close" size={24} color="white" />
               </TouchableOpacity>
             </LinearGradient>
-
-            <ScrollView style={styles.modalScroll}>
-              {documentos.filter((doc) => doc.tipo === selectedDocType)
-                .length === 0 ? (
-                <View style={styles.emptyState}>
-                  <Ionicons name="document-outline" size={64} color={isDark ? "#444" : "#CBD5E1"} />
-                  <Text style={[styles.emptyStateText, isDark && styles.textDark]}>No hay documentos</Text>
-                  <Text style={[styles.emptyStateSubtext, isDark && styles.textMutedDark]}>
-                    Presiona "Subir Nuevo" para agregar un documento PDF
-                  </Text>
-                </View>
-              ) : (
-                documentos
-                  .filter((doc) => doc.tipo === selectedDocType)
-                  .map((doc, index) => (
+            <GestureHandlerRootView style={{ flex: 1 }}>
+              <View style={{ flex: 1, paddingHorizontal: 20, paddingTop: 20 }}>
+                {/* Lista de Documentos usando FlatList para mejor rendimiento */}
+                <FlatList
+                  data={documentos.filter(
+                    (doc) => doc.tipo === selectedDocType
+                  )}
+                  keyExtractor={(item, index) =>
+                    item.id_documento?.toString() || index.toString()
+                  }
+                  showsVerticalScrollIndicator={false}
+                  contentContainerStyle={{ paddingBottom: 20 }}
+                  ListEmptyComponent={() => (
+                    <View style={styles.emptyState}>
+                      <Ionicons
+                        name="document-outline"
+                        size={64}
+                        color={isDark ? "#444" : "#CBD5E1"}
+                      />
+                      <Text
+                        style={[
+                          styles.emptyStateText,
+                          isDark && styles.textDark,
+                        ]}
+                      >
+                        No hay documentos
+                      </Text>
+                      <Text
+                        style={[
+                          styles.emptyStateSubtext,
+                          isDark && styles.textMutedDark,
+                        ]}
+                      >
+                        Presiona "Subir Nuevo" para agregar
+                      </Text>
+                    </View>
+                  )}
+                  renderItem={({ item: doc }) => (
                     <Swipeable
-                      key={doc.id_documento || `doc-${index}`}
+                      // Añade una clave única para forzar re-render si es necesario
+                      key={doc.id_documento}
                       renderRightActions={(progress, dragX) => (
                         <View style={styles.deleteAction}>
                           <TouchableOpacity
@@ -1317,7 +1521,7 @@ const [productResponse, historyResponse, trendResponse] = await Promise.all([
                           >
                             <Ionicons
                               name="trash-outline"
-                              size={20}
+                              size={24}
                               color="white"
                             />
                             <Text style={styles.deleteButtonText}>
@@ -1326,6 +1530,8 @@ const [productResponse, historyResponse, trendResponse] = await Promise.all([
                           </TouchableOpacity>
                         </View>
                       )}
+                      // Ajustes de umbral para que sea más fácil activar en Android
+                      friction={2}
                       rightThreshold={40}
                     >
                       <TouchableOpacity
@@ -1333,7 +1539,12 @@ const [productResponse, historyResponse, trendResponse] = await Promise.all([
                         onPress={() => handleViewDocument(doc)}
                         activeOpacity={0.7}
                       >
-                        <View style={[styles.docIconContainer, isDark && styles.docIconContainerDark]}>
+                        <View
+                          style={[
+                            styles.docIconContainer,
+                            isDark && styles.docIconContainerDark,
+                          ]}
+                        >
                           <Ionicons
                             name="document-text-outline"
                             size={24}
@@ -1341,13 +1552,29 @@ const [productResponse, historyResponse, trendResponse] = await Promise.all([
                           />
                         </View>
                         <View style={styles.docInfo}>
-                          <Text style={[styles.docName, isDark && styles.textDark]} numberOfLines={1}>
+                          <Text
+                            style={[styles.docName, isDark && styles.textDark]}
+                            numberOfLines={1}
+                          >
                             {doc.nombre}
                           </Text>
                           <View style={styles.docMeta}>
-                            <Text style={[styles.docMetaText, isDark && styles.textMutedDark]}>PDF</Text>
+                            <Text
+                              style={[
+                                styles.docMetaText,
+                                isDark && styles.textMutedDark,
+                              ]}
+                            >
+                              PDF
+                            </Text>
                             {doc.fecha_subida && (
-                              <Text style={[styles.docDate, isDark && styles.textMutedDark]}>
+                              <Text
+                                style={[
+                                  styles.docDate,
+                                  isDark && styles.textMutedDark,
+                                ]}
+                              >
+                                •{" "}
                                 {new Date(
                                   doc.fecha_subida
                                 ).toLocaleDateString()}
@@ -1362,38 +1589,67 @@ const [productResponse, historyResponse, trendResponse] = await Promise.all([
                         />
                       </TouchableOpacity>
                     </Swipeable>
-                  ))
-              )}
+                  )}
+                />
 
-              <TouchableOpacity
-                style={[styles.uploadButton, isDark && styles.uploadButtonDark]}
-                onPress={() => handleUploadDocument(selectedDocType)}
-                disabled={uploading}
-              >
-                {uploading ? (
-                  <ActivityIndicator size="small" color={isDark ? "#fff" : "black"} />
-                ) : (
-                  <>
-                    <Ionicons name="cloud-upload" size={20} color={isDark ? "#fff" : "black"} />
-                    <Text style={[styles.uploadButtonText, isDark && styles.textDark]}>
-                      Subir Nuevo{" "}
-                      {selectedDocType === "certificado"
-                        ? "Certificado"
-                        : "HDS"}
+                {/* Botón de Subir y Texto informativo (Fuera del scroll si quieres que esté fijo, o dentro del footer) */}
+                <View style={styles.footerContainer}>
+                  <TouchableOpacity
+                    style={[
+                      styles.uploadButton,
+                      isDark && styles.uploadButtonDark,
+                    ]}
+                    onPress={() => handleUploadDocument(selectedDocType)}
+                    disabled={uploading}
+                  >
+                    {uploading ? (
+                      <ActivityIndicator
+                        size="small"
+                        color={isDark ? "#fff" : "black"}
+                      />
+                    ) : (
+                      <>
+                        <Ionicons
+                          name="cloud-upload"
+                          size={20}
+                          color={isDark ? "#fff" : "black"}
+                        />
+                        <Text
+                          style={[
+                            styles.uploadButtonText,
+                            isDark && styles.textDark,
+                          ]}
+                        >
+                          Subir Nuevo{" "}
+                          {selectedDocType === "certificado"
+                            ? "Certificado"
+                            : "HDS"}
+                        </Text>
+                      </>
+                    )}
+                  </TouchableOpacity>
+
+                  <View style={styles.formatInfo}>
+                    <Text
+                      style={[
+                        styles.formatInfoText,
+                        isDark && styles.textMutedDark,
+                      ]}
+                    >
+                      Solo PDF (máx. 10MB)
                     </Text>
-                  </>
-                )}
-              </TouchableOpacity>
-
-              <View style={styles.formatInfo}>
-                <Text style={[styles.formatInfoText, isDark && styles.textMutedDark]}>
-                  Solo se permiten archivos PDF (máx. 10MB)
-                </Text>
-                <Text style={[styles.formatInfoSubtext, isDark && styles.textMutedDark]}>
-                  Desliza hacia la izquierda sobre un documento para eliminarlo
-                </Text>
+                    <Text
+                      style={[
+                        styles.formatInfoSubtext,
+                        isDark && styles.textMutedDark,
+                      ]}
+                    >
+                      Desliza a la izquierda un item para eliminar
+                    </Text>
+                  </View>
+                </View>
               </View>
-            </ScrollView>
+            </GestureHandlerRootView>
           </View>
         </View>
       </Modal>
@@ -1406,14 +1662,17 @@ const [productResponse, historyResponse, trendResponse] = await Promise.all([
       >
         <KeyboardAvoidingView
           style={styles.modalOverlay}
-          behavior={Platform.OS === "ios" ? "padding" : "padding"} // ✅ La solución
+          behavior={Platform.OS === "ios" ? "padding" : undefined}
+          keyboardVerticalOffset={Platform.OS === "ios" ? 100 : 0}
         >
           <TouchableOpacity
             style={styles.modalOverlay}
             activeOpacity={1}
             onPress={() => Keyboard.dismiss()}
           >
-            <View style={[styles.modalContent, isDark && styles.modalContentDark]}>
+            <View
+              style={[styles.modalContent, isDark && styles.modalContentDark]}
+            >
               <LinearGradient
                 colors={["#87bcf8ff", "#539DF3"]}
                 style={styles.modalHeader}
@@ -1431,11 +1690,19 @@ const [productResponse, historyResponse, trendResponse] = await Promise.all([
                 style={styles.modalScroll}
                 showsVerticalScrollIndicator={true}
                 contentContainerStyle={styles.modalScrollContent}
+                keyboardShouldPersistTaps="handled"
+                keyboardDismissMode="on-drag"
               >
                 <View style={styles.formSection}>
-                  <Text style={[styles.sectionTitle, isDark && styles.textDark]}>Información General</Text>
+                  <Text
+                    style={[styles.sectionTitle, isDark && styles.textDark]}
+                  >
+                    Información General
+                  </Text>
                   <View style={styles.inputGroup}>
-                    <Text style={[styles.label, isDark && styles.textDark]}>Nombre del Producto</Text>
+                    <Text style={[styles.label, isDark && styles.textDark]}>
+                      Nombre del Producto
+                    </Text>
                     <TextInput
                       style={[styles.input, isDark && styles.inputDark]}
                       value={editForm.nombre}
@@ -1448,7 +1715,9 @@ const [productResponse, historyResponse, trendResponse] = await Promise.all([
                   </View>
 
                   <View style={styles.inputGroup}>
-                    <Text style={[styles.label, isDark && styles.textDark]}>Marca</Text>
+                    <Text style={[styles.label, isDark && styles.textDark]}>
+                      Marca
+                    </Text>
                     <TextInput
                       style={[styles.input, isDark && styles.inputDark]}
                       value={editForm.marca}
@@ -1463,7 +1732,9 @@ const [productResponse, historyResponse, trendResponse] = await Promise.all([
                   {(producto.id_tipo_producto === 1 ||
                     producto.id_tipo_producto === 3) && (
                     <View style={styles.inputGroup}>
-                      <Text style={[styles.label, isDark && styles.textDark]}>Lote</Text>
+                      <Text style={[styles.label, isDark && styles.textDark]}>
+                        Lote
+                      </Text>
                       <TextInput
                         style={[styles.input, isDark && styles.inputDark]}
                         value={editForm.lote}
@@ -1480,7 +1751,9 @@ const [productResponse, historyResponse, trendResponse] = await Promise.all([
                     <View
                       style={[styles.inputGroup, { flex: 1, marginRight: 8 }]}
                     >
-                      <Text style={[styles.label, isDark && styles.textDark]}>Stock Actual</Text>
+                      <Text style={[styles.label, isDark && styles.textDark]}>
+                        Stock Actual
+                      </Text>
                       <TextInput
                         style={[styles.input, isDark && styles.inputDark]}
                         value={editForm.existencia_actual}
@@ -1496,7 +1769,9 @@ const [productResponse, historyResponse, trendResponse] = await Promise.all([
                     <View
                       style={[styles.inputGroup, { flex: 1, marginLeft: 8 }]}
                     >
-                      <Text style={[styles.label, isDark && styles.textDark]}>Stock Mínimo</Text>
+                      <Text style={[styles.label, isDark && styles.textDark]}>
+                        Stock Mínimo
+                      </Text>
                       <TextInput
                         style={[styles.input, isDark && styles.inputDark]}
                         value={editForm.stock_minimo}
@@ -1511,7 +1786,9 @@ const [productResponse, historyResponse, trendResponse] = await Promise.all([
                   </View>
 
                   <View style={styles.inputGroup}>
-                    <Text style={[styles.label, isDark && styles.textDark]}>Prioridad</Text>
+                    <Text style={[styles.label, isDark && styles.textDark]}>
+                      Prioridad
+                    </Text>
                     <View style={styles.inlineSelectOptions}>
                       {opcionesPrioridad.map((opcion) => (
                         <TouchableOpacity
@@ -1546,7 +1823,9 @@ const [productResponse, historyResponse, trendResponse] = await Promise.all([
                   </View>
 
                   <View style={styles.inputGroup}>
-                    <Text style={[styles.label, isDark && styles.textDark]}>Estatus</Text>
+                    <Text style={[styles.label, isDark && styles.textDark]}>
+                      Estatus
+                    </Text>
                     <View style={styles.inlineSelectOptions}>
                       {opcionesEstatus.map((opcion) => (
                         <TouchableOpacity
@@ -1584,12 +1863,16 @@ const [productResponse, historyResponse, trendResponse] = await Promise.all([
                 {/* Campos específicos por tipo */}
                 {producto.id_tipo_producto === 1 && (
                   <View style={styles.formSection}>
-                    <Text style={[styles.sectionTitle, isDark && styles.textDark]}>
+                    <Text
+                      style={[styles.sectionTitle, isDark && styles.textDark]}
+                    >
                       Detalles del Reactivo
                     </Text>
 
                     <View style={styles.inputGroup}>
-                      <Text style={[styles.label, isDark && styles.textDark]}>Presentación</Text>
+                      <Text style={[styles.label, isDark && styles.textDark]}>
+                        Presentación
+                      </Text>
                       <TextInput
                         style={[styles.input, isDark && styles.inputDark]}
                         value={editForm.presentacion}
@@ -1602,7 +1885,9 @@ const [productResponse, historyResponse, trendResponse] = await Promise.all([
                     </View>
 
                     <View style={styles.inputGroup}>
-                      <Text style={[styles.label, isDark && styles.textDark]}>Caducidad</Text>
+                      <Text style={[styles.label, isDark && styles.textDark]}>
+                        Caducidad
+                      </Text>
                       <TextInput
                         style={[styles.input, isDark && styles.inputDark]}
                         value={
@@ -1618,8 +1903,13 @@ const [productResponse, historyResponse, trendResponse] = await Promise.all([
                         keyboardType="numbers-and-punctuation"
                         placeholderTextColor={isDark ? "#666" : "#999"}
                       />
-                      <Text style={[styles.hintText, isDark && styles.textMutedDark]}>
-                        ¡Formato requerido!: YYYY-MM-DD
+                      <Text
+                        style={[
+                          styles.hintText,
+                          isDark && styles.textMutedDark,
+                        ]}
+                      >
+                        ¡FORMATO REQUERIDO!: YYYY-MM-DD
                       </Text>
                     </View>
                   </View>
@@ -1627,10 +1917,16 @@ const [productResponse, historyResponse, trendResponse] = await Promise.all([
 
                 {producto.id_tipo_producto === 2 && (
                   <View style={styles.formSection}>
-                    <Text style={[styles.sectionTitle, isDark && styles.textDark]}>Detalles del Equipo</Text>
+                    <Text
+                      style={[styles.sectionTitle, isDark && styles.textDark]}
+                    >
+                      Detalles del Equipo
+                    </Text>
 
                     <View style={styles.inputGroup}>
-                      <Text style={[styles.label, isDark && styles.textDark]}>ID AGK</Text>
+                      <Text style={[styles.label, isDark && styles.textDark]}>
+                        ID AGK
+                      </Text>
                       <TextInput
                         style={[styles.input, isDark && styles.inputDark]}
                         value={editForm.id_agk}
@@ -1643,7 +1939,9 @@ const [productResponse, historyResponse, trendResponse] = await Promise.all([
                     </View>
 
                     <View style={styles.inputGroup}>
-                      <Text style={[styles.label, isDark && styles.textDark]}>Modelo</Text>
+                      <Text style={[styles.label, isDark && styles.textDark]}>
+                        Modelo
+                      </Text>
                       <TextInput
                         style={[styles.input, isDark && styles.inputDark]}
                         value={editForm.modelo}
@@ -1656,7 +1954,9 @@ const [productResponse, historyResponse, trendResponse] = await Promise.all([
                     </View>
 
                     <View style={styles.inputGroup}>
-                      <Text style={[styles.label, isDark && styles.textDark]}>Número de Serie</Text>
+                      <Text style={[styles.label, isDark && styles.textDark]}>
+                        Número de Serie
+                      </Text>
                       <TextInput
                         style={[styles.input, isDark && styles.inputDark]}
                         value={editForm.numero_serie}
@@ -1672,7 +1972,9 @@ const [productResponse, historyResponse, trendResponse] = await Promise.all([
                       <View
                         style={[styles.inputGroup, { flex: 1, marginRight: 8 }]}
                       >
-                        <Text style={[styles.label, isDark && styles.textDark]}>Rango de Medición</Text>
+                        <Text style={[styles.label, isDark && styles.textDark]}>
+                          Rango de Medición
+                        </Text>
                         <TextInput
                           style={[styles.input, isDark && styles.inputDark]}
                           value={editForm.rango_medicion}
@@ -1687,7 +1989,9 @@ const [productResponse, historyResponse, trendResponse] = await Promise.all([
                       <View
                         style={[styles.inputGroup, { flex: 1, marginLeft: 8 }]}
                       >
-                        <Text style={[styles.label, isDark && styles.textDark]}>Resolución</Text>
+                        <Text style={[styles.label, isDark && styles.textDark]}>
+                          Resolución
+                        </Text>
                         <TextInput
                           style={[styles.input, isDark && styles.inputDark]}
                           value={editForm.resolucion}
@@ -1701,7 +2005,9 @@ const [productResponse, historyResponse, trendResponse] = await Promise.all([
                     </View>
 
                     <View style={styles.inputGroup}>
-                      <Text style={[styles.label, isDark && styles.textDark]}>Intervalo de Trabajo</Text>
+                      <Text style={[styles.label, isDark && styles.textDark]}>
+                        Intervalo de Trabajo
+                      </Text>
                       <TextInput
                         style={[styles.input, isDark && styles.inputDark]}
                         value={editForm.intervalo_trabajo}
@@ -1714,7 +2020,9 @@ const [productResponse, historyResponse, trendResponse] = await Promise.all([
                     </View>
 
                     <View style={styles.inputGroup}>
-                      <Text style={[styles.label, isDark && styles.textDark]}>Laboratorio</Text>
+                      <Text style={[styles.label, isDark && styles.textDark]}>
+                        Laboratorio
+                      </Text>
                       <View style={styles.inlineSelectOptions}>
                         {opcionesLaboratorios.map((opcion) => (
                           <TouchableOpacity
@@ -1751,11 +2059,23 @@ const [productResponse, historyResponse, trendResponse] = await Promise.all([
 
                 <View style={styles.modalActions}>
                   <TouchableOpacity
-                    style={[styles.modalButton, styles.saveButton, isDark && styles.saveButtonDark]}
+                    style={[
+                      styles.modalButton,
+                      styles.saveButton,
+                      isDark && styles.saveButtonDark,
+                    ]}
                     onPress={handleSaveEdit}
                   >
-                    <Ionicons name="save" size={20} color={isDark ? "#fff" : "black"} />
-                    <Text style={[styles.saveButtonText, isDark && styles.textDark]}>Guardar Cambios</Text>
+                    <Ionicons
+                      name="save"
+                      size={20}
+                      color={isDark ? "#fff" : "black"}
+                    />
+                    <Text
+                      style={[styles.saveButtonText, isDark && styles.textDark]}
+                    >
+                      Guardar Cambios
+                    </Text>
                   </TouchableOpacity>
                 </View>
               </ScrollView>
@@ -1772,14 +2092,17 @@ const [productResponse, historyResponse, trendResponse] = await Promise.all([
       >
         <KeyboardAvoidingView
           style={styles.modalOverlay}
-          behavior={Platform.OS === "ios" ? "padding" : "height"}
+          behavior={Platform.OS === "ios" ? "padding" : undefined}
+          keyboardVerticalOffset={Platform.OS === "ios" ? 100 : 0}
         >
           <TouchableOpacity
             style={styles.modalOverlay}
             activeOpacity={1}
             onPress={() => Keyboard.dismiss()}
           >
-            <View style={[styles.modalContent, isDark && styles.modalContentDark]}>
+            <View
+              style={[styles.modalContent, isDark && styles.modalContentDark]}
+            >
               <LinearGradient
                 colors={["#87bcf8ff", "#539DF3"]}
                 style={styles.modalHeader}
@@ -1797,12 +2120,16 @@ const [productResponse, historyResponse, trendResponse] = await Promise.all([
                 style={styles.modalScroll}
                 showsVerticalScrollIndicator={true}
                 contentContainerStyle={styles.modalScrollContent}
+                keyboardShouldPersistTaps="handled"
+                keyboardDismissMode="on-drag"
               >
                 <View style={styles.formSection}>
                   {/* Campo: Cantidad - OCULTAR para Baja */}
                   {reportForm.id_motivo_baja !== "4" && (
                     <View style={styles.inputGroup}>
-                      <Text style={[styles.label, isDark && styles.textDark]}>Cantidad a reportar</Text>
+                      <Text style={[styles.label, isDark && styles.textDark]}>
+                        Cantidad a reportar
+                      </Text>
                       <TextInput
                         style={[styles.input, isDark && styles.inputDark]}
                         value={reportForm.cantidad}
@@ -1818,7 +2145,12 @@ const [productResponse, historyResponse, trendResponse] = await Promise.all([
                         keyboardType="numeric"
                         placeholderTextColor={isDark ? "#666" : "#999"}
                       />
-                      <Text style={[styles.hintText, isDark && styles.textMutedDark]}>
+                      <Text
+                        style={[
+                          styles.hintText,
+                          isDark && styles.textMutedDark,
+                        ]}
+                      >
                         Stock disponible: {producto.existencia_actual} unidades
                       </Text>
                     </View>
@@ -1826,22 +2158,28 @@ const [productResponse, historyResponse, trendResponse] = await Promise.all([
 
                   {/* Mostrar mensaje especial para Baja */}
                   {reportForm.id_motivo_baja === "4" && (
-                    <View style={[styles.infoBox, isDark && styles.infoBoxDark]}>
+                    <View
+                      style={[styles.infoBox, isDark && styles.infoBoxDark]}
+                    >
                       <Ionicons
                         name="information-circle"
                         size={20}
                         color="#539DF3"
                       />
-                      <Text style={[styles.infoText, isDark && styles.textDark]}>
+                      <Text
+                        style={[styles.infoText, isDark && styles.textDark]}
+                      >
                         Se dará de baja TODO el stock disponible (
                         {producto.existencia_actual} unidades)
                       </Text>
                     </View>
                   )}
 
-                  {/* Campo: Motivo del reporte - VERSIÓN FILTRADA */}
+                  {/* Campo: Motivo del reporte */}
                   <View style={styles.inputGroup}>
-                    <Text style={[styles.label, isDark && styles.textDark]}>Motivo del reporte</Text>
+                    <Text style={[styles.label, isDark && styles.textDark]}>
+                      Motivo del reporte
+                    </Text>
                     {loadingMovimientos ? (
                       <ActivityIndicator size="small" color="#539DF3" />
                     ) : (
@@ -1850,7 +2188,6 @@ const [productResponse, historyResponse, trendResponse] = await Promise.all([
 
                         return motivosBaja
                           .filter((motivo) => {
-                            // ✅ PARA EQUIPOS (2) Y MATERIALES (3): Solo Baja (4) e Incidencia (2)
                             if (
                               producto.id_tipo_producto === 2 ||
                               producto.id_tipo_producto === 3
@@ -1864,7 +2201,6 @@ const [productResponse, historyResponse, trendResponse] = await Promise.all([
                             return true;
                           })
                           .sort((a, b) => {
-                            
                             const posA = ordenDeseado.indexOf(a.id_motivo_baja);
                             const posB = ordenDeseado.indexOf(b.id_motivo_baja);
 
@@ -1882,7 +2218,9 @@ const [productResponse, historyResponse, trendResponse] = await Promise.all([
                                 isDark && styles.radioOptionDark,
                                 reportForm.id_motivo_baja ===
                                   motivo.id_motivo_baja.toString() &&
-                                  styles.radioOptionSelected,
+                                  (isDark
+                                    ? styles.radioOptionSelectedDark
+                                    : styles.radioOptionSelected),
                               ]}
                               onPress={() => {
                                 console.log(
@@ -1895,13 +2233,23 @@ const [productResponse, historyResponse, trendResponse] = await Promise.all([
                                 });
                               }}
                             >
-                              <View style={[styles.radioCircle, isDark && styles.radioCircleDark]}>
+                              <View
+                                style={[
+                                  styles.radioCircle,
+                                  isDark && styles.radioCircleDark,
+                                ]}
+                              >
                                 {reportForm.id_motivo_baja ===
                                   motivo.id_motivo_baja.toString() && (
                                   <View style={styles.radioInnerCircle} />
                                 )}
                               </View>
-                              <Text style={[styles.radioText, isDark && styles.textDark]}>
+                              <Text
+                                style={[
+                                  styles.radioText,
+                                  isDark && styles.textDark,
+                                ]}
+                              >
                                 {motivo.nombre_motivo}
                               </Text>
                             </TouchableOpacity>
@@ -1915,7 +2263,11 @@ const [productResponse, historyResponse, trendResponse] = await Promise.all([
                       Descripción adicional (opcional)
                     </Text>
                     <TextInput
-                      style={[styles.input, styles.textArea, isDark && styles.inputDark]}
+                      style={[
+                        styles.input,
+                        styles.textArea,
+                        isDark && styles.inputDark,
+                      ]}
                       value={reportForm.descripcion_adicional}
                       onChangeText={(text) =>
                         setReportForm({
@@ -1938,11 +2290,23 @@ const [productResponse, historyResponse, trendResponse] = await Promise.all([
 
                 {/* Botón para confirmar la acción */}
                 <TouchableOpacity
-                  style={[styles.modalButton, styles.reportSubmitButton, isDark && styles.reportSubmitButtonDark]}
+                  style={[
+                    styles.modalButton,
+                    styles.reportSubmitButton,
+                    isDark && styles.reportSubmitButtonDark,
+                  ]}
                   onPress={handleReportBaja}
                 >
-                  <Ionicons name="checkmark-circle" size={20} color={isDark ? "#fff" : "black"} />
-                  <Text style={[styles.reportButtonText, isDark && styles.textDark]}>Realizar reporte</Text>
+                  <Ionicons
+                    name="checkmark-circle"
+                    size={20}
+                    color={isDark ? "#fff" : "black"}
+                  />
+                  <Text
+                    style={[styles.reportButtonText, isDark && styles.textDark]}
+                  >
+                    Realizar reporte
+                  </Text>
                 </TouchableOpacity>
               </ScrollView>
             </View>
@@ -1956,7 +2320,7 @@ const [productResponse, historyResponse, trendResponse] = await Promise.all([
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#F8FAFC", 
+    backgroundColor: "#F8FAFC",
   },
   containerDark: {
     backgroundColor: "#000",
@@ -1974,7 +2338,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scrollContent: {
-    paddingBottom: 40, 
+    paddingBottom: 40,
   },
 
   header: {
@@ -2184,7 +2548,6 @@ const styles = StyleSheet.create({
     textAlign: "right",
     marginLeft: 8,
   },
-
   warningCard: {
     flexDirection: "row",
     alignItems: "center",
@@ -2211,7 +2574,6 @@ const styles = StyleSheet.create({
     fontFamily: "Poppins_400Regular",
     color: "#64748B",
   },
-
   historialScrollContainer: {
     maxHeight: 300,
   },
@@ -2264,18 +2626,18 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontFamily: "Poppins_500Medium",
   },
-
   modalOverlay: {
     flex: 1,
-    backgroundColor: "rgba(0,0,0,0.5)",
+    backgroundColor: "rgba(0,0,0,0.6)",
     justifyContent: "flex-end",
   },
   modalContent: {
     backgroundColor: "#F8FAFC",
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
-    maxHeight: "90%",
-    minHeight: "50%",
+    height: "70%",
+    width: "100%",
+    overflow: "hidden",
   },
   modalContentDark: {
     backgroundColor: "#1c1c1e",
@@ -2284,9 +2646,13 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    padding: 20,
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
+    padding: 16,
+  },
+  footerContainer: {
+    paddingTop: 10,
+    paddingBottom: 20,
+    borderTopWidth: 1,
+    borderTopColor: "rgba(0,0,0,0.05)",
   },
   modalTitle: {
     fontSize: 20,
@@ -2301,6 +2667,7 @@ const styles = StyleSheet.create({
   },
   modalScrollContent: {
     padding: 20,
+    paddingBottom: 300,
   },
   modalActions: {
     marginTop: 24,
@@ -2338,7 +2705,12 @@ const styles = StyleSheet.create({
     padding: 16,
     backgroundColor: "#FFFFFF",
     borderRadius: 12,
-    marginBottom: 8,
+    marginBottom: 12,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 2,
   },
   docItemDark: {
     backgroundColor: "#2c2c2e",
@@ -2588,21 +2960,21 @@ const styles = StyleSheet.create({
     fontFamily: "Poppins_400Regular",
     flex: 1,
   },
-
   deleteAction: {
     backgroundColor: "#DC2626",
     justifyContent: "center",
     alignItems: "center",
+    width: 80,
+    height: 80,
     borderRadius: 12,
-    marginBottom: 8,
+    marginBottom: 12,
     marginLeft: 8,
-    width: 100,
   },
   deleteButton: {
     justifyContent: "center",
     alignItems: "center",
-    flex: 1,
-    paddingHorizontal: 16,
+    width: "100%",
+    height: "100%",
   },
   deleteButtonText: {
     color: "white",
@@ -2618,8 +2990,6 @@ const styles = StyleSheet.create({
     marginTop: 4,
     fontStyle: "italic",
   },
-
-  // Text Colors
   textDark: {
     color: "#e8e8e8ff",
   },
@@ -2632,5 +3002,9 @@ const styles = StyleSheet.create({
   },
   noProductText: {
     color: "#64748B",
+  },
+  radioOptionSelectedDark: {
+    backgroundColor: "#172e59",
+    borderColor: "#539DF3",
   },
 });

@@ -44,7 +44,7 @@ export const login = async (req, res) => {
       { 
         id: usuario.id_usuario,
         correo: usuario.correo,
-        rol: usuario.id_rol  // Esto debe coincidir con id_rol de la tabla rol
+        rol: usuario.id_rol  
       },
       JWT_CONFIG.secret,
       { expiresIn: JWT_CONFIG.expiresIn }

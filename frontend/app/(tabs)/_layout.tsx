@@ -46,7 +46,7 @@ export default function TabLayout() {
           ),
         }}
       />
-      
+
       <Tabs.Screen
         name="reportes"
         options={{
@@ -54,7 +54,7 @@ export default function TabLayout() {
           tabBarIcon: ({ color }) => (
             <Ionicons size={28} name="stats-chart" color={color} />
           ),
-          
+
           href: isAdmin ? "/reportes" : null,
         }}
       />

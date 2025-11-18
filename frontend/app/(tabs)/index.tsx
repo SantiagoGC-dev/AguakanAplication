@@ -72,7 +72,7 @@ interface Usuario {
 }
 
 // Configuración de API
-const API_BASE_URL = "http://10.149.121.216:3000/api";
+const API_BASE_URL = "http://192.168.0.166:3000/api";
 
 // Darle formato a la fecha
 function formatDate(dateString: string) {
@@ -214,7 +214,7 @@ export default function HomeScreen() {
 
   const alertasStock = React.useMemo(
     () => alertas.filter((a) => a.tipo === "stock"),
-    [alertas] // Se recalcula cuando 'alertas' cambia
+    [alertas]
   );
 
   // Cargar datos al montar el componente
@@ -233,7 +233,7 @@ export default function HomeScreen() {
 
     // Cargar los datos del dashboard
     fetchDashboardData();
-  }, [authUser]); // 🔥 Ejecutar esto solo cuando 'authUser' cambie
+  }, [authUser]);
 
   // Pull to refresh
   const onRefresh = React.useCallback(() => {
@@ -246,7 +246,7 @@ export default function HomeScreen() {
     if (alertasCaducidad.length > 0 || alertasStock.length > 0) {
       setShowModal(true); // Primero actualiza el estado
       setTimeout(() => {
-        setModalNotificacionesVisible(true); // Luego abre el modal
+        setModalNotificacionesVisible(true);
       }, 100);
     } else {
       Alert.alert(
@@ -270,7 +270,7 @@ export default function HomeScreen() {
       pathname: "/(tabs)/inventario",
       params: {
         filter: "en-uso",
-        timestamp: Date.now(), // FORZAR actualización
+        timestamp: Date.now(), // Evitar caché
       },
     });
   };
@@ -401,7 +401,7 @@ export default function HomeScreen() {
           />
         </View>
 
-        {/* SECCIÓN MEJORADA: Alertas con diseño más atractivo */}
+        {/* Alertas con diseño más atractivo */}
         {(alertasCaducidad.length > 0 || alertasStock.length > 0) && (
           <View
             style={[styles.alertasSection, isDark && styles.alertasSectionDark]}
@@ -490,7 +490,7 @@ export default function HomeScreen() {
           )}
         </View>
 
-        {/* Movimientos recientes mejorados */}
+        {/* Movimientos recientes */}
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
             <View style={styles.sectionTitleContainer}>
@@ -535,7 +535,7 @@ export default function HomeScreen() {
         </View>
       </ScrollView>
 
-      {/* Modal de Notificaciones - MEJORADO */}
+      {/* Modal de Notificaciones */}
       <Modal
         animationType="slide"
         transparent={true}
@@ -850,7 +850,6 @@ function ActiveProductCard({
   );
 }
 
-/* Componente: Movimiento reciente mejorado */
 function MovimientoItem({
   movimiento,
   isDark,
@@ -916,8 +915,7 @@ function MovimientoItem({
     </View>
   );
 }
-
-/* Componente: Tarjeta de Alerta SIN navegación */
+/*Tarjeta de Alerta SIN navegación */
 function AlertaCard({
   alerta,
   onPress,
@@ -1128,7 +1126,6 @@ const styles = StyleSheet.create({
     textTransform: "capitalize",
     fontFamily: "Poppins_400Regular",
   },
-  // Alertas Mejoradas
   alertasSection: {
     marginBottom: 24,
     backgroundColor: "#FFFFFF",
@@ -1473,7 +1470,7 @@ const styles = StyleSheet.create({
   },
   modalTitleContainer: {
     flex: 1,
-    marginRight: 16, // Espacio entre el título y el botón de cerrar
+    marginRight: 16,
   },
   modalTitle: {
     fontSize: 18,
@@ -1488,7 +1485,7 @@ const styles = StyleSheet.create({
   },
   closeButton: {
     padding: 4,
-    marginTop: -4, // Ajuste para alinear con el título
+    marginTop: -4,
   },
   modalScrollContent: {
     padding: 24,
@@ -1542,8 +1539,6 @@ const styles = StyleSheet.create({
     color: "#94A3B8",
     fontFamily: "Poppins_400Regular",
   },
-
-  // Text Colors para Dark Mode
   textDark: {
     color: "#fff",
   },

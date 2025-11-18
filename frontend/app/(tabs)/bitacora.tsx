@@ -18,7 +18,7 @@ import { useRouter } from "expo-router";
 import api from "@/utils/api";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 
-// --- Interfaces (Sin cambios) ---
+// Interfaces
 interface Usuario {
   id_usuario: string;
   nombre_completo: string;
@@ -55,7 +55,7 @@ export default function BitacoraScreen() {
   const router = useRouter();
   const colorScheme = useColorScheme();
   const isDark = colorScheme === "dark";
-  
+
   const [busqueda, setBusqueda] = useState("");
   const [refreshing, setRefreshing] = useState(false);
   const [filtrosVisible, setFiltrosVisible] = useState(false);
@@ -77,7 +77,7 @@ export default function BitacoraScreen() {
     usuario: "todos",
   });
 
-  // --- Funciones de Carga (Sin cambios) ---
+  // Funciones de Carga
   const fetchUsuarios = useCallback(async () => {
     try {
       const response = await api.get<Usuario[]>("/movimientos/usuarios");
@@ -85,13 +85,32 @@ export default function BitacoraScreen() {
       console.log("✅ Usuarios cargados:", usuariosData.length);
       setUsuarios(usuariosData);
     } catch (error: any) {
-      console.error("❌ Error cargando usuarios:", error.response?.data || error.message);
+      console.error(
+        "❌ Error cargando usuarios:",
+        error.response?.data || error.message
+      );
       const usuariosRespaldo: Usuario[] = [
-         { id_usuario: "1", nombre_completo: "Santiago Gutierrez Calderón", rol: "Administrador" },
-         { id_usuario: "2", nombre_completo: "Pedro Ramirez Lopez", rol: "Laboratorista" },
-         { id_usuario: "3", nombre_completo: "Miriam Lopez Garcia", rol: "Laboratorista" },
-         { id_usuario: "4", nombre_completo: "David Garcia Martinez", rol: "Administrador" },
-       ];
+        {
+          id_usuario: "1",
+          nombre_completo: "Santiago Gutierrez Calderón",
+          rol: "Administrador",
+        },
+        {
+          id_usuario: "2",
+          nombre_completo: "Pedro Ramirez Lopez",
+          rol: "Laboratorista",
+        },
+        {
+          id_usuario: "3",
+          nombre_completo: "Miriam Lopez Garcia",
+          rol: "Laboratorista",
+        },
+        {
+          id_usuario: "4",
+          nombre_completo: "David Garcia Martinez",
+          rol: "Administrador",
+        },
+      ];
       setUsuarios(usuariosRespaldo);
     }
   }, []);
@@ -132,15 +151,36 @@ export default function BitacoraScreen() {
           "movimientos"
         );
       } catch (error: any) {
-        console.error("❌ Error cargando movimientos:", error.response?.data || error.message);
+        console.error(
+          "❌ Error cargando movimientos:",
+          error.response?.data || error.message
+        );
         Alert.alert("Error", "No se pudieron cargar las actividades");
-         if (!isAppend) {
-           const datosEjemplo: Movimiento[] = [
-             { id_movimiento: "1", id_producto: "1", producto: "Guantes de látex estéril talla M", usuario: "Santiago Gutierrez", nombre_tipo: "Entrada", cantidad: 115, fecha: "2024-01-15T16:29:00Z" },
-             { id_movimiento: "2", id_producto: "2", producto: "Agua destilada", usuario: "Pedro Ramirez", nombre_tipo: "Salida", nombre_motivo: "Baja", descripcion_adicional: "Producto agotado", cantidad: 0, fecha: "2024-01-15T16:29:00Z" },
-           ];
-           setAllMovimientos(datosEjemplo);
-         }
+        if (!isAppend) {
+          const datosEjemplo: Movimiento[] = [
+            {
+              id_movimiento: "1",
+              id_producto: "1",
+              producto: "Guantes de látex estéril talla M",
+              usuario: "Santiago Gutierrez",
+              nombre_tipo: "Entrada",
+              cantidad: 115,
+              fecha: "2024-01-15T16:29:00Z",
+            },
+            {
+              id_movimiento: "2",
+              id_producto: "2",
+              producto: "Agua destilada",
+              usuario: "Pedro Ramirez",
+              nombre_tipo: "Salida",
+              nombre_motivo: "Baja",
+              descripcion_adicional: "Producto agotado",
+              cantidad: 0,
+              fecha: "2024-01-15T16:29:00Z",
+            },
+          ];
+          setAllMovimientos(datosEjemplo);
+        }
       } finally {
         setLoading(false);
         setRefreshing(false);
@@ -148,8 +188,8 @@ export default function BitacoraScreen() {
     },
     [busqueda, filtros]
   );
-  
-  // --- Resto de funciones (Sin cambios) ---
+
+  // Resto de funciones
   const loadMoreData = useCallback(() => {
     if (!loading && hasMore && allMovimientos.length > 0) {
       console.log(`📥 Cargando página ${pagination.currentPage + 1}...`);
@@ -246,7 +286,7 @@ export default function BitacoraScreen() {
     }
   }, []);
 
-  // --- Efectos (Sin cambios) ---
+  // Efectos
   useEffect(() => {
     fetchMovimientos(1, false);
     fetchUsuarios();
@@ -270,7 +310,9 @@ export default function BitacoraScreen() {
   // --- Renderizado ---
   if (loading && allMovimientos.length === 0) {
     return (
-      <View style={[styles.loadingContainer, isDark && styles.loadingContainerDark]}>
+      <View
+        style={[styles.loadingContainer, isDark && styles.loadingContainerDark]}
+      >
         <View style={styles.loadingContent}>
           <Ionicons name="shuffle" size={48} color="#4B9CD3" />
           <ThemedText type="title" style={styles.loadingText}>
@@ -283,14 +325,14 @@ export default function BitacoraScreen() {
 
   return (
     <View style={[styles.container, isDark && styles.containerDark]}>
-      {/* 🔹 Header */}
+      {/* Header */}
       <View style={[styles.header, isDark && styles.headerDark]}>
-      <Text style={[styles.headerTitle, isDark && styles.textDark]}>
-        Bitácora de Movimientos
-      </Text>
+        <Text style={[styles.headerTitle, isDark && styles.textDark]}>
+          Bitácora de Movimientos
+        </Text>
       </View>
 
-      {/* 🔹 Badge de filtros activos */}
+      {/* Badge de filtros activos */}
       {filtrosAplicados && (
         <View style={styles.badgeContainer}>
           <TouchableOpacity
@@ -305,10 +347,14 @@ export default function BitacoraScreen() {
         </View>
       )}
 
-      {/* 🔹 Buscador y filtros */}
+      {/* Buscador y filtros */}
       <View style={styles.searchContainer}>
         <View style={[styles.searchBox, isDark && styles.searchBoxDark]}>
-          <Ionicons name="search-outline" size={18} color={isDark ? "#888" : "#94A3B8"} />
+          <Ionicons
+            name="search-outline"
+            size={18}
+            color={isDark ? "#888" : "#94A3B8"}
+          />
           <TextInput
             placeholder="Buscar producto"
             value={busqueda}
@@ -328,7 +374,7 @@ export default function BitacoraScreen() {
           <Ionicons
             name="filter-outline"
             size={18}
-            color={filtrosAplicados ? "#fff" : (isDark ? "#fff" : "#1E293B")}
+            color={filtrosAplicados ? "#fff" : isDark ? "#fff" : "#1E293B"}
           />
           <ThemedText
             style={[
@@ -342,7 +388,7 @@ export default function BitacoraScreen() {
         </TouchableOpacity>
       </View>
 
-      {/* 🔹 Lista de actividades CON PAGINACIÓN */}
+      {/* Lista de actividades CON PAGINACIÓN */}
       <FlatList
         data={movimientosFiltrados}
         keyExtractor={(item) => item.id_movimiento}
@@ -368,22 +414,34 @@ export default function BitacoraScreen() {
                 <Ionicons name={icon as any} size={20} color={color} />
               </View>
               <View style={styles.itemInfo}>
-                <Text style={[styles.descripcionCompleta, isDark && styles.textMutedDark]}>
+                <Text
+                  style={[
+                    styles.descripcionCompleta,
+                    isDark && styles.textMutedDark,
+                  ]}
+                >
                   <Text style={[styles.usuario, isDark && styles.textDark]}>
                     {item.usuario}
                   </Text>
 
-                  <Text style={[styles.accion, isDark && styles.textMutedDark]}> {accion} </Text>
-                  
+                  <Text style={[styles.accion, isDark && styles.textMutedDark]}>
+                    {" "}
+                    {accion}{" "}
+                  </Text>
+
                   <Text
-                    
                     style={[styles.productoNombre, isDark && styles.textDark]}
                   >
                     {item.producto}
                   </Text>
                 </Text>
                 {item.descripcion_adicional && (
-                  <Text style={[styles.detalleAdicional, isDark && styles.textMutedDark]}>
+                  <Text
+                    style={[
+                      styles.detalleAdicional,
+                      isDark && styles.textMutedDark,
+                    ]}
+                  >
                     {item.descripcion_adicional}
                   </Text>
                 )}
@@ -397,8 +455,8 @@ export default function BitacoraScreen() {
         onEndReached={loadMoreData}
         onEndReachedThreshold={0.5}
         refreshControl={
-          <RefreshControl 
-            refreshing={refreshing} 
+          <RefreshControl
+            refreshing={refreshing}
             onRefresh={onRefresh}
             tintColor={isDark ? "#fff" : "#000"}
           />
@@ -407,7 +465,12 @@ export default function BitacoraScreen() {
           loading && allMovimientos.length > 0 ? (
             <View style={styles.loadingFooter}>
               <ActivityIndicator size="small" color="#4B9CD3" />
-              <ThemedText style={[styles.loadingFooterText, isDark && styles.textMutedDark]}>
+              <ThemedText
+                style={[
+                  styles.loadingFooterText,
+                  isDark && styles.textMutedDark,
+                ]}
+              >
                 Cargando más...
               </ThemedText>
             </View>
@@ -416,8 +479,14 @@ export default function BitacoraScreen() {
         ListEmptyComponent={
           !loading ? (
             <View style={styles.emptyState}>
-              <Ionicons name="list-outline" size={48} color={isDark ? "#444" : "#CBD5E1"} />
-              <ThemedText style={[styles.emptyStateText, isDark && styles.textMutedDark]}>
+              <Ionicons
+                name="list-outline"
+                size={48}
+                color={isDark ? "#444" : "#CBD5E1"}
+              />
+              <ThemedText
+                style={[styles.emptyStateText, isDark && styles.textMutedDark]}
+              >
                 {busqueda || filtros.periodo !== "todos" || filtros.tipoAccion
                   ? "No se encontraron resultados"
                   : "No hay actividades registradas"}
@@ -442,11 +511,15 @@ export default function BitacoraScreen() {
         style={isDark && styles.flatListDark}
       />
 
-      {/* 🔹 Modal de Filtros */}
+      {/* Modal de Filtros */}
       <Modal visible={filtrosVisible} animationType="slide" transparent>
         <View style={styles.modalOverlay}>
-          <View style={[styles.modalContent, isDark && styles.modalContentDark]}>
-            <View style={[styles.modalHeader, isDark && styles.modalHeaderDark]}>
+          <View
+            style={[styles.modalContent, isDark && styles.modalContentDark]}
+          >
+            <View
+              style={[styles.modalHeader, isDark && styles.modalHeaderDark]}
+            >
               <Text style={[styles.modalTitle, isDark && styles.textDark]}>
                 Filtros
               </Text>
@@ -454,14 +527,22 @@ export default function BitacoraScreen() {
                 style={styles.closeButton}
                 onPress={() => setFiltrosVisible(false)}
               >
-                <Ionicons name="close" size={24} color={isDark ? "#fff" : "#666"} />
+                <Ionicons
+                  name="close"
+                  size={24}
+                  color={isDark ? "#fff" : "#666"}
+                />
               </TouchableOpacity>
             </View>
 
             <ScrollView style={styles.filtersScroll}>
               {/* Filtro: Periodo */}
-              <View style={[styles.filterCard, isDark && styles.filterCardDark]}>
-                <Text style={[styles.filterCardTitle, isDark && styles.textDark]}>
+              <View
+                style={[styles.filterCard, isDark && styles.filterCardDark]}
+              >
+                <Text
+                  style={[styles.filterCardTitle, isDark && styles.textDark]}
+                >
                   Selección de periodo
                 </Text>
                 <View style={styles.filterOptions}>
@@ -504,7 +585,9 @@ export default function BitacoraScreen() {
               </View>
 
               {/* Filtro: Tipo de Acción */}
-              <View style={[styles.filterCard, isDark && styles.filterCardDark]}>
+              <View
+                style={[styles.filterCard, isDark && styles.filterCardDark]}
+              >
                 <ThemedText
                   type="defaultSemiBold"
                   style={[styles.filterCardTitle, isDark && styles.textDark]}
@@ -574,7 +657,9 @@ export default function BitacoraScreen() {
               </View>
 
               {/* Filtro: Usuario */}
-              <View style={[styles.filterCard, isDark && styles.filterCardDark]}>
+              <View
+                style={[styles.filterCard, isDark && styles.filterCardDark]}
+              >
                 <ThemedText
                   type="defaultSemiBold"
                   style={[styles.filterCardTitle, isDark && styles.textDark]}
@@ -582,12 +667,20 @@ export default function BitacoraScreen() {
                   Usuario
                 </ThemedText>
                 <TouchableOpacity
-                  style={[styles.dropdownTrigger, isDark && styles.dropdownTriggerDark]}
+                  style={[
+                    styles.dropdownTrigger,
+                    isDark && styles.dropdownTriggerDark,
+                  ]}
                   onPress={() =>
                     setDropdownUsuarioVisible(!dropdownUsuarioVisible)
                   }
                 >
-                  <ThemedText style={[styles.dropdownTriggerText, isDark && styles.textDark]}>
+                  <ThemedText
+                    style={[
+                      styles.dropdownTriggerText,
+                      isDark && styles.textDark,
+                    ]}
+                  >
                     {filtros.usuario === "todos"
                       ? "Todos los usuarios"
                       : usuarios.find((u) => u.id_usuario === filtros.usuario)
@@ -603,7 +696,12 @@ export default function BitacoraScreen() {
                 </TouchableOpacity>
 
                 {dropdownUsuarioVisible && (
-                  <View style={[styles.dropdownContent, isDark && styles.dropdownContentDark]}>
+                  <View
+                    style={[
+                      styles.dropdownContent,
+                      isDark && styles.dropdownContentDark,
+                    ]}
+                  >
                     <ScrollView
                       style={styles.dropdownScroll}
                       nestedScrollEnabled={true}
@@ -686,7 +784,9 @@ export default function BitacoraScreen() {
               </View>
             </ScrollView>
 
-            <View style={[styles.filterActions, isDark && styles.filterActionsDark]}>
+            <View
+              style={[styles.filterActions, isDark && styles.filterActionsDark]}
+            >
               <TouchableOpacity
                 style={[styles.resetBtn, isDark && styles.resetBtnDark]}
                 onPress={() => {
@@ -698,7 +798,12 @@ export default function BitacoraScreen() {
                   setDropdownUsuarioVisible(false);
                 }}
               >
-                <ThemedText style={[styles.resetBtnText, isDark && styles.resetBtnTextDark]}>
+                <ThemedText
+                  style={[
+                    styles.resetBtnText,
+                    isDark && styles.resetBtnTextDark,
+                  ]}
+                >
                   Limpiar Filtros
                 </ThemedText>
               </TouchableOpacity>
@@ -719,11 +824,10 @@ export default function BitacoraScreen() {
 }
 
 const styles = StyleSheet.create({
-  // Container & Layout
-  container: { 
-    flex: 1, 
-    backgroundColor: "#F8FAFC", 
-    paddingHorizontal: 20 
+  container: {
+    flex: 1,
+    backgroundColor: "#F8FAFC",
+    paddingHorizontal: 20,
   },
   containerDark: {
     backgroundColor: "#000",
@@ -750,8 +854,6 @@ const styles = StyleSheet.create({
     color: "#4B9CD3",
     textAlign: "center",
   },
-
-  // Header
   header: {
     flexDirection: "row",
     alignItems: "center",
@@ -767,8 +869,6 @@ const styles = StyleSheet.create({
     color: "#000000ff",
     fontFamily: "Poppins_700Bold",
   },
-
-  // Badge
   badgeContainer: {
     flexDirection: "row",
     justifyContent: "flex-start",
@@ -789,28 +889,26 @@ const styles = StyleSheet.create({
     fontFamily: "Poppins_500Medium",
     marginRight: 6,
   },
-
-  // Search & Filter
   searchContainer: {
     flexDirection: "row",
     alignItems: "center",
     gap: 10,
     marginBottom: 16,
   },
-searchBox: {
-  flexDirection: "row",
-  alignItems: "center",
-  backgroundColor: "#FFFFFF",
-  flex: 1,
-  borderRadius: 12,
-  paddingHorizontal: 12,
-  height: 44,
-  shadowColor: "#000",
-  shadowOffset: { width: 0, height: 1 },
-  shadowOpacity: 0.04,
-  shadowRadius: 3,
-  elevation: 1,
-},
+  searchBox: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#FFFFFF",
+    flex: 1,
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    height: 44,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.04,
+    shadowRadius: 3,
+    elevation: 1,
+  },
   searchBoxDark: {
     backgroundColor: "#1c1c1e",
     borderWidth: 1,
@@ -823,20 +921,20 @@ searchBox: {
     marginBottom: -5,
     fontFamily: "Poppins_400Regular",
   },
-filterButton: {
-  flexDirection: "row",
-  alignItems: "center",
-  backgroundColor: "#FFFFFF",
-  borderRadius: 12,
-  paddingHorizontal: 10,
-  height: 44,
-  gap: 4,
-  shadowColor: "#000",
-  shadowOffset: { width: 0, height: 1 },
-  shadowOpacity: 0.04,
-  shadowRadius: 3,
-  elevation: 1,
-},
+  filterButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#FFFFFF",
+    borderRadius: 12,
+    paddingHorizontal: 10,
+    height: 44,
+    gap: 4,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.04,
+    shadowRadius: 3,
+    elevation: 1,
+  },
   filterButtonDark: {
     backgroundColor: "#1c1c1e",
     borderWidth: 1,
@@ -853,31 +951,27 @@ filterButton: {
   filterTextActive: {
     color: "#FFFFFF",
   },
-
-  // List Content
-  scrollContent: { 
-    paddingBottom: 100, 
-    gap: 12 
+  scrollContent: {
+    paddingBottom: 100,
+    gap: 12,
   },
-
-  // List Items
-item: {
-  flexDirection: "row",
-  alignItems: "flex-start",
-  backgroundColor: "#FFFFFF",
-  borderRadius: 12,
-  padding: 16,
-  shadowColor: "#000",
-  shadowOffset: { width: 0, height: 1 },
-  shadowOpacity: 0.04,
-  shadowRadius: 3,
-  elevation: 1,
-},
-itemDark: {
-  backgroundColor: "#1c1c1e",
-  borderWidth: 1,
-  borderColor: "#333",
-},
+  item: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    backgroundColor: "#FFFFFF",
+    borderRadius: 12,
+    padding: 16,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.04,
+    shadowRadius: 3,
+    elevation: 1,
+  },
+  itemDark: {
+    backgroundColor: "#1c1c1e",
+    borderWidth: 1,
+    borderColor: "#333",
+  },
   iconContainer: {
     width: 34,
     height: 34,
@@ -920,8 +1014,6 @@ itemDark: {
     marginTop: 4,
     fontFamily: "Poppins_400Regular",
   },
-
-  // Empty State
   emptyState: {
     alignItems: "center",
     padding: 40,
@@ -945,8 +1037,6 @@ itemDark: {
     fontSize: 14,
     fontFamily: "Poppins_500Medium",
   },
-
-  // Modal
   modalOverlay: {
     flex: 1,
     backgroundColor: "rgba(0, 0, 0, 0.5)",
@@ -980,8 +1070,6 @@ itemDark: {
   closeButton: {
     padding: 4,
   },
-
-  // Filters
   filtersScroll: {
     maxHeight: 400,
     paddingVertical: 8,
@@ -1042,8 +1130,6 @@ itemDark: {
   filterOptionTextActive: {
     color: "#fff",
   },
-
-  // Filter Actions
   filterActions: {
     flexDirection: "row",
     padding: 20,
@@ -1092,8 +1178,6 @@ itemDark: {
     fontSize: 15,
     fontFamily: "Poppins_700Bold",
   },
-
-  // Loading Footer
   loadingFooter: {
     padding: 20,
     alignItems: "center",
@@ -1106,8 +1190,6 @@ itemDark: {
     color: "#64748B",
     fontFamily: "Poppins_400Regular",
   },
-
-  // Dropdown
   dropdownTrigger: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -1134,7 +1216,7 @@ itemDark: {
     borderColor: "#D1D5DB",
     borderRadius: 8,
     backgroundColor: "white",
-    maxHeight: 200, 
+    maxHeight: 200,
     marginBottom: 8,
   },
   dropdownContentDark: {
@@ -1142,7 +1224,7 @@ itemDark: {
     borderColor: "#333",
   },
   dropdownScroll: {
-    maxHeight: 198, 
+    maxHeight: 198,
   },
   dropdownOption: {
     flexDirection: "row",
@@ -1171,8 +1253,6 @@ itemDark: {
   dropdownOptionTextActive: {
     color: "#539DF3",
   },
-
-  // Text Colors
   textDark: {
     color: "#fff",
   },

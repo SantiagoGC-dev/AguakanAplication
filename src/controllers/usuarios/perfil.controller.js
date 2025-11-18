@@ -20,7 +20,7 @@ res.json({
         primer_nombre: usuario.primer_nombre,
         apellido_paterno: usuario.apellido_paterno,
         apellido_materno: usuario.apellido_materno,
-        rol: usuario.id_rol, // <-- ¡LA CORRECCIÓN CLAVE!
+        rol: usuario.id_rol, 
         estatus: usuario.id_estatus_usuario
       }
     });

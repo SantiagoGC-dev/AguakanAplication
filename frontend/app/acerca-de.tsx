@@ -1,19 +1,18 @@
 // app/acerca-de.tsx
-import React from 'react';
-import { 
-  View, 
-  Text, 
-  StyleSheet, 
-  ScrollView, 
+import React from "react";
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
   TouchableOpacity,
   Alert,
-  Platform
-} from 'react-native';
-import { Stack, useRouter } from 'expo-router';
-import { useColorScheme } from '@/hooks/use-color-scheme';
-import { Ionicons } from '@expo/vector-icons';
-import * as Sharing from 'expo-sharing';
-import { Asset } from 'expo-asset';
+} from "react-native";
+import { Stack, useRouter } from "expo-router";
+import { useColorScheme } from "@/hooks/use-color-scheme";
+import { Ionicons } from "@expo/vector-icons";
+import * as Sharing from "expo-sharing";
+import { Asset } from "expo-asset";
 
 export default function AcercaDeScreen() {
   const colorScheme = useColorScheme();
@@ -23,30 +22,33 @@ export default function AcercaDeScreen() {
   const openUserManual = async () => {
     try {
       // Cargar el asset del manual de usuario
-      const asset = Asset.fromModule(require('@/assets/manual-usuario.pdf'));
+      const asset = Asset.fromModule(require("@/assets/manual-usuario.pdf"));
       await asset.downloadAsync();
 
       // Verificar si sharing está disponible
       if (await Sharing.isAvailableAsync()) {
         await Sharing.shareAsync(asset.localUri!, {
-          mimeType: 'application/pdf',
-          dialogTitle: 'Abrir Manual de Usuario',
-          UTI: 'com.adobe.pdf' // Solo para iOS
+          mimeType: "application/pdf",
+          dialogTitle: "Abrir Manual de Usuario",
+          UTI: "com.adobe.pdf",
         });
       } else {
-        Alert.alert('Error', 'No se puede abrir el archivo en este dispositivo');
+        Alert.alert(
+          "Error",
+          "No se puede abrir el archivo en este dispositivo"
+        );
       }
     } catch (error) {
-      console.error('Error al abrir el manual:', error);
+      console.error("Error al abrir el manual:", error);
       Alert.alert(
-        'Abrir Manual', 
-        'Selecciona una aplicación para abrir el PDF',
+        "Abrir Manual",
+        "Selecciona una aplicación para abrir el PDF",
         [
-          { text: 'Cancelar', style: 'cancel' },
-          { 
-            text: 'Intentar de nuevo', 
-            onPress: () => openUserManual() 
-          }
+          { text: "Cancelar", style: "cancel" },
+          {
+            text: "Intentar de nuevo",
+            onPress: () => openUserManual(),
+          },
         ]
       );
     }
@@ -57,20 +59,20 @@ export default function AcercaDeScreen() {
       icon: "cube",
       title: "Versión de la Aplicación",
       value: "1.0.0",
-      description: "Proyecto de Estadía 2025"
+      description: "Proyecto de Estadía 2025",
     },
     {
       icon: "calendar",
       title: "Fecha de Lanzamiento",
       value: "Diciembre 2025",
-      description: "Versión inicial"
+      description: "Versión inicial",
     },
     {
       icon: "build",
       title: "Última Actualización",
       value: "Diciembre 2025",
-      description: "Mejoras de estabilidad"
-    }
+      description: "Mejoras de estabilidad",
+    },
   ];
 
   const developmentInfo = [
@@ -78,26 +80,27 @@ export default function AcercaDeScreen() {
       icon: "business",
       title: "Propietario del Sistema",
       value: "AGUAKAN",
-      description: "Empresa que opera servicios de agua potable, alcantarillado y saneamiento"
+      description:
+        "Empresa que opera servicios de agua potable, alcantarillado y saneamiento",
     },
     {
       icon: "school",
       title: "Institución Educativa",
       value: "Universidad Tecnológica de la Riviera Maya",
-      description: "Formación de profesionales técnicos"
+      description: "Formación de profesionales técnicos",
     },
     {
       icon: "person",
       title: "Desarrollador",
       value: "David Santiago Gutiérrez Calderón",
-      description: "Estudiante de Ingeniería en Desarrollo de Software"
+      description: "Estudiante de Ingeniería en Desarrollo de Software",
     },
     {
       icon: "people",
       title: "Asesor Empresarial",
       value: "Ing. Pedro Hernández Torres",
-      description: "Administrador del área de Calidad - AGUAKAN"
-    }
+      description: "Administrador del área de Calidad - AGUAKAN",
+    },
   ];
 
   const technicalInfo = [
@@ -105,20 +108,20 @@ export default function AcercaDeScreen() {
       icon: "logo-react",
       title: "Frontend",
       value: "React Native + Expo",
-      description: "Desarrollo móvil multiplataforma"
+      description: "Desarrollo móvil multiplataforma",
     },
     {
       icon: "cog-outline",
       title: "Backend",
       value: "Node.js + Express",
-      description: "API RESTful con autenticación JWT"
+      description: "API RESTful con autenticación JWT",
     },
     {
       icon: "server",
       title: "Base de Datos",
       value: "MySQL",
-      description: "Almacenamiento relacional"
-    }
+      description: "Almacenamiento relacional",
+    },
   ];
 
   return (
@@ -144,18 +147,11 @@ export default function AcercaDeScreen() {
         <View style={styles.headerPlaceholder} />
       </View>
 
-      <ScrollView 
-        style={styles.content}
-        showsVerticalScrollIndicator={false}
-      >
+      <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
         {/* Tarjeta de Presentación */}
         <View style={[styles.heroCard, isDark && styles.heroCardDark]}>
           <View style={styles.heroIcon}>
-            <Ionicons
-              name="cube"
-              size={40}
-              color="#539DF3"
-            />
+            <Ionicons name="cube" size={40} color="#539DF3" />
           </View>
           <Text style={[styles.heroTitle, isDark && styles.textDark]}>
             Sistema de Gestión de Inventario
@@ -163,9 +159,11 @@ export default function AcercaDeScreen() {
           <Text style={[styles.heroSubtitle, isDark && styles.textMutedDark]}>
             AGUAKAN - Control y Administración del Laboratorio de Calidad
           </Text>
-          <Text style={[styles.heroDescription, isDark && styles.textMutedDark]}>
-            Plataforma desarrollada para optimizar el control de inventario, 
-            mejorar la trazabilidad de productos y agilizar los procesos 
+          <Text
+            style={[styles.heroDescription, isDark && styles.textMutedDark]}
+          >
+            Plataforma desarrollada para optimizar el control de inventario,
+            mejorar la trazabilidad de productos y agilizar los procesos
             operativos del laboratorio de calidad.
           </Text>
         </View>
@@ -180,11 +178,7 @@ export default function AcercaDeScreen() {
             {appInfoItems.map((item, index) => (
               <View key={index} style={styles.infoItem}>
                 <View style={styles.infoHeader}>
-                  <Ionicons
-                    name={item.icon as any}
-                    size={20}
-                    color="#539DF3"
-                  />
+                  <Ionicons name={item.icon as any} size={20} color="#539DF3" />
                   <Text style={[styles.infoTitle, isDark && styles.textDark]}>
                     {item.title}
                   </Text>
@@ -192,11 +186,18 @@ export default function AcercaDeScreen() {
                 <Text style={[styles.infoValue, isDark && styles.textDark]}>
                   {item.value}
                 </Text>
-                <Text style={[styles.infoDescription, isDark && styles.textMutedDark]}>
+                <Text
+                  style={[
+                    styles.infoDescription,
+                    isDark && styles.textMutedDark,
+                  ]}
+                >
                   {item.description}
                 </Text>
                 {index < appInfoItems.length - 1 && (
-                  <View style={[styles.separator, isDark && styles.separatorDark]} />
+                  <View
+                    style={[styles.separator, isDark && styles.separatorDark]}
+                  />
                 )}
               </View>
             ))}
@@ -213,11 +214,7 @@ export default function AcercaDeScreen() {
             {developmentInfo.map((item, index) => (
               <View key={index} style={styles.infoItem}>
                 <View style={styles.infoHeader}>
-                  <Ionicons
-                    name={item.icon as any}
-                    size={20}
-                    color="#539DF3"
-                  />
+                  <Ionicons name={item.icon as any} size={20} color="#539DF3" />
                   <Text style={[styles.infoTitle, isDark && styles.textDark]}>
                     {item.title}
                   </Text>
@@ -225,11 +222,18 @@ export default function AcercaDeScreen() {
                 <Text style={[styles.infoValue, isDark && styles.textDark]}>
                   {item.value}
                 </Text>
-                <Text style={[styles.infoDescription, isDark && styles.textMutedDark]}>
+                <Text
+                  style={[
+                    styles.infoDescription,
+                    isDark && styles.textMutedDark,
+                  ]}
+                >
                   {item.description}
                 </Text>
                 {index < developmentInfo.length - 1 && (
-                  <View style={[styles.separator, isDark && styles.separatorDark]} />
+                  <View
+                    style={[styles.separator, isDark && styles.separatorDark]}
+                  />
                 )}
               </View>
             ))}
@@ -246,11 +250,7 @@ export default function AcercaDeScreen() {
             {technicalInfo.map((item, index) => (
               <View key={index} style={styles.techItem}>
                 <View style={styles.techIconContainer}>
-                  <Ionicons
-                    name={item.icon as any}
-                    size={24}
-                    color="#539DF3"
-                  />
+                  <Ionicons name={item.icon as any} size={24} color="#539DF3" />
                 </View>
                 <View style={styles.techTextContainer}>
                   <Text style={[styles.techTitle, isDark && styles.textDark]}>
@@ -259,7 +259,12 @@ export default function AcercaDeScreen() {
                   <Text style={[styles.techValue, isDark && styles.textDark]}>
                     {item.value}
                   </Text>
-                  <Text style={[styles.techDescription, isDark && styles.textMutedDark]}>
+                  <Text
+                    style={[
+                      styles.techDescription,
+                      isDark && styles.textMutedDark,
+                    ]}
+                  >
                     {item.description}
                   </Text>
                 </View>
@@ -274,47 +279,45 @@ export default function AcercaDeScreen() {
             Recursos
           </Text>
 
-          <TouchableOpacity 
+          <TouchableOpacity
             style={[styles.actionCard, isDark && styles.actionCardDark]}
             onPress={openUserManual}
           >
             <View style={styles.actionContent}>
-              <Ionicons
-                name="document-text"
-                size={22}
-                color="#539DF3"
-              />
+              <Ionicons name="document-text" size={22} color="#539DF3" />
               <View style={styles.actionTextContainer}>
                 <Text style={[styles.actionTitle, isDark && styles.textDark]}>
                   Manual de Usuario
                 </Text>
-                <Text style={[styles.actionDescription, isDark && styles.textMutedDark]}>
+                <Text
+                  style={[
+                    styles.actionDescription,
+                    isDark && styles.textMutedDark,
+                  ]}
+                >
                   Guía completa de uso del sistema
                 </Text>
               </View>
             </View>
-            <Ionicons
-              name="share"
-              size={20}
-              color={isDark ? "#666" : "#999"}
-            />
+            <Ionicons name="share" size={20} color={isDark ? "#666" : "#999"} />
           </TouchableOpacity>
 
-          <TouchableOpacity 
+          <TouchableOpacity
             style={[styles.actionCard, isDark && styles.actionCardDark]}
-            onPress={() => router.push('/ayuda-soporte')}
+            onPress={() => router.push("/ayuda-soporte")}
           >
             <View style={styles.actionContent}>
-              <Ionicons
-                name="help-circle"
-                size={22}
-                color="#539DF3"
-              />
+              <Ionicons name="help-circle" size={22} color="#539DF3" />
               <View style={styles.actionTextContainer}>
                 <Text style={[styles.actionTitle, isDark && styles.textDark]}>
                   Centro de Ayuda
                 </Text>
-                <Text style={[styles.actionDescription, isDark && styles.textMutedDark]}>
+                <Text
+                  style={[
+                    styles.actionDescription,
+                    isDark && styles.textMutedDark,
+                  ]}
+                >
                   Preguntas frecuentes y soporte
                 </Text>
               </View>
@@ -329,13 +332,10 @@ export default function AcercaDeScreen() {
 
         {/* Footer Informativo */}
         <View style={[styles.footerCard, isDark && styles.footerCardDark]}>
-          <Ionicons
-            name="shield-checkmark"
-            size={24}
-            color="#4CAF50"
-          />
+          <Ionicons name="shield-checkmark" size={24} color="#4CAF50" />
           <Text style={[styles.footerText, isDark && styles.textMutedDark]}>
-            © 2025 David Santiago Gutiérrez Calderón. Todos los derechos reservados.{'\n'}
+            © 2025 David Santiago Gutiérrez Calderón. Todos los derechos
+            reservados.{"\n"}
             Sistema desarrollado con fines educativos y operativos.
           </Text>
         </View>
@@ -345,7 +345,6 @@ export default function AcercaDeScreen() {
 }
 
 const styles = StyleSheet.create({
-  // Container & Layout
   container: {
     flex: 1,
     backgroundColor: "#F8FAFC",
@@ -357,8 +356,6 @@ const styles = StyleSheet.create({
     flex: 1,
     padding: 20,
   },
-
-  // Header
   header: {
     flexDirection: "row",
     alignItems: "center",
@@ -396,8 +393,6 @@ const styles = StyleSheet.create({
     flex: 1,
     marginHorizontal: 10,
   },
-
-  // Hero Card
   heroCard: {
     backgroundColor: "#fff",
     padding: 24,
@@ -446,8 +441,6 @@ const styles = StyleSheet.create({
     textAlign: "center",
     lineHeight: 20,
   },
-
-  // Sections
   section: {
     marginBottom: 24,
   },
@@ -458,8 +451,6 @@ const styles = StyleSheet.create({
     marginBottom: 16,
     marginLeft: 4,
   },
-
-  // Info Cards
   infoCard: {
     backgroundColor: "#fff",
     padding: 20,
@@ -509,8 +500,6 @@ const styles = StyleSheet.create({
   separatorDark: {
     backgroundColor: "#333",
   },
-
-  // Tech Card
   techCard: {
     backgroundColor: "#fff",
     padding: 20,
@@ -561,8 +550,6 @@ const styles = StyleSheet.create({
     fontFamily: "Poppins_400Regular",
     color: "#666",
   },
-
-  // Action Cards
   actionCard: {
     flexDirection: "row",
     alignItems: "center",
@@ -598,8 +585,6 @@ const styles = StyleSheet.create({
     fontFamily: "Poppins_400Regular",
     color: "#666",
   },
-
-  // Footer Card
   footerCard: {
     backgroundColor: "#fff",
     padding: 20,
@@ -626,8 +611,6 @@ const styles = StyleSheet.create({
     marginTop: 8,
     lineHeight: 16,
   },
-
-  // Text Colors
   textDark: {
     color: "#fff",
   },

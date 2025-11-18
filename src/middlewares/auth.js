@@ -19,7 +19,7 @@ export const verifyToken = (req, res, next) => {
 
 export const checkRole = (rolesPermitidos) => {
   return (req, res, next) => {
-    // AGREGAR VERIFICACIÓN DE USUARIO AUTENTICADO
+    // VERIFICACIÓN DE USUARIO AUTENTICADO
     if (!req.user) {
       return res.status(401).json({ error: 'Usuario no autenticado' });
     }
@@ -35,7 +35,7 @@ export const checkRole = (rolesPermitidos) => {
   };
 };
 
-// AGREGAR MIDDLEWARES ESPECÍFICOS
-export const requireAdmin = checkRole([1]); // Asumiendo 1 = Administrador
-export const requireLaboratorista = checkRole([2]); // Asumiendo 2 = Laboratorista
+//  MIDDLEWARES ESPECÍFICOS
+export const requireAdmin = checkRole([1]); //  1 = Administrador
+export const requireLaboratorista = checkRole([2]); // 2 = Laboratorista
 export const requireAdminOrLaboratorista = checkRole([1, 2]);

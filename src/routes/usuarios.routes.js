@@ -11,9 +11,7 @@ import { listarRoles, listarEstatus } from '../controllers/usuarios/roles.contro
 
 const router = express.Router();
 
-// Todas las rutas requieren autenticación y rol de administrador
 router.use(verifyToken, requireAdmin);
-
 router.get('/', listarUsuarios);
 router.get('/roles', listarRoles); // Nueva ruta para obtener roles
 router.get('/estatus', listarEstatus); // Nueva ruta para obtener estatus

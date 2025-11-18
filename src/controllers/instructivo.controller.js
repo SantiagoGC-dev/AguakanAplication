@@ -1,10 +1,9 @@
-// controllers/institucional.controller.js
 import multer from 'multer';
 import fs from 'fs';
 import path from 'path';
 
 const uploadDir = './uploads';
-const pdfFileName = 'instructivo_trabajo.pdf'; // Nombre de archivo fijo
+const pdfFileName = 'instructivo_trabajo.pdf'; 
 const pdfFilePath = path.join(uploadDir, pdfFileName);
 
 // --- Configuración de Multer (para subir) ---
@@ -13,7 +12,7 @@ const storage = multer.diskStorage({
     if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true });
     cb(null, uploadDir);
   },
-  filename: (req, file, cb) => cb(null, pdfFileName) // Siempre sobrescribe
+  filename: (req, file, cb) => cb(null, pdfFileName)
 });
 
 export const uploadInstructivo = multer({
@@ -22,11 +21,10 @@ export const uploadInstructivo = multer({
     if (file.mimetype === 'application/pdf') cb(null, true);
     else cb(new Error('Solo se permiten archivos PDF'), false);
   },
-  limits: { fileSize: 10 * 1024 * 1024 } // 10MB
-}).single('instructivo'); // Espera un campo 'instructivo'
+  limits: { fileSize: 10 * 1024 * 1024 } 
+}).single('instructivo'); 
 
 // --- Controladores de API ---
-
 // POST (Subir o Actualizar)
 export const actualizarInstructivo = (req, res) => {
   if (!req.file) {
@@ -36,7 +34,7 @@ export const actualizarInstructivo = (req, res) => {
   res.json({
     success: true,
     message: 'Instructivo actualizado',
-    url: `http://10.149.121.216:3000/uploads/${pdfFileName}` // TU IP
+    url: `http://192.168.0.166:3000/uploads/${pdfFileName}` // TU IP
   });
 };
 
@@ -46,10 +44,10 @@ export const obtenerInstructivo = (req, res) => {
     if (fs.existsSync(pdfFilePath)) {
       res.json({
         success: true,
-        url: `http://10.149.121.216:3000/uploads/${pdfFileName}` // TU IP
+        url: `http://192.168.0.166:3000/uploads/${pdfFileName}` 
       });
     } else {
-      res.json({ success: true, url: null }); // No existe pero no es un error
+      res.json({ success: true, url: null }); 
     }
   } catch (error) {
     res.status(500).json({ success: false, error: 'Error al verificar' });

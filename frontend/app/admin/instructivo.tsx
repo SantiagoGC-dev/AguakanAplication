@@ -1,34 +1,33 @@
-// app/admin/instructivo.tsx
-import React, { useState, useEffect } from 'react';
-import { 
-  View, 
-  Text, 
-  TouchableOpacity, 
-  Alert, 
-  StyleSheet, 
+import React, { useState, useEffect } from "react";
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  Alert,
+  StyleSheet,
   ActivityIndicator,
-  ScrollView 
-} from 'react-native';
-import { Stack, useRouter } from 'expo-router';
-import * as DocumentPicker from 'expo-document-picker';
-import * as Linking from 'expo-linking';
-import api from '@/utils/api';
-import { useAuth } from '@/context/AuthContext';
-import { useColorScheme } from '@/hooks/use-color-scheme';
-import { Ionicons } from '@expo/vector-icons';
+  ScrollView,
+} from "react-native";
+import { Stack, useRouter } from "expo-router";
+import * as DocumentPicker from "expo-document-picker";
+import * as Linking from "expo-linking";
+import api from "@/utils/api";
+import { useAuth } from "@/context/AuthContext";
+import { useColorScheme } from "@/hooks/use-color-scheme";
+import { Ionicons } from "@expo/vector-icons";
 
 export default function InstructivoScreen() {
   const colorScheme = useColorScheme();
   const isDark = colorScheme === "dark";
   const router = useRouter();
-  const { user } = useAuth(); // Obtener el usuario del contexto
-  
+  const { user } = useAuth();
+
   const [pdfUrl, setPdfUrl] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
-  
-  // Verificar si el usuario es administrador
+
+  // Determina si el usuario es administrador
   const isAdmin = user?.rol === 1;
-  
+
   useEffect(() => {
     fetchInstructivo();
   }, []);
@@ -36,7 +35,7 @@ export default function InstructivoScreen() {
   const fetchInstructivo = async () => {
     setLoading(true);
     try {
-      const response = await api.get('/instructivo');
+      const response = await api.get("/instructivo");
       if (response.data.success) {
         setPdfUrl(response.data.url);
       }
@@ -67,11 +66,14 @@ export default function InstructivoScreen() {
           onPress: async () => {
             setLoading(true);
             try {
-              await api.delete('/instructivo');
+              await api.delete("/instructivo");
               Alert.alert("Éxito", "Instructivo eliminado.");
               setPdfUrl(null);
             } catch (error: any) {
-              Alert.alert("Error", error.response?.data?.error || "No se pudo eliminar.");
+              Alert.alert(
+                "Error",
+                error.response?.data?.error || "No se pudo eliminar."
+              );
             } finally {
               setLoading(false);
             }
@@ -84,15 +86,15 @@ export default function InstructivoScreen() {
   const handleUpload = async () => {
     try {
       const result = await DocumentPicker.getDocumentAsync({
-        type: 'application/pdf',
+        type: "application/pdf",
         copyToCacheDirectory: false,
       });
-      
+
       if (result.canceled) return;
-      
+
       const file = result.assets[0];
       const formData = new FormData();
-      formData.append('instructivo', {
+      formData.append("instructivo", {
         uri: file.uri,
         name: file.name,
         type: file.mimeType,
@@ -100,8 +102,8 @@ export default function InstructivoScreen() {
 
       setLoading(true);
 
-      const response = await api.post('/instructivo', formData, {
-        headers: { 'Content-Type': 'multipart/form-data' },
+      const response = await api.post("/instructivo", formData, {
+        headers: { "Content-Type": "multipart/form-data" },
       });
 
       if (response.data.success) {
@@ -109,7 +111,10 @@ export default function InstructivoScreen() {
         setPdfUrl(response.data.url);
       }
     } catch (error: any) {
-      Alert.alert("Error", error.response?.data?.error || "No se pudo subir el archivo.");
+      Alert.alert(
+        "Error",
+        error.response?.data?.error || "No se pudo subir el archivo."
+      );
     } finally {
       setLoading(false);
     }
@@ -142,27 +147,26 @@ export default function InstructivoScreen() {
         {/* Tarjeta de Información */}
         <View style={[styles.infoCard, isDark && styles.infoCardDark]}>
           <View style={styles.cardHeader}>
-            <Ionicons
-              name="document-text"
-              size={24}
-              color="#539DF3"
-            />
+            <Ionicons name="document-text" size={24} color="#539DF3" />
             <Text style={[styles.cardTitle, isDark && styles.textDark]}>
               {isAdmin ? "Gestión del Instructivo" : "Instructivo de Trabajo"}
             </Text>
           </View>
-          <Text style={[styles.cardDescription, isDark && styles.textMutedDark]}>
-            {isAdmin 
+          <Text
+            style={[styles.cardDescription, isDark && styles.textMutedDark]}
+          >
+            {isAdmin
               ? "Aquí puedes gestionar el instructivo de trabajo. El archivo debe estar en formato PDF."
-              : "Consulta el instructivo de trabajo. Solo disponible para lectura."
-            }
+              : "Consulta el instructivo de trabajo. Solo disponible para lectura."}
           </Text>
-          
+
           {/* Badge de permisos */}
-          <View style={[
-            styles.permissionBadge, 
-            isAdmin ? styles.adminBadge : styles.userBadge
-          ]}>
+          <View
+            style={[
+              styles.permissionBadge,
+              isAdmin ? styles.adminBadge : styles.userBadge,
+            ]}
+          >
             <Ionicons
               name={isAdmin ? "shield" : "eye"}
               size={14}
@@ -187,10 +191,9 @@ export default function InstructivoScreen() {
             </Text>
           </View>
           <Text style={[styles.statusText, isDark && styles.textMutedDark]}>
-            {pdfUrl 
-              ? "Hay un instructivo cargado en el sistema" 
-              : "No hay instructivo cargado en el sistema"
-            }
+            {pdfUrl
+              ? "Hay un instructivo cargado en el sistema"
+              : "No hay instructivo cargado en el sistema"}
           </Text>
         </View>
 
@@ -210,7 +213,7 @@ export default function InstructivoScreen() {
           </Text>
 
           {/* Botón Ver - Disponible para todos */}
-          <TouchableOpacity 
+          <TouchableOpacity
             style={[styles.actionButton, isDark && styles.actionButtonDark]}
             onPress={handleView}
             disabled={!pdfUrl}
@@ -219,21 +222,27 @@ export default function InstructivoScreen() {
               <Ionicons
                 name="eye"
                 size={22}
-                color={pdfUrl ? "#539DF3" : (isDark ? "#666" : "#999")}
+                color={pdfUrl ? "#539DF3" : isDark ? "#666" : "#999"}
               />
               <View style={styles.buttonTextContainer}>
-                <Text style={[
-                  styles.actionButtonText, 
-                  isDark && styles.textDark,
-                  !pdfUrl && styles.disabledText
-                ]}>
+                <Text
+                  style={[
+                    styles.actionButtonText,
+                    isDark && styles.textDark,
+                    !pdfUrl && styles.disabledText,
+                  ]}
+                >
                   Ver Instructivo
                 </Text>
-                <Text style={[
-                  styles.actionButtonSubtext, 
-                  isDark && styles.textMutedDark
-                ]}>
-                  {pdfUrl ? "Abrir PDF actual" : "No hay instructivo disponible"}
+                <Text
+                  style={[
+                    styles.actionButtonSubtext,
+                    isDark && styles.textMutedDark,
+                  ]}
+                >
+                  {pdfUrl
+                    ? "Abrir PDF actual"
+                    : "No hay instructivo disponible"}
                 </Text>
               </View>
             </View>
@@ -248,22 +257,30 @@ export default function InstructivoScreen() {
           {isAdmin && (
             <>
               {/* Botón Subir/Actualizar */}
-              <TouchableOpacity 
+              <TouchableOpacity
                 style={[styles.actionButton, isDark && styles.actionButtonDark]}
                 onPress={handleUpload}
               >
                 <View style={styles.buttonContent}>
-                  <Ionicons
-                    name="cloud-upload"
-                    size={22}
-                    color="#539DF3"
-                  />
+                  <Ionicons name="cloud-upload" size={22} color="#539DF3" />
                   <View style={styles.buttonTextContainer}>
-                    <Text style={[styles.actionButtonText, isDark && styles.textDark]}>
+                    <Text
+                      style={[
+                        styles.actionButtonText,
+                        isDark && styles.textDark,
+                      ]}
+                    >
                       {pdfUrl ? "Actualizar PDF" : "Subir PDF"}
                     </Text>
-                    <Text style={[styles.actionButtonSubtext, isDark && styles.textMutedDark]}>
-                      {pdfUrl ? "Reemplazar instructivo actual" : "Cargar nuevo instructivo"}
+                    <Text
+                      style={[
+                        styles.actionButtonSubtext,
+                        isDark && styles.textMutedDark,
+                      ]}
+                    >
+                      {pdfUrl
+                        ? "Reemplazar instructivo actual"
+                        : "Cargar nuevo instructivo"}
                     </Text>
                   </View>
                 </View>
@@ -276,30 +293,33 @@ export default function InstructivoScreen() {
 
               {/* Botón Eliminar (solo si hay PDF) */}
               {pdfUrl && (
-                <TouchableOpacity 
-                  style={[styles.actionButton, styles.deleteButton, isDark && styles.actionButtonDark]}
+                <TouchableOpacity
+                  style={[
+                    styles.actionButton,
+                    styles.deleteButton,
+                    isDark && styles.actionButtonDark,
+                  ]}
                   onPress={handleDelete}
                 >
                   <View style={styles.buttonContent}>
-                    <Ionicons
-                      name="trash"
-                      size={22}
-                      color="#FF3B30"
-                    />
+                    <Ionicons name="trash" size={22} color="#FF3B30" />
                     <View style={styles.buttonTextContainer}>
-                      <Text style={[styles.actionButtonText, styles.deleteText]}>
+                      <Text
+                        style={[styles.actionButtonText, styles.deleteText]}
+                      >
                         Eliminar PDF
                       </Text>
-                      <Text style={[styles.actionButtonSubtext, isDark && styles.textMutedDark]}>
+                      <Text
+                        style={[
+                          styles.actionButtonSubtext,
+                          isDark && styles.textMutedDark,
+                        ]}
+                      >
                         Eliminar instructivo actual del sistema
                       </Text>
                     </View>
                   </View>
-                  <Ionicons
-                    name="chevron-forward"
-                    size={20}
-                    color="#FF3B30"
-                  />
+                  <Ionicons name="chevron-forward" size={20} color="#FF3B30" />
                 </TouchableOpacity>
               )}
             </>
@@ -307,14 +327,15 @@ export default function InstructivoScreen() {
 
           {/* Mensaje para laboratoristas si no hay PDF */}
           {!isAdmin && !pdfUrl && (
-            <View style={[styles.infoMessage, isDark && styles.infoMessageDark]}>
-              <Ionicons
-                name="information-circle"
-                size={20}
-                color="#539DF3"
-              />
-              <Text style={[styles.infoMessageText, isDark && styles.textMutedDark]}>
-                Actualmente no hay instructivo disponible. Contacta al administrador.
+            <View
+              style={[styles.infoMessage, isDark && styles.infoMessageDark]}
+            >
+              <Ionicons name="information-circle" size={20} color="#539DF3" />
+              <Text
+                style={[styles.infoMessageText, isDark && styles.textMutedDark]}
+              >
+                Actualmente no hay instructivo disponible. Contacta al
+                administrador.
               </Text>
             </View>
           )}
@@ -325,7 +346,6 @@ export default function InstructivoScreen() {
 }
 
 const styles = StyleSheet.create({
-  // Container & Layout
   container: {
     flex: 1,
     backgroundColor: "#F8FAFC",
@@ -337,8 +357,6 @@ const styles = StyleSheet.create({
     flex: 1,
     padding: 20,
   },
-
-  // Header
   header: {
     flexDirection: "row",
     alignItems: "center",
@@ -376,8 +394,6 @@ const styles = StyleSheet.create({
     flex: 1,
     marginHorizontal: 10,
   },
-
-  // Info Card
   infoCard: {
     backgroundColor: "#fff",
     padding: 20,
@@ -413,8 +429,6 @@ const styles = StyleSheet.create({
     lineHeight: 20,
     marginBottom: 12,
   },
-
-  // Permission Badge
   permissionBadge: {
     flexDirection: "row",
     alignItems: "center",
@@ -435,8 +449,6 @@ const styles = StyleSheet.create({
     fontFamily: "Poppins_600SemiBold",
     color: "#fff",
   },
-
-  // Status Card
   statusCard: {
     backgroundColor: "#fff",
     padding: 20,
@@ -470,8 +482,6 @@ const styles = StyleSheet.create({
     fontFamily: "Poppins_400Regular",
     color: "#666",
   },
-
-  // Loading
   loadingContainer: {
     alignItems: "center",
     padding: 20,
@@ -483,8 +493,6 @@ const styles = StyleSheet.create({
     color: "#666",
     marginTop: 8,
   },
-
-  // Actions Section
   actionsSection: {
     marginBottom: 40,
   },
@@ -495,8 +503,6 @@ const styles = StyleSheet.create({
     marginBottom: 16,
     marginLeft: 4,
   },
-
-  // Action Buttons
   actionButton: {
     flexDirection: "row",
     alignItems: "center",
@@ -541,8 +547,6 @@ const styles = StyleSheet.create({
   disabledText: {
     color: "#999",
   },
-
-  // Info Message
   infoMessage: {
     flexDirection: "row",
     alignItems: "center",
@@ -565,8 +569,6 @@ const styles = StyleSheet.create({
     flex: 1,
     lineHeight: 18,
   },
-
-  // Text Colors
   textDark: {
     color: "#fff",
   },
