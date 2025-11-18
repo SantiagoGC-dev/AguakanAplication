@@ -1,9 +1,6 @@
 import request from 'supertest';
 import app from '../src/app.js'; 
 
-// -----------------------------------------------------------------
-// INICIO DE LAS PRUEBAS DE REPORTES
-// -----------------------------------------------------------------
 describe('API de Reportes - /api/reportes', () => {
 
   it('GET /estadisticas - debe devolver las estadísticas generales', async () => {
@@ -23,7 +20,7 @@ describe('API de Reportes - /api/reportes', () => {
     expect(response.statusCode).toBe(200);
     expect(response.body.success).toBe(true);
     expect(Array.isArray(response.body.data)).toBe(true);
-    expect(response.body.pagination).toHaveProperty('page', 1); // <-- Corregido
+    expect(response.body.pagination).toHaveProperty('page', 1);
   });
 
   it('GET /productos - debe filtrar por tipo de producto', async () => {

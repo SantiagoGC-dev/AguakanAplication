@@ -346,8 +346,6 @@ const styles = StyleSheet.create({
     color: "#94A3B8", 
     textAlign: "center" 
   },
-
-  // Text Colors
   textDark: {
     color: "#fff",
   },

@@ -1,12 +1,11 @@
 import request from 'supertest';
 import app from '../src/app.js'; 
-import pool from '../src/config/db.js'; // ¡ESTE SÍ CIERRA EL POOL!
+import pool from '../src/config/db.js';
 
-// --- Variables Globales ---
 let tokenAdmin;
 
 beforeAll(async () => {
-  // 1. Iniciar sesión como Admin
+
   const loginResponse = await request(app)
     .post('/api/auth/login')
     .send({
@@ -19,18 +18,10 @@ beforeAll(async () => {
   }
 });
 
-// -----------------------------------------------------------------
-// DESPUÉS DE TODAS LAS PRUEBAS
-// -----------------------------------------------------------------
 afterAll(async () => {
-  // ¡Este es el ÚNICO archivo que cierra el pool!
-  // Es el último en orden alfabético.
   await pool.end(); 
 });
 
-// -----------------------------------------------------------------
-// INICIO DE LAS PRUEBAS DE ADMIN/USUARIOS
-// -----------------------------------------------------------------
 describe('API de Admin/Usuarios - /api/usuarios', () => {
 
   it('GET / - debe obtener la lista de usuarios (solo admin)', async () => {
@@ -65,14 +56,13 @@ describe('API de Admin/Usuarios - /api/usuarios', () => {
   });
   
   it('PUT /:id - debe actualizar un usuario (ej. rol)', async () => {
-    // ID 3 = cignacio@aguakan.com
     const idUsuarioAActualizar = 3; 
     
     const response = await request(app)
       .put(`/api/usuarios/${idUsuarioAActualizar}`)
       .set('Authorization', `Bearer ${tokenAdmin}`)
       .send({
-        id_rol: 1 // Aseguramos que sea Admin
+        id_rol: 1
       });
 
     expect(response.statusCode).toBe(200);
@@ -81,8 +71,7 @@ describe('API de Admin/Usuarios - /api/usuarios', () => {
   });
   
   it('DELETE /:id - debe desactivar un usuario (que no sea él mismo)', async () => {
-    // Asumimos que ID 4 es un usuario de prueba (Laboratorista)
-    // ¡NO USAR EL ID 3 (cignacio) O FALLARÁ!
+
     const idUsuarioADesactivar = 4; 
     
     const response = await request(app)

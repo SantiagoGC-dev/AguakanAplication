@@ -1,13 +1,10 @@
 import request from 'supertest';
 import app from '../src/app.js'; 
-// No necesitamos el pool aquí, no cerramos la conexión
 
-// --- Variables Globales ---
 let token;
 let adminUserId;
 
 beforeAll(async () => {
-  // 1. Iniciar sesión como Admin
   const loginResponse = await request(app)
     .post('/api/auth/login')
     .send({
@@ -47,7 +44,6 @@ describe('API de Perfil - /api/perfil', () => {
 
     expect(response.statusCode).toBe(200);
     expect(response.body.success).toBe(true);
-    // Verificamos que el apellido materno se haya actualizado en la respuesta
     expect(response.body.data.apellido_materno).toBe(nuevoApellido);
   });
   

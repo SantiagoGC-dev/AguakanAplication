@@ -17,7 +17,6 @@ import upload from "../middlewares/upload.js";
 
 const router = Router();
 
-// --- RUTAS ESPECÍFICAS PARA PRODUCTOS ---
 router.get("/tipoproducto", getTipoProducto);
 router.get("/laboratorios/list", getLaboratorios);
 router.get("/estatus/list", getEstatusProductos);
