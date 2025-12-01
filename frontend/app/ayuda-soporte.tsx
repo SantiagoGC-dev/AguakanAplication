@@ -30,11 +30,7 @@ export default function AyudaScreen() {
       icon: "construct",
       title: "Soporte Técnico (TI)",
       description:
-        "Para problemas técnicos (errores de servidor, la app no conecta, etc.), contacta al Departamento de TI de AGUAKAN.",
-      contact: [
-        { type: "Email", value: "soporte.ti@aguakan.com" },
-        { type: "Teléfono", value: "984-123-4567" },
-      ],
+        "Para problemas técnicos (errores de servidor, la app no conecta, etc.), contacta al Departamento de TI.",
     },
   ];
 
@@ -137,25 +133,6 @@ export default function AyudaScreen() {
               >
                 {item.description}
               </Text>
-              {item.contact && (
-                <View style={styles.contactInfo}>
-                  {item.contact.map((contact, contactIndex) => (
-                    <View key={contactIndex} style={styles.contactItem}>
-                      <Ionicons
-                        name={contact.type === "Email" ? "mail" : "call"}
-                        size={16}
-                        color="#539DF3"
-                      />
-                      <Text
-                        style={[styles.contactText, isDark && styles.textDark]}
-                      >
-                        <Text style={styles.contactType}>{contact.type}: </Text>
-                        {contact.value}
-                      </Text>
-                    </View>
-                  ))}
-                </View>
-              )}
             </View>
           ))}
         </View>
@@ -441,7 +418,7 @@ const styles = StyleSheet.create({
   },
   contactTitle: {
     fontSize: 16,
-    fontFamily: "Poppins_600SemiBold",
+    fontFamily: "Poppins_700Bold",
     color: "#111",
     marginLeft: 12,
     flex: 1,

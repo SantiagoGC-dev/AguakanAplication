@@ -34,7 +34,7 @@ export const actualizarInstructivo = (req, res) => {
   res.json({
     success: true,
     message: 'Instructivo actualizado',
-    url: `http://192.168.0.166:3000/uploads/${pdfFileName}` // TU IP
+    url: `http://10.147.93.216:3000/uploads/${pdfFileName}` // TU IP
   });
 };
 
@@ -44,7 +44,7 @@ export const obtenerInstructivo = (req, res) => {
     if (fs.existsSync(pdfFilePath)) {
       res.json({
         success: true,
-        url: `http://192.168.0.166:3000/uploads/${pdfFileName}` 
+        url: `http://10.147.93.216:3000/uploads/${pdfFileName}` 
       });
     } else {
       res.json({ success: true, url: null }); 

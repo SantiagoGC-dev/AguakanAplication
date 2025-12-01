@@ -683,7 +683,7 @@ export const updateProductoImagen = async (req, res) => {
     }
 
     // Construir la URL completa de la imagen
-    const imageUrl = `http://192.168.0.166:3000/uploads/${req.file.filename}`;
+    const imageUrl = `http://10.147.93.216:3000/uploads/${req.file.filename}`;
 
     console.log("🖼️ URL COMPLETA que se guardará:", imageUrl);
 

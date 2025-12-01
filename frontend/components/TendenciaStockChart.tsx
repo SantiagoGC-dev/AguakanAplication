@@ -18,7 +18,7 @@ import {
 import { useColorScheme } from "@/hooks/use-color-scheme";
 
 interface PuntoGrafica {
-  x: string;
+  x: string | Date;
   y: number;
 }
 
@@ -40,49 +40,120 @@ const TendenciaStockChart: React.FC<TendenciaStockChartProps> = ({
   const { width: screenWidth } = useWindowDimensions();
   const chartWidth = Math.max(screenWidth - 32, 340);
 
-  const datosProcesados = useMemo(
-    () =>
-      datos?.map((p) => ({
-        x: p.x,
-        y: typeof p.y === "number" ? p.y : 0,
-      })) ?? [],
-    [datos]
-  );
+  // Procesar datos para convertir strings de fecha a objetos Date
+  const datosProcesados = useMemo(() => {
+    if (!datos || datos.length === 0) return [];
+
+    return datos.map((p) => ({
+      x: typeof p.x === "string" ? new Date(p.x) : p.x,
+      y: typeof p.y === "number" ? p.y : 0,
+    }));
+  }, [datos]);
+
+  // Ordenar datos por fecha para asegurar que se muestren en orden cronológico
+  const datosOrdenados = useMemo(() => {
+    return [...datosProcesados].sort((a, b) => {
+      const dateA = a.x instanceof Date ? a.x.getTime() : 0;
+      const dateB = b.x instanceof Date ? b.x.getTime() : 0;
+      return dateA - dateB;
+    });
+  }, [datosProcesados]);
 
   const estadisticas = useMemo(() => {
-    const valores = datosProcesados.map((d) => d.y);
+    const valores = datosOrdenados.map((d) => d.y);
+    if (valores.length === 0) return { min: 0, max: 0, promedio: 0 };
+
     const min = Math.min(...valores);
     const max = Math.max(...valores);
     const promedio = Math.round(
       valores.reduce((a, b) => a + b, 0) / valores.length
     );
     return { min, max, promedio };
-  }, [datosProcesados]);
+  }, [datosOrdenados]);
 
-  if (datosProcesados.length === 0) {
+  // Prevenir múltiples tooltips - datos con IDs únicos
+  const datosConId = useMemo(() => {
+    return datosOrdenados.map((d, index) => ({
+      ...d,
+      id: `punto-${index}`, // ID único para cada punto
+    }));
+  }, [datosOrdenados]);
+
+  if (datosOrdenados.length === 0) {
     return (
-      <View style={[styles.emptyContainer, isDark && styles.emptyContainerDark]}>
-        <Text style={[styles.emptyText, isDark && styles.textDark]}>📊 No hay datos históricos</Text>
-        <Text style={[styles.emptySubtext, isDark && styles.textMutedDark]}>Agrega datos para ver la tendencia</Text>
+      <View
+        style={[styles.emptyContainer, isDark && styles.emptyContainerDark]}
+      >
+        <Text style={[styles.emptyText, isDark && styles.textDark]}>
+          📊 No hay datos históricos
+        </Text>
+        <Text style={[styles.emptySubtext, isDark && styles.textMutedDark]}>
+          Agrega datos para ver la tendencia
+        </Text>
       </View>
     );
   }
 
-  const formatFecha = (valor: string) => {
-    const d = new Date(valor);
-    if (isNaN(d.getTime())) return valor;
-    return `${d.getDate()}/${d.getMonth() + 1}`;
+  // Formato de fecha para las etiquetas del eje X
+  const formatFechaEjeX = (date: Date) => {
+    if (!(date instanceof Date) || isNaN(date.getTime())) {
+      return "";
+    }
+
+    const day = date.getDate().toString().padStart(2, "0");
+    const month = (date.getMonth() + 1).toString().padStart(2, "0");
+    const year = date.getFullYear().toString().slice(-2);
+
+    return datosOrdenados.length <= 10 ? `${day}/${month}` : `${month}/${year}`;
   };
+
+  // Formato de fecha para el tooltip
+  const formatFechaTooltip = (date: Date) => {
+    if (!(date instanceof Date) || isNaN(date.getTime())) {
+      return "Fecha inválida";
+    }
+
+    const options: Intl.DateTimeFormatOptions = {
+      weekday: "short",
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+    };
+
+    return new Intl.DateTimeFormat("es-ES", options).format(date);
+  };
+
+  // Calcular ticks apropiados para el eje X
+  const getXTicks = useMemo(() => {
+    if (datosOrdenados.length <= 5) {
+      return datosOrdenados.map((d) => d.x as Date);
+    }
+
+    const ticks = [];
+    const step = Math.max(1, Math.floor(datosOrdenados.length / 5));
+
+    for (let i = 0; i < datosOrdenados.length; i += step) {
+      ticks.push(datosOrdenados[i].x as Date);
+    }
+
+    if (
+      ticks[ticks.length - 1] !== datosOrdenados[datosOrdenados.length - 1].x
+    ) {
+      ticks.push(datosOrdenados[datosOrdenados.length - 1].x as Date);
+    }
+
+    return ticks;
+  }, [datosOrdenados]);
 
   // Estilos dinámicos para el chart basados en el tema
   const axisStyle = {
-    axis: { 
-      stroke: isDark ? "#444" : "#CBD5E1", 
-      strokeWidth: 1 
+    axis: {
+      stroke: isDark ? "#444" : "#CBD5E1",
+      strokeWidth: 1,
     },
-    ticks: { 
-      stroke: isDark ? "#444" : "#CBD5E1", 
-      size: 5 
+    ticks: {
+      stroke: isDark ? "#444" : "#CBD5E1",
+      size: 5,
     },
     tickLabels: {
       fontSize: 11,
@@ -90,9 +161,9 @@ const TendenciaStockChart: React.FC<TendenciaStockChartProps> = ({
       padding: 6,
       fontWeight: "500",
     },
-    grid: { 
-      stroke: isDark ? "#333" : "#E2E8F0", 
-      strokeDasharray: "4,4" 
+    grid: {
+      stroke: isDark ? "#333" : "#E2E8F0",
+      strokeDasharray: "4,4",
     },
   };
 
@@ -105,30 +176,51 @@ const TendenciaStockChart: React.FC<TendenciaStockChartProps> = ({
   const tooltipTextStyle = {
     fill: isDark ? "#fff" : "#F8FAFC",
     fontSize: 11,
-    fontWeight: "500"
+    fontWeight: "500",
   };
 
   return (
-    <ScrollView style={styles.scrollContainer} showsVerticalScrollIndicator={false}>
+    <ScrollView
+      style={styles.scrollContainer}
+      showsVerticalScrollIndicator={false}
+    >
       <View style={[styles.container, isDark && styles.containerDark]}>
         {/* Header */}
         <View style={[styles.header, isDark && styles.headerDark]}>
-          <Text style={[styles.titulo, isDark && styles.textDark]}>{titulo}</Text>
-          <View style={[styles.badgeContainer, isDark && styles.badgeContainerDark]}>
-            <Text style={[styles.badgeText, isDark && styles.badgeTextDark]}>{datosProcesados.length} registros</Text>
+          <Text style={[styles.titulo, isDark && styles.textDark]}>
+            {titulo}
+          </Text>
+          <View
+            style={[styles.badgeContainer, isDark && styles.badgeContainerDark]}
+          >
+            <Text style={[styles.badgeText, isDark && styles.badgeTextDark]}>
+              {datosOrdenados.length} registros
+            </Text>
           </View>
         </View>
 
         {/* Chart */}
         <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-          <View style={[styles.chartWrapper, isDark && styles.chartWrapperDark, { width: chartWidth }]}>
+          <View
+            style={[
+              styles.chartWrapper,
+              isDark && styles.chartWrapperDark,
+              { width: chartWidth },
+            ]}
+          >
             <VictoryChart
               theme={VictoryTheme.material}
+              scale={{ x: "time" }}
               containerComponent={
                 <VictoryVoronoiContainer
-                  labels={({ datum }) =>
-                    `${formatFecha(datum.x)}\n${datum.y} unidades`
-                  }
+                  voronoiDimension="x"
+                  labels={({ datum }) => {
+                    // Verificar y evitar duplicados
+                    if (datum._id) return "";
+                    return `${formatFechaTooltip(datum.x)}\n${
+                      datum.y
+                    } unidades`;
+                  }}
                   labelComponent={
                     <VictoryTooltip
                       flyoutStyle={tooltipStyle}
@@ -144,14 +236,15 @@ const TendenciaStockChart: React.FC<TendenciaStockChartProps> = ({
               padding={{ top: 30, bottom: 50, left: 60, right: 30 }}
             >
               <VictoryAxis
-                tickFormat={formatFecha}
-                tickCount={Math.min(6, datosProcesados.length)}
+                scale="time"
+                tickFormat={formatFechaEjeX}
+                tickValues={getXTicks}
                 style={axisStyle}
               />
               <VictoryAxis dependentAxis tickCount={6} style={axisStyle} />
 
               <VictoryLine
-                data={datosProcesados}
+                data={datosConId}
                 interpolation="monotoneX"
                 style={{
                   data: {
@@ -161,11 +254,12 @@ const TendenciaStockChart: React.FC<TendenciaStockChartProps> = ({
                   },
                 }}
                 animate={{ duration: 1200, onLoad: { duration: 800 } }}
+                events={[]} // Sin eventos propios para evitar conflictos
               />
 
               {mostrarPuntos && (
                 <VictoryScatter
-                  data={datosProcesados}
+                  data={datosConId}
                   size={5}
                   style={{
                     data: {
@@ -174,6 +268,7 @@ const TendenciaStockChart: React.FC<TendenciaStockChartProps> = ({
                       strokeWidth: 2,
                     },
                   }}
+                  events={[]} // Sin eventos propios, usar solo el del contenedor
                 />
               )}
             </VictoryChart>
@@ -181,15 +276,21 @@ const TendenciaStockChart: React.FC<TendenciaStockChartProps> = ({
         </ScrollView>
 
         {/* Stats */}
-        <View style={[styles.statsContainer, isDark && styles.statsContainerDark]}>
+        <View
+          style={[styles.statsContainer, isDark && styles.statsContainerDark]}
+        >
           {[
             { label: "Máximo", value: estadisticas.max },
             { label: "Promedio", value: estadisticas.promedio },
             { label: "Mínimo", value: estadisticas.min },
           ].map((item) => (
             <View key={item.label} style={styles.statBox}>
-              <Text style={[styles.statLabel, isDark && styles.textMutedDark]}>{item.label}</Text>
-              <Text style={[styles.statValue, isDark && styles.textDark]}>{item.value}</Text>
+              <Text style={[styles.statLabel, isDark && styles.textMutedDark]}>
+                {item.label}
+              </Text>
+              <Text style={[styles.statValue, isDark && styles.textDark]}>
+                {item.value}
+              </Text>
             </View>
           ))}
         </View>
@@ -197,8 +298,12 @@ const TendenciaStockChart: React.FC<TendenciaStockChartProps> = ({
         {/* Legend */}
         <View style={[styles.legend, isDark && styles.legendDark]}>
           <View style={styles.legendItem}>
-            <View style={[styles.legendColor, { backgroundColor: "#3B82F6" }]} />
-            <Text style={[styles.legendText, isDark && styles.textDark]}>Stock histórico</Text>
+            <View
+              style={[styles.legendColor, { backgroundColor: "#3B82F6" }]}
+            />
+            <Text style={[styles.legendText, isDark && styles.textDark]}>
+              Stock histórico
+            </Text>
           </View>
         </View>
       </View>
@@ -206,6 +311,7 @@ const TendenciaStockChart: React.FC<TendenciaStockChartProps> = ({
   );
 };
 
+// Los estilos permanecen igual...
 const styles = StyleSheet.create({
   scrollContainer: { flex: 1 },
   container: {
@@ -251,10 +357,10 @@ const styles = StyleSheet.create({
   badgeContainerDark: {
     backgroundColor: "#2c2c2e",
   },
-  badgeText: { 
-    fontSize: 12, 
-    fontWeight: "600", 
-    color: "#0369A1" 
+  badgeText: {
+    fontSize: 12,
+    fontWeight: "600",
+    color: "#0369A1",
   },
   badgeTextDark: {
     color: "#60A5FA",
@@ -279,9 +385,9 @@ const styles = StyleSheet.create({
   statsContainerDark: {
     backgroundColor: "#2c2c2e",
   },
-  statBox: { 
-    alignItems: "center", 
-    flex: 1 
+  statBox: {
+    alignItems: "center",
+    flex: 1,
   },
   statLabel: {
     fontSize: 11,
@@ -306,20 +412,20 @@ const styles = StyleSheet.create({
   legendDark: {
     borderTopColor: "#333",
   },
-  legendItem: { 
-    flexDirection: "row", 
-    alignItems: "center" 
+  legendItem: {
+    flexDirection: "row",
+    alignItems: "center",
   },
-  legendColor: { 
-    width: 14, 
-    height: 14, 
-    borderRadius: 7, 
-    marginRight: 8 
+  legendColor: {
+    width: 14,
+    height: 14,
+    borderRadius: 7,
+    marginRight: 8,
   },
-  legendText: { 
-    fontSize: 13, 
-    color: "#475569", 
-    fontWeight: "500" 
+  legendText: {
+    fontSize: 13,
+    color: "#475569",
+    fontWeight: "500",
   },
   emptyContainer: {
     padding: 40,
@@ -341,10 +447,10 @@ const styles = StyleSheet.create({
     marginBottom: 8,
     textAlign: "center",
   },
-  emptySubtext: { 
-    fontSize: 13, 
-    color: "#94A3B8", 
-    textAlign: "center" 
+  emptySubtext: {
+    fontSize: 13,
+    color: "#94A3B8",
+    textAlign: "center",
   },
   textDark: {
     color: "#fff",

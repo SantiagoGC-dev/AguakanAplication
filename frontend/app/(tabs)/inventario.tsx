@@ -29,7 +29,7 @@ import { useColorScheme } from "@/hooks/use-color-scheme";
 const { width: screenWidth, height: screenHeight } = Dimensions.get("window");
 
 //Configuración de la API y Tipos
-const API_BASE_URL = "http://192.168.0.166:3000";
+const API_BASE_URL = "http://10.147.93.216:3000";
 
 interface FilterOption {
   label: string;
@@ -1712,7 +1712,7 @@ const styles = StyleSheet.create({
   safe: {
     flex: 1,
     backgroundColor: "#f8fafc",
-    marginBottom: -50,
+    marginBottom: -35,
   },
   safeDark: { backgroundColor: "#000" },
   container: {

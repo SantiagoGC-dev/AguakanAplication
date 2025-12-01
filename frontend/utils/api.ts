@@ -1,7 +1,7 @@
 import axios from 'axios';
 import { storage } from './storage'; 
 // IP local de desarrollo
-const API_BASE_URL = "http://192.168.0.166:3000/api";
+const API_BASE_URL = "http://10.147.93.216:3000/api";
 
 const api = axios.create({
   baseURL: API_BASE_URL,

@@ -30,7 +30,7 @@ import { useAuth } from "@/context/AuthContext";
 import api from "@/utils/api";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 
-const API_ROOT_URL = "http://192.168.0.166:3000";
+const API_ROOT_URL = "http://10.147.93.216:3000";
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get("window");
 
@@ -1222,6 +1222,14 @@ export default function ProductDetail() {
                 </Text>
               </View>
               <View style={styles.detailItem}>
+                <Text style={[styles.detailLabel, isDark && styles.textMutedDark]}>
+                  Intervalo de Trabajo
+                </Text>
+                <Text style={[styles.detailValue, isDark && styles.textDark]}>
+                  {producto.intervalo_trabajo || "N/A"}
+                </Text>
+              </View>
+              <View style={styles.detailItem}>
                 <Text
                   style={[styles.detailLabel, isDark && styles.textMutedDark]}
                 >
@@ -2018,7 +2026,7 @@ export default function ProductDetail() {
                         placeholderTextColor={isDark ? "#666" : "#999"}
                       />
                     </View>
-
+                    
                     <View style={styles.inputGroup}>
                       <Text style={[styles.label, isDark && styles.textDark]}>
                         Laboratorio
