@@ -72,7 +72,7 @@ interface Usuario {
 }
 
 // Configuración de API
-const API_BASE_URL = "http://10.147.93.216:3000/api";
+const API_BASE_URL = "http://192.168.167.216:3000/api";
 
 // Darle formato a la fecha
 function formatDate(dateString: string) {

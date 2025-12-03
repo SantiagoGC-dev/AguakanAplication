@@ -6,7 +6,9 @@
   "main": "dashboard.js",
   "scripts": {
     "dev": "nodemon server.js",
-    "test:backend": "node --experimental-vm-modules node_modules/jest/bin/jest.js --runInBand"
+    "test:backend": "node --experimental-vm-modules node_modules/jest/bin/jest.js --runInBand",
+    "android": "expo run:android",
+    "ios": "expo run:ios"
   },
   "keywords": [],
   "author": "",
@@ -19,12 +21,16 @@
     "cors": "^2.8.5",
     "dotenv": "^17.2.3",
     "exceljs": "^4.4.0",
+    "expo": "~54.0.20",
     "expo-file-system": "^19.0.17",
     "expo-sharing": "~14.0.7",
+    "expo-system-ui": "~6.0.8",
     "express": "^5.1.0",
     "jsonwebtoken": "^9.0.2",
     "multer": "^2.0.2",
     "mysql2": "^3.15.0",
+    "react": "19.1.0",
+    "react-native": "0.81.5",
     "react-native-fs": "^2.20.0"
   },
   "devDependencies": {

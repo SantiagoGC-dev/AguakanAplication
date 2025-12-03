@@ -34,7 +34,7 @@ interface AuthContextData {
 
 const AuthContext = createContext<AuthContextData>({} as AuthContextData);
 const EXPIRATION_TIME = 9 * 60 * 60 * 1000;
-const API_BASE_URL = "http://10.147.93.216:3000";
+const API_BASE_URL = "http://192.168.167.216:3000";
 
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);

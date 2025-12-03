@@ -1,0 +1,36 @@
+{
+  "expo": {
+    "name": "Laboratory",
+    "slug": "aguakanpp",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./frontend/assets/images/icon.png",
+    "userInterfaceStyle": "light",
+    "splash": {
+      "image": "./frontend/assets/images/icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#ffffff"
+    },
+    "assetBundlePatterns": [
+      "**/*"
+    ],
+    "ios": {
+      "supportsTablet": true
+    },
+    "extra": {
+      "eas": {
+        "projectId": "6d91e5ed-8f2c-4905-b416-4f718ead2170"
+      }
+    },
+    "android": {
+      "package": "com.santiagocalderon.aguakanpp",
+      "adaptiveIcon": {
+        "foregroundImage": "./frontend/assets/images/adaptive-icon.png",
+        "backgroundColor": "#ffffff"
+      }
+    },
+    "web": {
+      "favicon": "./frontend/assets/images/favicon.png"
+    }
+  }
+}

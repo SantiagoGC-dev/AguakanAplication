@@ -73,7 +73,7 @@ export const uploadDocumento = async (req, res) => {
         nombre_archivo: req.file.filename,
         id_tipo_documento: id_tipo_documento,
         fecha_subida: new Date(),
-        url: `http://10.147.93.216:3000/uploads/${req.file.filename}`
+        url: `http://192.168.167.216:3000/uploads/${req.file.filename}`
       }
     });
 
@@ -126,7 +126,7 @@ export const getDocumentosByProducto = async (req, res) => {
       id_tipo_documento: doc.id_tipo_documento,
       nombre_archivo: doc.nombre_archivo,
       fecha_subida: doc.fecha_subida,
-      url: `http://10.147.93.216:3000/uploads/${doc.nombre_archivo}`,
+      url: `http://192.168.167.216:3000/uploads/${doc.nombre_archivo}`,
       tipo: doc.id_tipo_documento == 1 ? "certificado" : "hds"
     }));
 
