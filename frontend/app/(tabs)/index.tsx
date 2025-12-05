@@ -313,58 +313,55 @@ export default function HomeScreen() {
         }
       >
         {/* Header Mejorado */}
-        <View
-          style={[styles.headerContainer, isDark && styles.headerContainerDark]}
-        >
-          <View style={styles.headerContent}>
-            <View style={styles.userInfo}>
-              <View style={styles.avatarContainer}>
-                <ThemedText style={styles.avatarText}>
-                  {userName
-                    .split(" ")
-                    .map((n) => n[0])
-                    .join("")
-                    .toUpperCase()}
-                </ThemedText>
-              </View>
-              <View>
-                <View style={styles.welcomeContainer}>
-                  <Text style={[styles.welcomeText, isDark && styles.textDark]}>
-                    ¡Hola!{" "}
-                  </Text>
-                  <Text
-                    style={[styles.userNameText, isDark && styles.textDark]}
-                  >
-                    {userName}
-                  </Text>
-                </View>
-                <Text
-                  style={[styles.subtitleText, isDark && styles.subtitleText]}
-                >
-                  {userRole}
-                </Text>
-              </View>
-            </View>
-            <TouchableOpacity
-              style={styles.notificationButton}
-              onPress={handleNotificacionPress}
-            >
-              <Ionicons
-                name="notifications-outline"
-                size={24}
-                color={isDark ? "#0A84FF" : "#539DF3"}
-              />
-              {(stats.productosBajoStock > 0 || stats.proximosCaducar > 0) && (
-                <View style={styles.notificationBadge}>
-                  <ThemedText style={styles.badgeText}>
-                    {stats.productosBajoStock + stats.proximosCaducar}
-                  </ThemedText>
-                </View>
-              )}
-            </TouchableOpacity>
-          </View>
+<View style={[styles.headerContainer, isDark && styles.headerContainerDark]}>
+  <View style={styles.headerContent}>
+    <View style={styles.userInfo}>
+      <View style={styles.avatarContainer}>
+        <ThemedText style={styles.avatarText}>
+          {userName
+            .split(" ")
+            .map((n) => n[0])
+            .join("")
+            .toUpperCase()}
+        </ThemedText>
+      </View>
+      <View style={styles.userTextContainer}>
+        <View style={styles.welcomeContainer}>
+          <Text style={[styles.welcomeText, isDark && styles.textDark]}>
+            ¡Hola!{" "}
+          </Text>
+          <Text
+            style={[styles.userNameText, isDark && styles.textDark]}
+            numberOfLines={1}
+            ellipsizeMode="tail"
+          >
+            {userName}
+          </Text>
         </View>
-
+        <Text style={[styles.subtitleText]}>
+          {userRole}
+        </Text>
+      </View>
+    </View>
+    <TouchableOpacity
+      style={styles.notificationButton}
+      onPress={handleNotificacionPress}
+    >
+      <Ionicons
+        name="notifications-outline"
+        size={24}
+        color={isDark ? "#0A84FF" : "#539DF3"}
+      />
+      {(stats.productosBajoStock > 0 || stats.proximosCaducar > 0) && (
+        <View style={styles.notificationBadge}>
+          <ThemedText style={styles.badgeText}>
+            {stats.productosBajoStock + stats.proximosCaducar}
+          </ThemedText>
+        </View>
+      )}
+    </TouchableOpacity>
+  </View>
+</View>
         {/* Tarjetas de resumen mejoradas */}
         <View style={styles.cardsContainer}>
           <SummaryCard
@@ -682,7 +679,7 @@ export default function HomeScreen() {
                       style={[
                         styles.notificationItem,
                         {
-                          backgroundColor: isDark ? "#2A2400" : "#FFFBEB",
+                          backgroundColor: isDark ? "#3A3400" : "#FFFBEB",
                           borderLeftColor: "#EFB700",
                         },
                         isDark && styles.notificationItemDark,
@@ -1056,6 +1053,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 12,
     flex: 1,
+    minWidth: 0, // Importante para que funcione ellipsis
   },
   avatarContainer: {
     width: 50,
@@ -1071,32 +1069,41 @@ const styles = StyleSheet.create({
     fontFamily: "Poppins_700Bold",
   },
   welcomeContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    flexWrap: "wrap",
-  },
+  flexDirection: "row",
+  alignItems: "center",
+  flexWrap: "nowrap", // Cambia de "wrap" a "nowrap"
+  minWidth: 0, // Añade esta línea
+},
+  userTextContainer: {
+  flex: 1,
+  minWidth: 0, // Importante para que el texto se trunque
+},
   welcomeText: {
     fontSize: 23,
     marginBottom: 2,
     color: "#000000ff",
     fontFamily: "Poppins_700Bold",
   },
-  userNameText: {
-    fontSize: 23,
-    marginBottom: 2,
-    color: "#000000ff",
-    fontFamily: "Poppins_500Medium",
-  },
-  subtitleText: {
-    fontSize: 14,
-    marginTop: -5,
-    color: "#539DF3",
-    fontFamily: "Poppins_400Regular",
-  },
-  notificationButton: {
-    padding: 8,
-    position: "relative",
-  },
+userNameText: {
+  fontSize: 23,
+  marginBottom: 2,
+  color: "#000000ff",
+  fontFamily: "Poppins_500Medium",
+  flex: 1, // Añade esta línea
+  minWidth: 0, // Añade esta línea
+},
+subtitleText: {
+  fontSize: 14,
+  marginTop: -5,
+  color: "#539DF3",
+  fontFamily: "Poppins_400Regular",
+},
+notificationButton: {
+  padding: 8,
+  position: "relative",
+  marginLeft: 8, // Añade esta línea para espacio
+  flexShrink: 0, // Añade esta línea para que no se encoja
+},
   notificationBadge: {
     position: "absolute",
     top: 1,

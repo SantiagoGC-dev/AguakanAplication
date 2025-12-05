@@ -612,6 +612,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "#F8FAFC",
+    paddingBottom: 20,
   },
   containerDark: {
     backgroundColor: "#000",
@@ -619,6 +620,7 @@ const styles = StyleSheet.create({
   content: {
     flex: 1,
     padding: 20,
+    marginBottom: 10,
   },
   header: {
     flexDirection: "row",

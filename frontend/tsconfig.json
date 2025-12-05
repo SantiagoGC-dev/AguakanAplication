@@ -7,14 +7,12 @@
         "./*"
       ]
     },
-    // --- ESTA ES LA LÍNEA QUE ARREGLA EL ERROR ---
-    "types": ["jest"]
-    // ---------------------------------------------
+    "types": [
+      "jest"
+    ]
   },
   "include": [
     "**/*.ts",
-    "**/*.tsx",
-    ".expo/types/**/*.ts",
-    "expo-env.d.ts"
+    "**/*.tsx"
   ]
 }

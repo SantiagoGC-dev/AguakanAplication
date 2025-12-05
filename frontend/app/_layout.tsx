@@ -1,9 +1,5 @@
-import {
-  DarkTheme,
-  DefaultTheme,
-  ThemeProvider,
-} from "@react-navigation/native";
-import { Stack } from "expo-router";
+import { DarkTheme, DefaultTheme, ThemeProvider } from "@react-navigation/native";
+import { Stack, useRouter, useSegments } from "expo-router"; // Agregamos hooks de router
 import { StatusBar } from "expo-status-bar";
 import { useEffect } from "react";
 import "react-native-reanimated";
@@ -24,9 +20,12 @@ SplashScreen.preventAutoHideAsync();
 export const unstable_settings = {
   anchor: "(tabs)",
 };
+
 function RootLayoutNav() {
   const colorScheme = useColorScheme();
   const { isAuthenticated, isLoading } = useAuth();
+  const segments = useSegments(); // Para saber en qué pantalla estamos
+  const router = useRouter(); // Para movernos
 
   const [fontsLoaded] = useFonts({
     Poppins_400Regular,
@@ -34,46 +33,50 @@ function RootLayoutNav() {
     Poppins_700Bold,
   });
 
+  // Lógica de Protección de Rutas (Reemplaza al condicional del Stack)
+  useEffect(() => {
+    if (isLoading || !fontsLoaded) return;
+
+    const inAuthGroup = segments[0] === "(tabs)" || segments[0] === "detail";
+
+    if (!isAuthenticated && inAuthGroup) {
+      // Si NO está logueado y trata de entrar a tabs o detalle -> Mándalo al login
+      router.replace("/login");
+    } else if (isAuthenticated && segments[0] === "login") {
+      // Si SÍ está logueado y está en login -> Mándalo a inicio
+      router.replace("/(tabs)");
+    }
+  }, [isAuthenticated, isLoading, segments, fontsLoaded]);
+
   useEffect(() => {
     if (fontsLoaded && !isLoading) {
       SplashScreen.hideAsync();
     }
   }, [fontsLoaded, isLoading]);
+
   if (!fontsLoaded || isLoading) {
     return (
       <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
         <ActivityIndicator size="large" />
-        <Text style={{ marginTop: 10 }}>Cargando...</Text>
       </View>
     );
   }
 
-  console.log("🎯 Renderizando layout. Autenticado:", isAuthenticated);
-
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <ThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
+        {/* STACK LIMPIO: Sin condicionales ni fragmentos <> */}
         <Stack screenOptions={{ headerShown: false }}>
-          {isAuthenticated ? (
-            <>
-              <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-              <Stack.Screen
-                name="detail/[id]"
-                options={{
-                  headerTitle: "Detalle del producto",
-                  headerBackTitle: "",
-                }}
-              />
-            </>
-          ) : (
-            <Stack.Screen
-              name="login"
-              options={{
-                headerShown: false,
-                animation: "fade",
-              }}
-            />
-          )}
+          <Stack.Screen name="login" options={{ animation: "fade" }} />
+          <Stack.Screen name="(tabs)" />
+          <Stack.Screen
+            name="detail/[id]"
+            options={{
+              headerTitle: "Detalle del producto",
+              headerShown: false, // O true si quieres el header
+              headerBackTitle: "",
+            }}
+          />
         </Stack>
         <StatusBar style="auto" />
       </ThemeProvider>

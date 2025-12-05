@@ -1064,7 +1064,7 @@ export default function ProductDetail() {
           </View>
           <View style={styles.infoGrid}>
             <View style={styles.infoItem}>
-              <Text style={[styles.infoLabel, isDark && styles.textMutedDark]}>
+              <Text style={[styles.infoLabel, isDark && styles.textDarkDetails]}>
                 Marca
               </Text>
               <Text style={[styles.infoValue, isDark && styles.textDark]}>
@@ -1072,7 +1072,7 @@ export default function ProductDetail() {
               </Text>
             </View>
             <View style={styles.infoItem}>
-              <Text style={[styles.infoLabel, isDark && styles.textMutedDark]}>
+              <Text style={[styles.infoLabel, isDark && styles.textDarkDetails]}>
                 Lote
               </Text>
               <Text style={[styles.infoValue, isDark && styles.textDark]}>
@@ -1080,7 +1080,7 @@ export default function ProductDetail() {
               </Text>
             </View>
             <View style={styles.infoItem}>
-              <Text style={[styles.infoLabel, isDark && styles.textMutedDark]}>
+              <Text style={[styles.infoLabel, isDark && styles.textDarkDetails]}>
                 Fecha Ingreso
               </Text>
               <Text style={[styles.infoValue, isDark && styles.textDark]}>
@@ -1088,7 +1088,7 @@ export default function ProductDetail() {
               </Text>
             </View>
             <View style={styles.infoItem}>
-              <Text style={[styles.infoLabel, isDark && styles.textMutedDark]}>
+              <Text style={[styles.infoLabel, isDark && styles.textDarkDetails]}>
                 Prioridad
               </Text>
               <Text style={[styles.infoValue, isDark && styles.textDark]}>
@@ -1096,7 +1096,7 @@ export default function ProductDetail() {
               </Text>
             </View>
             <View style={styles.infoItem}>
-              <Text style={[styles.infoLabel, isDark && styles.textMutedDark]}>
+              <Text style={[styles.infoLabel, isDark && styles.textDarkDetails]}>
                 Stock Mínimo
               </Text>
               <Text style={[styles.infoValue, isDark && styles.textDark]}>
@@ -1104,7 +1104,7 @@ export default function ProductDetail() {
               </Text>
             </View>
             <View style={styles.infoItem}>
-              <Text style={[styles.infoLabel, isDark && styles.textMutedDark]}>
+              <Text style={[styles.infoLabel, isDark && styles.textDarkDetails]}>
                 Stock Actual
               </Text>
               <Text
@@ -3003,6 +3003,9 @@ const styles = StyleSheet.create({
   },
   textMutedDark: {
     color: "#d6d6d6ff",
+  },
+  textDarkDetails: {
+    color: "#539DF3",
   },
   loadingText: {
     marginTop: 10,
