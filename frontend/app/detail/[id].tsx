@@ -1382,7 +1382,6 @@ export default function ProductDetail() {
                     <Text
                       style={[
                         styles.historialSubtitle,
-                        isDark && styles.textMutedDark,
                       ]}
                     >
                       {new Date(mov.fecha).toLocaleString("es-MX")} por{" "}
@@ -2609,7 +2608,7 @@ const styles = StyleSheet.create({
   historialSubtitle: {
     fontSize: 12,
     fontFamily: "Poppins_400Regular",
-    color: "#777",
+    color: "#539DF3",
     marginTop: 2,
   },
   historialDescription: {

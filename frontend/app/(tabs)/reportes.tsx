@@ -807,12 +807,31 @@ export default function ReportesScreen() {
         </View>
 
         {/* Periodo actual */}
-        <View style={styles.periodoContainer}>
-          <ThemedText
-            style={[styles.periodoText, isDark && styles.textMutedDark]}
-          >
-            Periodo: {periodoTexto}
+        <View
+          style={[
+            styles.periodoContainer,
+            isDark && styles.periodoContainerDark,
+          ]}
+        >
+          {/* Título Principal */}
+          <ThemedText style={[styles.periodoText, isDark && styles.textDark]}>
+            <Text style={{ fontWeight: "bold" }}>Periodo:</Text> {periodoTexto}
           </ThemedText>
+
+          {/* Nota/Alerta abajo con ícono */}
+          <View style={styles.notaContainer}>
+            <Ionicons
+              name="information-circle-outline"
+              size={14}
+              color={isDark ? "#888" : "#666"}
+              style={{ marginTop: 2 }}
+            />
+            <ThemedText
+              style={[styles.periodoAlertaText, isDark && styles.textMutedDark]}
+            >
+              Aplica para la fecha de ingreso de los productos
+            </ThemedText>
+          </View>
         </View>
 
         {/* Botones de exportar */}
@@ -1297,14 +1316,36 @@ const styles = StyleSheet.create({
     fontFamily: "Poppins_500Medium",
   },
   periodoContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginTop: 8,
+    marginHorizontal: 1,
+    marginVertical: 12,
+    padding: 12,
+    backgroundColor: "#f1f5f9", // Gris muy suave
+    borderRadius: 12,
+    borderLeftWidth: 4,
+    borderLeftColor: "#539DF3", // Acento azul
+    // Quitamos 'flexDirection: row' para que sea columna (Título arriba, nota abajo)
+  },
+  periodoContainerDark: {
+    backgroundColor: "#1c1c1e", // Fondo oscuro para modo noche
+    borderLeftColor: "#539DF3",
   },
   periodoText: {
-    fontSize: 14,
-    color: "#64748B",
+    fontSize: 16,
     fontFamily: "Poppins_500Medium",
+    color: "#1a1a1a",
+    marginBottom: 4, // Espacio entre el título y la nota de abajo
+  },
+  notaContainer: {
+    flexDirection: "row", // Esto alinea el icono y el texto de alerta horizontalmente
+    alignItems: "center",
+    gap: 6,
+  },
+  periodoAlertaText: {
+    fontSize: 12,
+    color: "#64748b", // Gris azulado (más elegante que el rojo fuerte)
+    fontFamily: "Poppins_400Regular",
+    fontStyle: "italic",
+    flex: 1, // Para que el texto se ajuste si es muy largo
   },
   paginationInfo: {
     paddingHorizontal: 16,

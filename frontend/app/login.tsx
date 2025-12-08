@@ -72,7 +72,7 @@ export default function LoginScreen() {
               laboratory
             </Text>
             <Text style={[styles.subtitle, isDark && styles.subtitleDark]}>
-              Gestor de inventario
+              Sistema de control de inventario para laboratorio
             </Text>
           </View>
 
@@ -172,6 +172,7 @@ const styles = StyleSheet.create({
   },
   subtitle: {
     fontSize: 16,
+    textAlign: "center",
     color: "#475569",
     fontFamily: "Poppins_400Regular",
     letterSpacing: 0.3,

@@ -24,6 +24,7 @@ import DateTimePicker from "@react-native-community/datetimepicker";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { useFocusEffect } from "@react-navigation/native";
 import { useColorScheme } from "@/hooks/use-color-scheme";
+import api from "@/utils/api";
 
 // Obtener dimensiones de la pantalla
 const { width: screenWidth, height: screenHeight } = Dimensions.get("window");
@@ -875,10 +876,12 @@ export default function InventarioScreen() {
     setFormState((prev: any) => ({ ...prev, [fieldName]: parsedValue }));
   };
 
-  const handleSaveNewProduct = async () => {
+const handleSaveNewProduct = async () => {
+    // Evitar doble clic
     if (guardandoProducto) return;
     setGuardandoProducto(true);
 
+    // 1. Obtener información del tipo seleccionado
     const tipoInfo = tiposDisponibles.find(
       (t) => t.nombre_tipo === selectedProductType
     );
@@ -889,10 +892,12 @@ export default function InventarioScreen() {
       return;
     }
 
+    // 2. Preparar lógica de tipos
     const isReactivo = tipoInfo.nombre_tipo === "Reactivo";
     const isMaterial = tipoInfo.nombre_tipo === "Material";
     const isEquipo = tipoInfo.nombre_tipo === "Equipo";
 
+    // Determinar existencia según el tipo
     const existencia = isReactivo
       ? formState.cantidad_ingresada_reactivo
       : isMaterial
@@ -901,6 +906,7 @@ export default function InventarioScreen() {
       ? 1
       : formState.existencia_actual;
 
+    // 3. Construir el objeto de datos (Payload)
     const dataToSend = {
       ...formState,
       id_tipo_producto: tipoInfo.id_tipo_producto,
@@ -909,12 +915,12 @@ export default function InventarioScreen() {
       imagen: formState.imagen || null,
       id_laboratorio:
         formState.id_laboratorio || laboratorios[0]?.id_laboratorio || 1,
-      id_estatus_producto: 1,
+      id_estatus_producto: 1, // Siempre inicia disponible
       stock_minimo: formState.stock_minimo || 0,
       id_prioridad: formState.id_prioridad || "2",
     };
 
-    // Validaciones básicas por tipo de producto
+    // 4. Validaciones de campos obligatorios
     if (isEquipo) {
       if (!dataToSend.nombre || !dataToSend.marca || !dataToSend.modelo) {
         Alert.alert(
@@ -952,34 +958,45 @@ export default function InventarioScreen() {
       }
     }
 
+    // 5. Envío al Servidor usando 'api' (Axios con Interceptor)
     try {
-      const response = await fetch(`${API_BASE_URL}/api/productos`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(dataToSend),
-      });
+      console.log("📤 Enviando producto con Axios...");
 
-      const result = await response.json();
+      // NOTA: Usamos 'api.post' para que se incluya el TOKEN automáticamente.
+      // La URL es solo '/productos' porque la base ya está en utils/api.ts
+      const response = await api.post('/productos', dataToSend);
 
-      if (response.ok) {
-        Alert.alert(
-          "Éxito",
-          `Producto "${dataToSend.nombre}" (${tipoInfo.nombre_tipo}) creado con éxito!`
-        );
-        setShowAddModal(false);
-        setFormState({});
-        fetchProducts();
+      // Con Axios, la respuesta exitosa viene en response.data
+      Alert.alert(
+        "Éxito",
+        `Producto "${dataToSend.nombre}" (${tipoInfo.nombre_tipo}) creado con éxito!`
+      );
+      
+      // Limpiar y recargar
+      setShowAddModal(false);
+      setFormState({});
+      fetchProducts(); 
+
+    } catch (error: any) {
+      console.error("❌ Error al guardar:", error);
+
+      // Manejo de errores robusto para Axios
+      if (error.response) {
+        // El servidor respondió con un error (4xx, 5xx)
+        const msg = error.response.data?.error || "Error al guardar el producto.";
+        
+        if (error.response.status === 401 || error.response.status === 403) {
+             Alert.alert("Sesión Expirada", "Tu sesión ha caducado o no tienes permisos.");
+        } else {
+             Alert.alert("Error del Servidor", msg);
+        }
+      } else if (error.request) {
+        // No hubo respuesta del servidor (problema de red)
+        Alert.alert("Error de Conexión", "No se pudo conectar con el servidor. Verifica tu red.");
       } else {
-        Alert.alert(
-          "Error",
-          `Error al guardar: ${result.error || "Verifique los campos."}`
-        );
+        // Error en la configuración de la petición
+        Alert.alert("Error", "Ocurrió un error inesperado.");
       }
-    } catch (error) {
-      Alert.alert("Error", "Hubo un error de conexión al servidor.");
-      console.error(error);
     } finally {
       setGuardandoProducto(false);
     }
