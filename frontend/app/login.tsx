@@ -69,7 +69,7 @@ export default function LoginScreen() {
               />
             </View>
             <Text style={[styles.title, isDark && styles.titleDark]}>
-              laboratory
+              LabStock
             </Text>
             <Text style={[styles.subtitle, isDark && styles.subtitleDark]}>
               Sistema de control de inventario para laboratorio

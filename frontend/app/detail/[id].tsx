@@ -20,7 +20,7 @@ import * as WebBrowser from "expo-web-browser";
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import * as ImagePicker from "expo-image-picker";
-import TendenciaStockChart from "../../components/TendenciaStockChart";
+import TendenciaStockChart from "../../components/ProductosStockChartProps";
 import {
   Swipeable,
   GestureHandlerRootView,
@@ -261,6 +261,28 @@ export default function ProductDetail() {
     if (!fecha) return "N/A";
     return fecha.split("T")[0];
   };
+
+  useEffect(() => {
+  // Solo cargar gráfica si es un producto tipo 1 (reactivo)
+  if (producto?.id_tipo_producto === 1 && producto?.id_producto) {
+    const cargarGrafica = async () => {
+      try {
+        console.log(`📈 Cargando gráfica para producto ${producto.id_producto}`);
+        const response = await api.get(`/movimientos/grafica-stock/${producto.id_producto}`);
+        setDatosGrafica(response.data);
+        console.log("✅ Gráfica cargada:", response.data.length, "puntos");
+      } catch (error) {
+        console.error("❌ Error cargando gráfica:", error);
+        setDatosGrafica([]);
+      }
+    };
+    
+    cargarGrafica();
+  } else {
+    // Si no es reactivo, limpia los datos de gráfica
+    setDatosGrafica([]);
+  }
+}, [producto?.id_producto, producto?.id_tipo_producto]);
 
   const fetchOpcionesSelect = async () => {
     // Cargar Prioridades
@@ -795,82 +817,89 @@ export default function ProductDetail() {
     }
   };
 
-  const refreshProductData = async () => {
-    if (!id) return;
+const refreshProductData = async () => {
+  if (!id) return;
 
-    setLoading(true);
-    setCargandoHistorial(true);
+  setLoading(true);
+  setCargandoHistorial(true);
+  try {
+    console.log("🔄🔄🔄 RECARGANDO DATOS - INICIO");
+
+    // Hacer peticiones en paralelo con api.get
+    const [productResponse, historyResponse] = await Promise.all([
+      api.get(`/productos/${id}?t=${Date.now()}`),
+      api.get(`/movimientos/historial/${id}?t=${Date.now()}`),
+    ]);
+
+    // NO USES el endpoint /tendencia viejo
+    const productData = productResponse.data;
+    const historyData = historyResponse.data;
+
+    // DEBUG CRÍTICO
+    console.log("📥 DATOS RECIBIDOS DEL BACKEND:", {
+      id: productData.id_producto,
+      nombre: productData.nombre,
+      caducidad: productData.caducidad,
+      estatus: productData.estatus,
+      id_estatus: productData.id_estatus_producto,
+    });
+
+    setProducto(productData);
+    setHistorial(historyData);
+    
+    // AHORA OBTÉN LOS DATOS DEL NUEVO ENDPOINT
     try {
-      console.log("🔄🔄🔄 RECARGANDO DATOS - INICIO");
-
-      // Hacer peticiones en paralelo con api.get
-      const [productResponse, historyResponse, trendResponse] =
-        await Promise.all([
-          api.get(`/productos/${id}?t=${Date.now()}`),
-          api.get(`/movimientos/historial/${id}?t=${Date.now()}`),
-          api.get(`/productos/${id}/tendencia?t=${Date.now()}`),
-        ]);
-
-      // Con Axios, la respuesta está en .data
-      const productData = productResponse.data;
-      const historyData = historyResponse.data;
-      const trendData = trendResponse.data;
-
-      // DEBUG CRÍTICO
-      console.log("📥 DATOS RECIBIDOS DEL BACKEND:", {
-        id: productData.id_producto,
-        nombre: productData.nombre,
-        caducidad: productData.caducidad,
-        estatus: productData.estatus,
-        id_estatus: productData.id_estatus_producto,
-      });
-
-      setProducto(productData);
-      setHistorial(historyData);
-      setDatosGrafica(trendData);
-
-      if (productData) {
-        const editFormData: any = {
-          nombre: productData.nombre || "",
-          marca: productData.marca || "",
-          lote: productData.lote || "",
-          existencia_actual: productData.existencia_actual?.toString() || "",
-          stock_minimo: productData.stock_minimo?.toString() || "",
-          prioridad: productData.prioridad || "",
-          estatus: productData.estatus || "",
-          id_estatus_producto:
-            productData.id_estatus_producto?.toString() || "",
-          id_prioridad: productData.id_prioridad?.toString() || "",
-          presentacion: productData.presentacion || "",
-          caducidad: productData.caducidad
-            ? productData.caducidad.split("T")[0]
-            : "",
-        };
-        if (productData.id_tipo_producto === 2) {
-          editFormData.id_agk = productData.id_agk || "";
-          editFormData.modelo = productData.modelo || "";
-          editFormData.numero_serie = productData.numero_serie || "";
-          editFormData.rango_medicion = productData.rango_medicion || "";
-          editFormData.resolucion = productData.resolucion || "";
-          editFormData.intervalo_trabajo = productData.intervalo_trabajo || "";
-          editFormData.id_laboratorio =
-            productData.id_laboratorio?.toString() || "";
-        }
-        console.log("📝 FORMULARIO ACTUALIZADO:", editFormData);
-        setEditForm(editFormData);
-      }
-      console.log("✅ RECARGANDO DATOS - COMPLETADO");
-    } catch (error: any) {
-      console.error(
-        "❌ Error recargando datos:",
-        error.response?.data || error.message
-      );
-      Alert.alert("Error", "No se pudo actualizar la información.");
-    } finally {
-      setLoading(false);
-      setCargandoHistorial(false);
+      const graficaResponse = await api.get(`/movimientos/grafica-stock/${id}`);
+      setDatosGrafica(graficaResponse.data);
+      console.log("✅ Datos de gráfica cargados:", graficaResponse.data.length, "puntos");
+    } catch (graficaError) {
+      console.error("⚠️ Error cargando gráfica:", graficaError);
+      // Si falla, deja datosGrafica vacío
+      setDatosGrafica([]);
     }
-  };
+
+    if (productData) {
+      const editFormData: any = {
+        nombre: productData.nombre || "",
+        marca: productData.marca || "",
+        lote: productData.lote || "",
+        existencia_actual: productData.existencia_actual?.toString() || "",
+        stock_minimo: productData.stock_minimo?.toString() || "",
+        prioridad: productData.prioridad || "",
+        estatus: productData.estatus || "",
+        id_estatus_producto:
+          productData.id_estatus_producto?.toString() || "",
+        id_prioridad: productData.id_prioridad?.toString() || "",
+        presentacion: productData.presentacion || "",
+        caducidad: productData.caducidad
+          ? productData.caducidad.split("T")[0]
+          : "",
+      };
+      if (productData.id_tipo_producto === 2) {
+        editFormData.id_agk = productData.id_agk || "";
+        editFormData.modelo = productData.modelo || "";
+        editFormData.numero_serie = productData.numero_serie || "";
+        editFormData.rango_medicion = productData.rango_medicion || "";
+        editFormData.resolucion = productData.resolucion || "";
+        editFormData.intervalo_trabajo = productData.intervalo_trabajo || "";
+        editFormData.id_laboratorio =
+          productData.id_laboratorio?.toString() || "";
+      }
+      console.log("📝 FORMULARIO ACTUALIZADO:", editFormData);
+      setEditForm(editFormData);
+    }
+    console.log("✅ RECARGANDO DATOS - COMPLETADO");
+  } catch (error: any) {
+    console.error(
+      "❌ Error recargando datos:",
+      error.response?.data || error.message
+    );
+    Alert.alert("Error", "No se pudo actualizar la información.");
+  } finally {
+    setLoading(false);
+    setCargandoHistorial(false);
+  }
+};
 
   // useEffect para cargar el producto
   useEffect(() => {
@@ -1431,24 +1460,36 @@ export default function ProductDetail() {
         </View>
 
         {/* Gráfica de tendencia */}
-        {producto.id_tipo_producto === 1 && datosGrafica.length > 1 && (
-          <View style={[styles.card, isDark && styles.cardDark]}>
-            <View style={styles.cardHeader}>
-              <Ionicons
-                name="trending-up"
-                size={24}
-                color={isDark ? "#fff" : "#000000ff"}
-              />
-              <Text style={[styles.cardTitle, isDark && styles.textDark]}>
-                Tendencia de Stock
-              </Text>
-            </View>
-            <TendenciaStockChart
-              datos={datosGrafica}
-              titulo={`Stock histórico - ${producto.nombre}`}
-            />
-          </View>
-        )}
+{producto.id_tipo_producto === 1 && (
+  <View style={[styles.card, isDark && styles.cardDark]}>
+    <View style={styles.cardHeader}>
+      <Ionicons
+        name="trending-up"
+        size={24}
+        color={isDark ? "#fff" : "#000000ff"}
+      />
+      <Text style={[styles.cardTitle, isDark && styles.textDark]}>
+        Tendencia de stock
+      </Text>
+    </View>
+    
+    {datosGrafica.length > 0 ? (
+      <TendenciaStockChart
+        datos={datosGrafica}
+        titulo={`Stock histórico - ${producto.nombre}`}
+      />
+    ) : (
+      <View style={styles.centeredMessage}>
+        <Ionicons name="stats-chart" size={48} color="#94A3B8" />
+        <Text style={[styles.messageText, isDark && styles.textMutedDark]}>
+          {producto.existencia_actual > 0 
+            ? "Cargando datos de stock..." 
+            : "No hay stock para mostrar gráfica"}
+        </Text>
+      </View>
+    )}
+  </View>
+)}
       </Animated.ScrollView>
 
       {/* Modal de Documentos */}
@@ -3017,4 +3058,15 @@ const styles = StyleSheet.create({
     backgroundColor: "#172e59",
     borderColor: "#539DF3",
   },
+  centeredMessage: {
+  padding: 30,
+  alignItems: "center",
+  justifyContent: "center",
+},
+messageText: {
+  marginTop: 12,
+  color: "#64748B",
+  fontSize: 14,
+  textAlign: "center",
+},
 });
